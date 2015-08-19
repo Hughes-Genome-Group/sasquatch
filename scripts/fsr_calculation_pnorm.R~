@@ -26,19 +26,19 @@ border.list.minus <- sobel.borders(profile=profile.minus, kl=kl)
 
 #calculate adjusted SFR
 if(border.list.plus$flag){
-	fsr.plus <- adj.fsr(profile=gauss.list.plus$profile, kl=kl, usb=border.list.plus$us, dsb=border.list.plus$ds, usr=border.list.plus$range.us, dsr=border.list.plus$range.ds)
+	fsr.plus <- adj.fsr(profile=profile.plus, kl=kl, usb=border.list.plus$us, dsb=border.list.plus$ds, usr=border.list.plus$range.us, dsr=border.list.plus$range.ds)
 }else{	
-	fsr.plus="NA" 
+	fsr.plus="1.0" 
 }
 
 if(border.list.minus$flag){
-	fsr.minus <- adj.fsr(profile=gauss.list.minus$profile, kl=kl, usb=border.list.minus$us, dsb=border.list.minus$ds, usr=border.list.minus$range.us, dsr=border.list.plus$range.ds)
+	fsr.minus <- adj.fsr(profile=profile.minus, kl=kl, usb=border.list.minus$us, dsb=border.list.minus$ds, usr=border.list.minus$range.us, dsr=border.list.plus$range.ds)
 }else{	
-	fsr.minus="NA" 
+	fsr.minus="1.0A" 
 }
 
 #return / print
-cat(paste0("fsr_plus=", fsr.plus, " fsr_minus=", fsr.minus, " scale_plus=", gauss.list.plus$scale.factor, " scale_minus=", gauss.list.minus$scale.factor))
+cat(paste0("fsr_plus=", fsr.plus, " fsr_minus=", fsr.minus))
 
 
 

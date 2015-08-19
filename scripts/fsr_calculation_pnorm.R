@@ -28,13 +28,13 @@ border.list.minus <- sobel.borders(profile=profile.minus, kl=kl)
 if(border.list.plus$flag){
 	fsr.plus <- adj.fsr(profile=profile.plus, kl=kl, usb=border.list.plus$us, dsb=border.list.plus$ds, usr=border.list.plus$range.us, dsr=border.list.plus$range.ds)
 }else{	
-	fsr.plus="NA" 
+	fsr.plus="1.0" 
 }
 
 if(border.list.minus$flag){
 	fsr.minus <- adj.fsr(profile=profile.minus, kl=kl, usb=border.list.minus$us, dsb=border.list.minus$ds, usr=border.list.minus$range.us, dsr=border.list.plus$range.ds)
 }else{	
-	fsr.minus="NA" 
+	fsr.minus="1.0" 
 }
 
 #return / print

@@ -36,23 +36,23 @@ border.list.merged <- sobel.borders(profile=profile.merged, kl=kl)
 if(border.list.plus$flag){
 	fsr.merged <- adj.fsr(profile=profile.merged, kl=kl, usb=border.list.merged$us, dsb=border.list.merged$ds, usr=border.list.merged$range.us, dsr=border.list.merged$range.ds)
 }else{	
-	fsr.merged="NA" 
+	fsr.merged="1.0" 
 }
 
 if(border.list.plus$flag){
 	fsr.plus <- adj.fsr(profile=gauss.list.plus$profile, kl=kl, usb=border.list.plus$us, dsb=border.list.plus$ds, usr=border.list.plus$range.us, dsr=border.list.plus$range.ds)
 }else{	
-	fsr.plus="NA" 
+	fsr.plus="1.0" 
 }
 
 if(border.list.minus$flag){
 	fsr.minus <- adj.fsr(profile=gauss.list.minus$profile, kl=kl, usb=border.list.minus$us, dsb=border.list.minus$ds, usr=border.list.minus$range.us, dsr=border.list.plus$range.ds)
 }else{	
-	fsr.minus="NA" 
+	fsr.minus="1.0" 
 }
 
 #return / print
 cat(paste0("fsr_merged=", fsr.merged," fsr_plus=", fsr.plus, " fsr_minus=", fsr.minus, " scale_plus=", gauss.list.plus$scale.factor, " scale_minus=", gauss.list.minus$scale.factor))
-cat("profile=",profile.merged, sep=":")
+cat(" profile=",profile.merged, sep=":")
 
 
