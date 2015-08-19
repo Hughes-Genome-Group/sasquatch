@@ -1,0 +1,110 @@
+options(warn=-1)
+suppressMessages(library("TFBSTools"))
+suppressMessages(library("Biostrings"))
+options(warn=0)
+
+### DEFINE FUNCTION
+#wrapper function for JASPAR matching
+meet.jaspar <- function(seq,thresh,pwm.in){
+
+#     pet with N's
+    seq = paste0("NNNNN",seq,"NNNNN")
+
+    #make DNAString
+    seq = DNAString(seq)
+
+    #match
+    suppressWarnings(out <- lapply(pwm.in,function(x) searchSeq(x, seq, strand="*", min.score=thresh )) )
+    out <- out[sapply(out, function(x) nrow(writeGFF3(x)) > 0 )]
+
+    # combine output
+    tmp <- ""
+
+    if(length(out) >= 1){
+
+      #make dataframes
+      out.frame <- lapply(out, function(x) writeGFF3(x) ) #make data frame
+      out.frame <- lapply(out.frame, function(x) x <- x[x[,6]==max(x[,6]),]) #pick higehst matching strand
+      factors <- sapply(out.frame, function(x) strsplit(as.character(unlist(x[9])),";")[[1]][1] )
+      factors <- sapply(factors, function(x) gsub("TF=(\\w+)","\\1",x, perl=TRUE) )
+
+      
+      #relative score
+      rel.scores <- lapply(out, function(x) relScore(x))
+      rel.scores <- lapply(rel.scores, max)
+      
+      df <- data.frame(factor=factors, rel.scores=unlist(rel.scores) )
+      df <- df[order(df$rel.scores, decreasing =TRUE),]
+      
+      #merge values
+      for(i in c(1:nrow(df))){
+	  tmp <- paste0(tmp,df$factor[i],"=",round(df$rel.scores[[i]],digits=2),";")
+      }
+
+    }else{	#if no match above threshold report nothing
+      tmp <- "no hits"
+    }
+
+    return(tmp)
+
+}
+
+### USAGE
+
+args <- commandArgs(trailingOnly = TRUE)
+
+#input table 
+in.table <- args[1]
+
+#define output table
+out.table <- args[2]
+
+#organism ("human" or "mouse")
+organism <- args[3]
+
+#threshold default suggestion 80% for long queries
+threshold <- args[4]
+
+
+#load.db accoridng to organism 
+if(organism == "human"){
+  
+  load("/hts/data4/rschwess/database_assembly/jaspar/jaspar2014.human.9606.all.versions")
+  pwm.in <- human.pwm
+  
+}else if(organism == "mouse"){
+
+  load("/hts/data4/rschwess/database_assembly/jaspar/jaspar2014.mouse.10090.all.versions")
+   pwm.in <- mouse.pwm
+   
+}else{
+  stop("Please select an available organism human or mouse ! ... exiting ...")  
+}
+
+#read in (summary) table
+tab <- read.table(in.table, header=TRUE,fill=TRUE)
+tab <- na.omit(tab)
+
+tab$quick.jaspar <- rep(".", nrow(tab))
+
+for(j in c(1:nrow(tab))){
+
+    if( tab[j,14] >= 0 ){
+    
+      seq <- as.character(tab[j,7])
+      tab$quick.jaspar[j] <- meet.jaspar(seq, threshold, pwm.in)
+    
+    }else if(tab[j,14] < 0) {
+    
+      seq <- as.character(tab[j,8])
+      tab$quick.jaspar[j] <- meet.jaspar(seq, threshold, pwm.in)
+    
+    }    
+    
+}
+
+# write.table
+write.table(tab, file=out.table, quote=F, row.names=F, col.names=T, sep="\t")
+
+
+

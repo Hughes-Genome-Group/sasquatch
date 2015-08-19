@@ -1,0 +1,33 @@
+suppressMessages(library(ggplot2))
+
+#get Arguments
+args <- commandArgs(trailingOnly = TRUE)
+
+source(args[6])	#get common functions from file
+
+kmer <- args[1]	#kmer of interest
+
+profile.plus <- as.numeric( strsplit(args[2], ":")[[1]] )	#data plus strand profile #split the combined string at :s
+#occurence counts
+count.plus <- args[3]
+
+smooth.flag <- args[4]	#to smooth or not to smooth
+
+plot.dir <- args[5]
+
+# START #
+kl=nchar(kmer)
+
+#make plots in lists
+profile.norm.list <- plot.profile.pnorm.data(kmer, profile.plus=profile.plus, count.plus=count.plus, smooth.flag=smooth.flag)
+
+#plot is stored in theplot object #my current solution is to plot it to the desired dir if Flag TRUE /not sure hwo you want to handle plots
+#plus
+png.file=paste0(plot.dir,'/norm_data_plot_',kmer,'_merged.png')
+png(png.file, width=900, height=300)
+
+		print( profile.norm.list$pp )	#real
+
+suppress.output <- dev.off()
+
+
