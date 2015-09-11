@@ -6,9 +6,9 @@
 #$ -m eas
 #$ -e /hts/data4/rschwess/clustereo
 #$ -o /hts/data4/rschwess/clustereo
-#$ -N w4_vdHarst_dnase_kl7
+#$ -N w4_vdHarst_kl7
 
-#qsub /hts/data4/rschwess/Sasquatch_offline/Sasquatch/workflow_scripts/merged/use_vocabulary/Explanation_damage_multiple_seq_v3_pnorm_merged.sh
+#qsub /hts/data4/rschwess/Sasquatch_offline/Sasquatch/workflow_scripts/use_vocabulary/Explanation_damage_multiple_seq_v3_pnorm_merged.sh
 
 #run dissection and table creation on multiple sequences, assign a reference sequence and calulate the damage to 
 #the footprint contributing kmers and rank the sequences according to that
@@ -16,7 +16,7 @@
 #First set directories
 SCRIPT_DIR=/hts/data4/rschwess/Sasquatch_offline/Sasquatch/scripts		
 COMMON_FUNCTIONS=${SCRIPT_DIR}/common_functions.R
-OUTPUT_DIR=/hts/data4/rschwess/dnase_motif_tissue/validate_snps/bauer/hery_requery
+OUTPUT_DIR=/hts/data4/rschwess/dnase_motif_tissue/validate_snps/fanis_microarray_snps
 
 #select a background/normalization type (choose accordingly normalized kmer count files) there will pnorm dnase and pnorm atac files
 #we have to check how much the different backgrounds differ to tell how much different norm types we need to have but at least one for atac and one for dnase will be needed (currently only dnase available)
@@ -41,7 +41,7 @@ TISSUE="human_erythroid_hg18"
 ### INPUT ###
 #############
 #input file with sequences (first sequence is considered as the reference sequence,; relative to which all dmage is calculated later
-sequence_list=${OUTPUT_DIR}/sas_in.txt
+sequence_list=${OUTPUT_DIR}/sasq_query_all
 
 #TEMPORARY WRITTEN FILES'
 #temporary sequence list per line

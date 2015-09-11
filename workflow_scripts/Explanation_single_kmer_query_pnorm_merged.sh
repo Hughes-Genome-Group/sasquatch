@@ -7,22 +7,22 @@
 
 SCRIPT_DIR=/hts/data4/rschwess/Sasquatch_offline/Sasquatch/scripts		
 COMMON_FUNCTIONS=${SCRIPT_DIR}/common_functions.R
-OUTPUT_DIR=/hts/data4/rschwess/dnase_motif_tissue/idx_duke_testout/atac_hery_macs2_peakcompare
+OUTPUT_DIR=/hts/data4/rschwess/dnase_motif_tissue/idx_duke_testout/
 
 ORGANISM="human"
 
-FRAG_TYPE="ATAC"
+FRAG_TYPE="DNase"
 
 #I use the following to create tissue specific sub directories and name the files accordingly when creating the tissue specific data,
 #so that by setting a data directory and the correct tag you get access to the tissue specific count files later.
-TISSUE="erythroid_hg18_macs2"
+TISSUE="ENCODE_CD34plus_mobilized"
 
 # currently available "laza" (human fibroblast) "JH60" (human erythroid 60% mapped)  "atac" for atac;  mm9 --> atac= atac_mm9
 NORM_TYPE="JH60"
 
 ###INPUT###
 #enter a k-mer of interest
-kmer="WGATAA"
+kmer="GTTTGA"
 
 #get & store kmer length
 kl=`expr length $kmer`	
@@ -126,6 +126,7 @@ profile_naked_merged=`Rscript ${SCRIPT_DIR}/merge_profiles.R ${profile_naked_plu
 fsr_out=`Rscript ${SCRIPT_DIR}/fsr_calculation_pnorm_merge.R ${kmer} ${profile_merged} ${profile_plus} ${profile_minus} ${COMMON_FUNCTIONS}`
 #output is again a string like: fsr_plus=x fsr_minus=x scale_plus=x scale_minus=x
 fsr_merged=`echo ${fsr_out} | ${PERL} -ne '/fsr_merged=(\d+\.?\d*)\s+/; print $1;'`
+
 fsr_plus=`echo ${fsr_out} | ${PERL} -ne '/fsr_plus=(\d+\.?\d*)\s+/; print $1;'`	
 fsr_minus=`echo ${fsr_out} | ${PERL} -ne '/fsr_minus=(\d+\.?\d*)/; print $1;'`
 
@@ -152,10 +153,10 @@ Rscript ${SCRIPT_DIR}/pnorm_single_plots_merge.R ${kmer} ${profile_merged} ${pro
 # (4) Write single Kmer results into a single table #
 #####################################################
 
-##header
-#echo -e "sfr.merged\tsfr.plus\tsfr.minus"  >${OUTPUT_DIR}/single_stats_table
-##data
-#echo -e "${fsr_merged}\t${fsr_plus}\t${fsr_minus}" >>${OUTPUT_DIR}/single_stats_table
+#header
+echo -e "sfr.merged\tsfr.plus\tsfr.minus"  >${OUTPUT_DIR}/single_stats_table
+#data
+echo -e "${fsr_merged}\t${fsr_plus}\t${fsr_minus}" >>${OUTPUT_DIR}/single_stats_table
 
 
 ###################################################################
