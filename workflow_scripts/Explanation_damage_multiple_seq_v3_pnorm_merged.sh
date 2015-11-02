@@ -27,6 +27,9 @@ ORGANISM="human"
 
 FRAG_TYPE="DNase"
 
+#select search mode exhaustive "e" or local "l"
+SEARCH_MODE="e"
+
 #I use the following TAG to create tissue specific sub directories and name the files accordingly when creating the tissue specific data,
 #so that by setting a data directory and the correct tag you get access to the tissue specific count files later.
 #for erythroid human example
@@ -171,8 +174,31 @@ echo "" >>${temp_fsr_file}
 
 done
 
-dmgout=`Rscript ${SCRIPT_DIR}/multi_seq_dmg_v3.R ${temp_fsr_file} ${kl} ${totalid}`
+#run assessing dmg procedure
+#either summing up 
+if [ "$SEARCH_MODE" == "e" ]
+then
+
+  dmgout=`Rscript ${SCRIPT_DIR}/multi_seq_dmg_v3_summing_up.R ${temp_fsr_file} ${kl} ${totalid}`
+
+#or single higehst scoring kmer dependend on run mode
+elif [ "$SEARCH_MODE" == "l" ]
+then
+
+    dmgout=`Rscript ${SCRIPT_DIR}/multi_seq_dmg_v3.R ${temp_fsr_file} ${kl} ${totalid}`
+
+else
+
+  echo "Specify a proper Run mode!"
+  exit 2;
+
+fi
+
 echo -ne "${totalid}\t$dmgout\n" >>${wrapper_dmg_outlist}
+
+echo "$totalid done"
+
+done
 
 echo "$totalid done"
 
