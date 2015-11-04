@@ -6,9 +6,9 @@
 #$ -m eas
 #$ -e /hts/data4/rschwess/clustereo
 #$ -o /hts/data4/rschwess/clustereo
-#$ -N mutagen_hery_chr16_kl7
+#$ -N mutagen_gataa_break_hery
 
-#qsub /hts/data4/rschwess/Sasquatch_offline/Sasquatch/workflow_scripts/merged/use_vocabulary/in_silico_mutagenesis_into_wig.sh
+#qsub /hts/data4/rschwess/Sasquatch_offline/Sasquatch/workflow_scripts/use_vocabulary/in_silico_mutagenesis_into_wig.sh
 
 #run dissection and table creation on multiple sequences, assign a reference sequence and calulate the damage to 
 #the footprint contributing kmers and rank the sequences according to REGIONS
@@ -16,7 +16,7 @@
 #First set directories
 SCRIPT_DIR=/hts/data4/rschwess/Sasquatch_offline/Sasquatch/scripts	
 COMMON_FUNCTIONS=${SCRIPT_DIR}/common_functions.R
-OUTPUT_DIR=/hts/data4/rschwess/dnase_motif_tissue/human_erythroid_sasq_tracks
+OUTPUT_DIR=/hts/data4/rschwess/dnase_motif_tissue/tool_compare/bp_res_motif_disruption
 
 mkdir -p ${OUTPUT_DIR}
 
@@ -34,24 +34,24 @@ FRAG_TYPE="DNase"
 #for erythroid human example
 TISSUE="human_erythroid_hg18"
 
-IN_BED=${OUTPUT_DIR}/pipeline_peakcall_ploidy_filtered_200bp_extended.chr16.bed
-
 #############
 ### INPUT ###
 #############
 
 #The QUERY#
 #build
-build="hg18"	
+build="hg19"	
 
 #chr
-chromosome="chr16"
+chromosome="chr1"
 
-#read in bed file
+#input BED regions to process
+IN_BED=${OUTPUT_DIR}/hg19_bed_in.bed
+
 #Final WIG OUTPUT#
 #output WIG file listing the highest dmg and higest dmg per chr pos
-wig_abs_file=${OUTPUT_DIR}/sasq_insilico_mutagenesis_abs_human_erythroid_hg18_${chromosome}.wig
-wig_max_file=${OUTPUT_DIR}/sasq_insilico_mutagenesis_max_human_erythroid_hg18_${chromosome}.wig
+wig_abs_file=${OUTPUT_DIR}/sasq_insilico_mutagenesis_abs_${TISSUE}_${BUILD}_${chromosome}.wig
+wig_max_file=${OUTPUT_DIR}/sasq_insilico_mutagenesis_max_${TISSUE}_${BUILD}_${chromosome}.wig
 
 #init WIG file
 echo -ne "track type=wiggle_0 name=SasQ_abs_DMG\n" >${wig_abs_file}
@@ -59,7 +59,6 @@ echo -ne "variableStep chrom=$chromosome\n" >>${wig_abs_file}
 
 echo -ne "track type=wiggle_0 name=SasQ_max_DMG\n" >${wig_max_file}
 echo -ne "variableStep chrom=$chromosome\n" >>${wig_max_file}
-
 
 #length of sequences to split into
 kl=7
@@ -131,7 +130,7 @@ do
 echo -n "" >${wrapper_dmg_outlist}
 
 ###
-perl /hts/data4/rschwess/scripts/dnase_tissue_motif/arrange_insilico_mutagenesis_queries.pl `perl /hts/data4/rschwess/scripts/get_ref_sequence.pl ${build} ${chromosome} ${totalid} ${stopid} | tail -n 1` ${kl} | cut -f 3,4 >${OUTPUT_DIR}/seq_list
+perl ${SCRIPT_DIR}/arrange_insilico_mutagenesis_queries.pl `perl ${SCRIPT_DIR}/get_ref_sequence.pl ${build} ${chromosome} ${totalid} ${stopid} | tail -n 1` ${kl} | cut -f 3,4 >${OUTPUT_DIR}/seq_list
 ###
 
 #read in every line of seqs_input and parse to fsr calulcation and perform dmg assessment
