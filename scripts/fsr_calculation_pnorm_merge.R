@@ -30,7 +30,7 @@ border.list.minus <- sobel.borders(profile=profile.minus, kl=kl)
 border.list.merged <- sobel.borders(profile=profile.merged, kl=kl)
 
 #calculate adjusted SFR
-if(border.list.plus$flag){
+if(border.list.merged$flag){
 	fsr.merged <- adj.fsr(profile=profile.merged, kl=kl, usb=border.list.merged$us, dsb=border.list.merged$ds, usr=border.list.merged$range.us, dsr=border.list.merged$range.ds)
 }else{	
 	fsr.merged="1.0" 
