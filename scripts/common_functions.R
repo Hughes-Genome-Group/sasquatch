@@ -1200,23 +1200,55 @@ plot.profile.pnorm.data.single <- function(kmer, profile.plus, count.plus, smoot
 grep.profile <- function(kmer, infile){
   
   kmer.list <- decode.kmer(kmer)  #function that decodes ambivalent fasta code  letters like W into a list of all possible kmers ( if W two kmers to acutally search for)
-  count <- 0#initialize variables
+  count <- 0 #initialize variables
+  kl <- nchar(kmer)
   profile <- rep(0,(250+kl))
   
   for(km in kmer.list){  #for all entries in the splitted up kmer list
     match <- grep(km, readLines(infile), value=TRUE)  #performs basically a system grep / not sure how fast in relation to systemcommand
     split <- strsplit(match, "\t")[[1]]	#split on "\t" and unlist, all flat files are currently saved with a tab as seperator
     count <- count + as.numeric(split[2])	#second entry (first number) is the count how often the kmer appeared in the searched regions, rest is the cutting profile
-    profile <- profile + as.numeric(split[c(28:(length(split)-25))])	#currently I trimm the profile for plotting purposes latter (-25 bp in the beginning and end)
+    #remove kmer and count from split 
+    split <- split[-c(1,2)]
+    split <- as.numeric(split)
+    profile <- profile + split[c(26:(length(split)-25))]	#get length of split
   }
-  
-  profile <- profile / sum(profile)  #normalize the counted cuts to relative cutting frequency in the investigated region
-  
+  profile <- (profile / sum(profile))
+ 
   newlist <- list( "profile"=profile, "count"=count ) #assemble return list
   return(newlist)
   
 }
 
+#function to retrieve a normalized and pruned footprint (load completely prior working)
+get.footprint <- function(kmer,tissue, data.dir, length, smooth){
+  
+  infile.plus=file.path(data.dir,tissue,"counts",paste0("kmers_",kl,"_count_",tissue,"_pnorm_JH60_plus.txt"))
+  infile.minus=file.path(data.dir,tissue,"counts",paste0("kmers_",kl,"_count_",tissue,"_pnorm_JH60_minus.txt"))
+  
+  #grep profiles & counts
+  l.plus <- grep.profile(kmer, infile.plus)
+  l.minus <- grep.profile(kmer, infile.minus)
+  
+  if(frag.type == "ATAC"){
+    profile.merge <- (l.plus$profile + l.minus$profile)/2  #sum up profile, average is calculated later anyway
+  }else if(frag.type == "DNase"){
+    middle <- ( l.plus$profile[c(126:(125+kl))] + l.minus$profile[c(126:(125+kl))] ) / 2 #calc average of both strands for the kmer length middle
+    profile.merge <- c( l.plus$profile[c(1:125)], middle, l.minus$profile[c((125+kl+1):length(l.minus$profile))] )	#combine left flank from plus right flank from minus and kmer middle from the average
+  }else{
+    cat("Select according $FRAG_TYPE")
+  }
+  
+  #smooth if specified
+  if(smooth){
+    profile.merge <- ksmooth(c(1:length(profile.merge)), profile.merge, kernel="normal", bandwidth=5)$y
+  }
+  
+  remove.temp <- (250-length)/2
+  profile.merge <- profile.merge[c((1+remove.temp)):(length(profile.merge)-remove.temp)]
 
+  return(list(profile=profile.merge, count=l.plus$count))
+  
+}
 
 
