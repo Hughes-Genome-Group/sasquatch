@@ -4,15 +4,15 @@
 #the footprint contributing kmers and rank the sequences according to that
 
 #First set directories
-SCRIPT_DIR=/hts/data4/rschwess/Sasquatch_offline/Sasquatch/scripts			
+SCRIPT_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/scripts			
 COMMON_FUNCTIONS=${SCRIPT_DIR}/common_functions.R
-OUTPUT_DIR=/hts/data4/rschwess/dnase_motif_tissue/idx_duke_testout/merge_strands
+OUTPUT_DIR=/t1-data1/WTSA_Dev/rschwess/dnase_motif_tissue/idx_duke_testout/merge_strands
 
-BACKGROUND_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH60/counts
-BASE_DIR=/hts/data4/rschwess/database_assembly/background/hg19_ploidy_removed/basecomp
+BACKGROUND_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH60/counts
+BASE_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/background/hg19_ploidy_removed/basecomp
 
 #Specify the location of the tissue specific data (for example human erythroid is located here):
-DATA_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/human_ploidy_correct
+DATA_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/human_ploidy_correct
 
 #I use the following TAG
 TAG="human_erythroid_hg18"		

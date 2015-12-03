@@ -4,19 +4,19 @@
 #$ -q batchq
 #$ -M rschwess
 #$ -m eas
-#$ -e /hts/data4/rschwess/clustereo
-#$ -o /hts/data4/rschwess/clustereo
+#$ -e /t1-data1/WTSA_Dev/rschwess/clustereo
+#$ -o /t1-data1/WTSA_Dev/rschwess/clustereo
 #$ -N w4_dsQTL_vocab_single
 
-#qsub /hts/data4/rschwess/Sasquatch_offline/Sasquatch/workflow_scripts/merged/use_vocabulary/in_silico_mutagenesis_pnorm_merged.sh
+#qsub /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/workflow_scripts/merged/use_vocabulary/in_silico_mutagenesis_pnorm_merged.sh
 
 #run dissection and table creation on multiple sequences, assign a reference sequence and calulate the damage to 
 #the footprint contributing kmers and rank the sequences according to REGIONS
 
 #First set directories
-SCRIPT_DIR=/hts/data4/rschwess/Sasquatch_offline/Sasquatch/scripts	
+SCRIPT_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/scripts	
 COMMON_FUNCTIONS=${SCRIPT_DIR}/common_functions.R
-OUTPUT_DIR=/hts/data4/rschwess/dnase_motif_tissue/validate_snps/QTL_GM12878/w4_single
+OUTPUT_DIR=/t1-data1/WTSA_Dev/rschwess/dnase_motif_tissue/validate_snps/QTL_GM12878/w4_single
 
 #select a background/normalization type (choose accordingly normalized kmer count files) there will pnorm dnase and pnorm atac files
 #we have to check how much the different backgrounds differ to tell how much different norm types we need to have but at least one for atac and one for dnase will be needed (currently only dnase available)
@@ -52,7 +52,7 @@ wrapper_dmg_outlist=${OUTPUT_DIR}/summary_dmg_table_single.txt
 kl=7
 
 #define DATA directory
-DATA_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/${ORGANISM}/${FRAG_TYPE}
+DATA_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/${ORGANISM}/${FRAG_TYPE}
 
 ### Take Vocabulary File
 VOCAB="${DATA_DIR}/${TISSUE}/vocabulary_${TISSUE}.txt"

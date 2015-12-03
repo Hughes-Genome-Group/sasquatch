@@ -4,19 +4,19 @@
 
 #First set directory for scripts, output directory and location of the common_functions.R file that contains 
 #all shared functions sourced from some of the latter scripts:
-SCRIPT_DIR=/hts/data4/rschwess/Sasquatch_offline/Sasquatch/scripts			
+SCRIPT_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/scripts			
 COMMON_FUNCTIONS=${SCRIPT_DIR}/common_functions.R
-OUTPUT_DIR=/hts/data4/rschwess/dnase_motif_tissue/idx_duke_testout/merge_strands
+OUTPUT_DIR=/t1-data1/WTSA_Dev/rschwess/dnase_motif_tissue/idx_duke_testout/merge_strands
 
 #Specify the directory where the background files (base frequency and naked dnaseI fibroblast cutting) are located,
 #Currently this links to files for chr1 only but I'm close to finish the complete genome as background.
 
 #Specify the directory where the background files (naked dnaseI fibroblast cutting) are located,
-BACKGROUND_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH60/counts
-BASE_DIR=/hts/data4/rschwess/database_assembly/background/hg19_ploidy_removed/basecomp
+BACKGROUND_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH60/counts
+BASE_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/background/hg19_ploidy_removed/basecomp
 
 #Specify the location of the tissue specific data (for example human erythroid is located here):
-DATA_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/human_ploidy_correct
+DATA_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/human_ploidy_correct
 
 #I use the following TAG to create tissue specific sub directories and name the files accordingly when creating the tissue specific data,
 #so that by setting a data directory and the correct tag you get access to the tissue specific count files later.

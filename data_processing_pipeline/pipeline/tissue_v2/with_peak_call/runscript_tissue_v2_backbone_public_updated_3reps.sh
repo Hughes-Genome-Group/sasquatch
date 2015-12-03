@@ -4,17 +4,17 @@
 #$ -q batchq
 #$ -M rschwess
 #$ -m eas
-#$ -e /hts/data4/rschwess/clustereo
-#$ -o /hts/data4/rschwess/clustereo
+#$ -e /t1-data1/WTSA_Dev/rschwess/clustereo
+#$ -o /t1-data1/WTSA_Dev/rschwess/clustereo
 #$ -N bb_hepg2_duke_upd_pipe
 
-#qsub /hts/data4/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/tissue_v2/runscript_tissue_v2_backbone_public_updated_3reps.sh
+#qsub /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/tissue_v2/runscript_tissue_v2_backbone_public_updated_3reps.sh
 
 #set -x
 
 #path to pipeline directory and additional scripts
-PIPE_DIR=/hts/data4/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/tissue_v2
-SCRIPT_DIR=/hts/data4/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/scripts
+PIPE_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/tissue_v2
+SCRIPT_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/scripts
 
 #specify if "mouse" or "human"
 ORGANISM="human"
@@ -29,7 +29,7 @@ IDTAG="ENCODE_HepG2_duke"
 DATA_TYPE="DNase"
 
 #output directory
-OUTPUT_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/${ORGANISM}/${DATA_TYPE}/update_pipe/${IDTAG}
+OUTPUT_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/${ORGANISM}/${DATA_TYPE}/update_pipe/${IDTAG}
 
 #type of sequencing ["singleend" / "pairedend"] 
 SEQ_TYPE="singleend"
@@ -88,14 +88,14 @@ case "${ORGANISM}" in
 				REF_GENOME="/databank/igenomes/Homo_sapiens/UCSC/hg19/Sequence/WholeGenomeFasta/genome.fa"
 				BIGWIG_CHRSIZES='/hts/data0/config/bigwig/hg19_sizes.txt'
 				#ploidy regions to filter
-				PLOIDY_REGIONS='/hts/data4/rschwess/database_assembly/region_exclude/hg19/wgEncodeDukeMapabilityRegionsExcludable.bed'
+				PLOIDY_REGIONS='/t1-data1/WTSA_Dev/rschwess/database_assembly/region_exclude/hg19/wgEncodeDukeMapabilityRegionsExcludable.bed'
 			;;
 
 			hg18)
 				REF_GENOME="/databank/raw/hg18_full/hg18_full.fa"
 				BIGWIG_CHRSIZES='/hts/data0/config/bigwig/hg18_sizes.txt'
 				#ploidy regions to filter
-				PLOIDY_REGIONS='/hts/data4/rschwess/database_assembly/region_exclude/hg18/wgEncodeDukeMapabilityRegionsExcludable.bed'
+				PLOIDY_REGIONS='/t1-data1/WTSA_Dev/rschwess/database_assembly/region_exclude/hg18/wgEncodeDukeMapabilityRegionsExcludable.bed'
 			;;
 
 		esac
@@ -105,15 +105,15 @@ case "${ORGANISM}" in
 	
 			DNase)
 				pnormsource="JH60"
-				PROPENSITY_PLUS=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH60/pnorm/hg18_human_JH60_propensities_plus_merged
-				PROPENSITY_MINUS=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH60/pnorm/hg18_human_JH60_propensities_minus_merged
+				PROPENSITY_PLUS=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH60/pnorm/hg18_human_JH60_propensities_plus_merged
+				PROPENSITY_MINUS=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH60/pnorm/hg18_human_JH60_propensities_minus_merged
 			
 			;;
 
 			ATAC)
 				pnormsource="atac"
-				PROPENSITY_PLUS=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH_atac/pnorm/cut_kmer_6_hg18_plus_merged_propensities
-				PROPENSITY_MINUS=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH_atac/pnorm/cut_kmer_6_hg18_minus_merged_propensities
+				PROPENSITY_PLUS=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH_atac/pnorm/cut_kmer_6_hg18_plus_merged_propensities
+				PROPENSITY_MINUS=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH_atac/pnorm/cut_kmer_6_hg18_minus_merged_propensities
 
 			;;
 		esac
@@ -128,7 +128,7 @@ case "${ORGANISM}" in
 				REF_GENOME="/databank/igenomes/Mus_musculus/UCSC/mm9/Sequence/WholeGenomeFasta/genome.fa"
 				BIGWIG_CHRSIZES='/hts/data0/config/bigwig/mm9_sizes.txt'
 				#ploidy regions to filter
-				PLOIDY_REGIONS='/hts/data4/rschwess/database_assembly/region_exclude/mm9/Ploidy_mm9_sorted.bed'							
+				PLOIDY_REGIONS='/t1-data1/WTSA_Dev/rschwess/database_assembly/region_exclude/mm9/Ploidy_mm9_sorted.bed'							
 			;;
 		esac	
 
@@ -137,15 +137,15 @@ case "${ORGANISM}" in
 	
 			DNase)
 				pnormsource="mm9"
-				PROPENSITY_PLUS=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid/pnorm/cut_kmer_6_mm9_plus_merged_propensities
-				PROPENSITY_MINUS=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid/pnorm/cut_kmer_6_mm9_minus_merged_propensities
+				PROPENSITY_PLUS=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid/pnorm/cut_kmer_6_mm9_plus_merged_propensities
+				PROPENSITY_MINUS=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid/pnorm/cut_kmer_6_mm9_minus_merged_propensities
 			
 			;;
 
 			ATAC)
 				pnormsource="atac_mm9"
-				PROPENSITY_PLUS=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid_atac/pnorm/cut_kmer_6_atac_mm9_plus_merged_propensities
-				PROPENSITY_MINUS=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid_atac/pnorm/cut_kmer_6_atac_mm9_minus_merged_propensities
+				PROPENSITY_PLUS=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid_atac/pnorm/cut_kmer_6_atac_mm9_plus_merged_propensities
+				PROPENSITY_MINUS=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid_atac/pnorm/cut_kmer_6_atac_mm9_minus_merged_propensities
 
 			;;
 		esac

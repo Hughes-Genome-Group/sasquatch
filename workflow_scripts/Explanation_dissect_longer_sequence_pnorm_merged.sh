@@ -7,9 +7,9 @@
 #First set directory for scripts, output directory and location of the common_functions.R file that contains 
 #all shared functions sourced from some of the latter scripts:
 
-SCRIPT_DIR=/hts/data4/rschwess/Sasquatch_offline/Sasquatch/scripts	
+SCRIPT_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/scripts	
 COMMON_FUNCTIONS=${SCRIPT_DIR}/common_functions.R
-OUTPUT_DIR=/hts/data4/rschwess/dnase_motif_tissue/sliding_base_change/longer_CTCF_sites
+OUTPUT_DIR=/t1-data1/WTSA_Dev/rschwess/dnase_motif_tissue/sliding_base_change/longer_CTCF_sites
 
 # currently available "laza" (human fibroblast) "JH40" (human erythroid 40% mapped)
 NORM_TYPE="JH60"
@@ -41,7 +41,7 @@ table_file="${OUTPUT_DIR}/splitted_kmer_table_ctcf3.txt"
 
 
 #define DATA directory
-DATA_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/${ORGANISM}/${FRAG_TYPE}/
+DATA_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/${ORGANISM}/${FRAG_TYPE}/
 
 ### BACKGROUNDs ###
 case "${ORGANISM}" in 
@@ -52,13 +52,13 @@ case "${FRAG_TYPE}" in
 
 DNase)	
 #Specify the directory where the background files (naked dnaseI fibroblast cutting) are located,
-BACKGROUND_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH60/counts
+BACKGROUND_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH60/counts
 #Select accordingly normalized input files
 infile_plus=${DATA_DIR}/${TISSUE}/counts/kmers_${kl}_count_${TISSUE}_pnorm_${NORM_TYPE}_plus.txt
 infile_minus=${DATA_DIR}/${TISSUE}/counts/kmers_${kl}_count_${TISSUE}_pnorm_${NORM_TYPE}_minus.txt
 ;;
 ATAC)
-BACKGROUND_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH_atac/counts
+BACKGROUND_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH_atac/counts
 infile_plus=${DATA_DIR}/${TISSUE}/counts/kmers_${kl}_count_${TISSUE}_pnorm_atac_plus.txt
 infile_minus=${DATA_DIR}/${TISSUE}/counts/kmers_${kl}_count_${TISSUE}_pnorm_atac_minus.txt
 ;;
@@ -70,12 +70,12 @@ mouse)
 case "${FRAG_TYPE}" in
 
 DNase)	
-BACKGROUND_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid/counts
+BACKGROUND_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid/counts
 infile_plus=${DATA_DIR}/${TISSUE}/counts/kmers_${kl}_count_${TISSUE}_pnorm_mm9_plus.txt
 infile_minus=${DATA_DIR}/${TISSUE}/counts/kmers_${kl}_count_${TISSUE}_pnorm_mm9_minus.txt
 ;;
 ATAC)
-BACKGROUND_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid_atac/counts
+BACKGROUND_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid_atac/counts
 infile_plus=${DATA_DIR}/${TISSUE}/counts/kmers_${kl}_count_${TISSUE}_pnorm_atac_mm9_plus.txt
 infile_minus=${DATA_DIR}/${TISSUE}/counts/kmers_${kl}_count_${TISSUE}_pnorm_atac_mm9_minus.txt
 ;;

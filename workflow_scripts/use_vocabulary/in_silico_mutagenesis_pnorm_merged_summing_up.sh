@@ -4,16 +4,16 @@
 #$ -q batchq
 #$ -M rschwess
 #$ -m eas
-#$ -e /hts/data4/rschwess/clustereo
-#$ -o /hts/data4/rschwess/clustereo
-#$ -N w4_dsQTLs_sum_up_vocab
+#$ -e /t1-data1/WTSA_Dev/rschwess/clustereo
+#$ -o /t1-data1/WTSA_Dev/rschwess/clustereo
+#$ -N inslico_mut_human_r2_hery
 
-#qsub /hts/data4/rschwess/tool_sandbox/workflow_scripts/merged/use_vocabulary/in_silico_mutagenesis_pnorm_merged_summing_up.sh
+#qsub /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/workflow_scripts/use_vocabulary/in_silico_mutagenesis_pnorm_merged_summing_up.sh
 
 #First set directories
-SCRIPT_DIR=/hts/data4/rschwess/Sasquatch_offline/Sasquatch/scripts		
+SCRIPT_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/scripts		
 COMMON_FUNCTIONS=${SCRIPT_DIR}/common_functions.R
-OUTPUT_DIR=/hts/data4/rschwess/dnase_motif_tissue/validate_snps/QTL_GM12878/w4_summing_up
+OUTPUT_DIR=/t1-data1/WTSA_Dev/rschwess/dnase_motif_tissue/tool_compare/sliding_mutation_compare_human_R2
 
 #select a background/normalization type (choose accordingly normalized kmer count files) there will pnorm dnase and pnorm atac files
 #we have to check how much the different backgrounds differ to tell how much different norm types we need to have but at least one for atac and one for dnase will be needed (currently only dnase available)
@@ -27,29 +27,29 @@ FRAG_TYPE="DNase"
 #I use the following TAG to create tissue specific sub directories and name the files accordingly when creating the tissue specific data,
 #so that by setting a data directory and the correct tag you get access to the tissue specific count files later.
 #for erythroid human example
-TISSUE="ENCODE_GM12878_UW_merged"
+TISSUE="ENCODE_K562_UW_merged"
 
 #############
 ### INPUT ###
 #############
 #input file with sequences (first sequence is considered as the reference sequence,; relative to which all dmage is calculated later
-sequence_list=${OUTPUT_DIR}/seq_query
+sequence_list=${OUTPUT_DIR}/r2_sasq_query
 
 #TEMPORARY WRITTEN FILES'
 #temporary sequence list per line
 temp_sequence_list=${OUTPUT_DIR}/temp_seqs_input
 #file to write temporary table with fsr calculations to
-temp_fsr_file="${OUTPUT_DIR}/multiseq_fsr_table.txt"
+temp_fsr_file="${OUTPUT_DIR}/multiseq_fsr_table.${TISSUE}.txt"
 
 #Final output#
 #output file listing the highest dmg and higes dmg causing variant per line
-wrapper_dmg_outlist=${OUTPUT_DIR}/summary_dmg_table_summing_up.txt
+wrapper_dmg_outlist=${OUTPUT_DIR}/summary_dmg_table_summing_up.${TISSUE}.txt
 
 #length of sequences to split into
 kl=7
 
 #define DATA directory
-DATA_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/${ORGANISM}/${FRAG_TYPE}
+DATA_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/${ORGANISM}/${FRAG_TYPE}
 
 ### Take Vocabulary File
 VOCAB="${DATA_DIR}/${TISSUE}/vocabulary_${TISSUE}.txt"

@@ -1,13 +1,13 @@
 #!/bin/bash
 
 #SCRIPT DIRs
-PIPE_DIR=/hts/data4/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/tissue_v2
-SCRIPT_DIR=/hts/data4/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/scripts	
+PIPE_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/tissue_v2
+SCRIPT_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/scripts	
 
 #TAG
 IDTAG="hg18_human_JH60"
 #OUTPUT
-OUTPUT_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/${IDTAG}
+OUTPUT_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/${IDTAG}
 
 #specify if DNaseI or ATAC data ("dnase" or "atac")
 DATA_TYPE="dnase"
@@ -15,7 +15,7 @@ DATA_TYPE="dnase"
 SEQ_TYPE="singleend"	
 
 #specify bam file / naked digest
-BAM_FILE=/hts/data4/msuciu/Background_controls/DNase_Backgrounds/human/pipe/version17_unfiltered/Human_JH_DNase_Background_v17_unFiltered/hg18/Background_DNaseI_Human_Merge_hg18.bam
+BAM_FILE=/t1-data1/WTSA_Dev/msuciu/Background_controls/DNase_Backgrounds/human/pipe/version17_unfiltered/Human_JH_DNase_Background_v17_unFiltered/hg18/Background_DNaseI_Human_Merge_hg18.bam
 
 #genome Build
 BUILD='hg18'
@@ -25,14 +25,14 @@ then
 	REF_GENOME="/databank/igenomes/Homo_sapiens/UCSC/hg19/Sequence/WholeGenomeFasta/genome.fa"
 	BIGWIG_CHRSIZES='/hts/data0/config/bigwig/hg19_sizes.txt'
 	#ploidy regions to filter
-	PLOIDY_REGIONS='/hts/data4/rschwess/database_assembly/region_exclude/hg19/wgEncodeDukeMapabilityRegionsExcludable.bed'
+	PLOIDY_REGIONS='/t1-data1/WTSA_Dev/rschwess/database_assembly/region_exclude/hg19/wgEncodeDukeMapabilityRegionsExcludable.bed'
 	
 elif [ "${BUILD}" == "hg18" ]   
 then
 	REF_GENOME="/databank/raw/hg18_full/hg18_full.fa"
 	BIGWIG_CHRSIZES='/hts/data0/config/bigwig/hg18_sizes.txt'
 	#ploidy regions to filter
-	PLOIDY_REGIONS='/hts/data4/rschwess/database_assembly/region_exclude/hg18/wgEncodeDukeMapabilityRegionsExcludable.bed'
+	PLOIDY_REGIONS='/t1-data1/WTSA_Dev/rschwess/database_assembly/region_exclude/hg18/wgEncodeDukeMapabilityRegionsExcludable.bed'
 fi
 
 ####################

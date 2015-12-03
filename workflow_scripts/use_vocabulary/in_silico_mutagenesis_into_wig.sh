@@ -4,19 +4,19 @@
 #$ -q batchq
 #$ -M rschwess
 #$ -m eas
-#$ -e /hts/data4/rschwess/clustereo
-#$ -o /hts/data4/rschwess/clustereo
+#$ -e /t1-data1/WTSA_Dev/rschwess/clustereo
+#$ -o /t1-data1/WTSA_Dev/rschwess/clustereo
 #$ -N mutagen_gataa_break_hery
 
-#qsub /hts/data4/rschwess/Sasquatch_offline/Sasquatch/workflow_scripts/use_vocabulary/in_silico_mutagenesis_into_wig.sh
+#qsub /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/workflow_scripts/use_vocabulary/in_silico_mutagenesis_into_wig.sh
 
 #run dissection and table creation on multiple sequences, assign a reference sequence and calulate the damage to 
 #the footprint contributing kmers and rank the sequences according to REGIONS
 
 #First set directories
-SCRIPT_DIR=/hts/data4/rschwess/Sasquatch_offline/Sasquatch/scripts	
+SCRIPT_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/scripts	
 COMMON_FUNCTIONS=${SCRIPT_DIR}/common_functions.R
-OUTPUT_DIR=/hts/data4/rschwess/dnase_motif_tissue/tool_compare/bp_res_motif_disruption
+OUTPUT_DIR=/t1-data1/WTSA_Dev/rschwess/dnase_motif_tissue/tool_compare/bp_res_motif_disruption
 
 mkdir -p ${OUTPUT_DIR}
 
@@ -72,7 +72,7 @@ temp_fsr_file=${OUTPUT_DIR}/multiseq_fsr_table.txt
 wrapper_dmg_outlist=${OUTPUT_DIR}/summary_dmg_table.txt
 
 #define DATA directory
-DATA_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/${ORGANISM}/${FRAG_TYPE}/
+DATA_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/${ORGANISM}/${FRAG_TYPE}/
 ### Take Vocabulary File
 VOCAB="${DATA_DIR}/${TISSUE}/vocabulary_${TISSUE}.txt"
 
@@ -207,9 +207,9 @@ echo -ne "${totalid}\t$dmgout\n" >>${wrapper_dmg_outlist}
 done
 
 #get highest absolute of the variables and assemble wig entry
-perl /hts/data4/rschwess/scripts/dnase_tissue_motif/feed_highest_max_sasq_dmg_to_wig.pl $position ${wrapper_dmg_outlist} >>${wig_max_file}
+perl /t1-data1/WTSA_Dev/rschwess/scripts/dnase_tissue_motif/feed_highest_max_sasq_dmg_to_wig.pl $position ${wrapper_dmg_outlist} >>${wig_max_file}
 
-perl /hts/data4/rschwess/scripts/dnase_tissue_motif/feed_highest_abs_sasq_dmg_to_wig.pl $position ${wrapper_dmg_outlist} >>${wig_abs_file}
+perl /t1-data1/WTSA_Dev/rschwess/scripts/dnase_tissue_motif/feed_highest_abs_sasq_dmg_to_wig.pl $position ${wrapper_dmg_outlist} >>${wig_abs_file}
 
 totalid=$(( $totalid + 1))
 stopid=$(( $stopid + 1))

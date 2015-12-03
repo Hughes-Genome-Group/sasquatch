@@ -12,7 +12,7 @@ kl <- as.numeric(args[2])
 total.id <- as.numeric(args[3]) #total id running through complete seqs input
 
 #temp input for testing
-#intable <- read.table('/hts/data4/rschwess/dnase_motif_tissue/idx_duke_testout/merge_strands/multiseq_fsr_table.txt', header=FALSE)
+#intable <- read.table('/t1-data1/WTSA_Dev/rschwess/dnase_motif_tissue/idx_duke_testout/merge_strands/multiseq_fsr_table.txt', header=FALSE)
 #exp.fp.kmers <- 1
 #kl=6
 #total.id=1

@@ -3,16 +3,16 @@
 
 IDTAG="hg18_human_JH60"
 
-PIPE_DIR=/hts/data4/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/tissue_v2/background
-SCRIPT_DIR=/hts/data4/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/scripts
+PIPE_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/tissue_v2/background
+SCRIPT_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/scripts
 
-OUTPUT_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/${IDTAG}_minus_test
+OUTPUT_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/${IDTAG}_minus_test
 
-FOOTPRINT_FILE_PLUS=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/${IDTAG}/footprints/${IDTAG}_ploidy_removed_Plus_merged.wig
-FOOTPRINT_FILE_MINUS=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/${IDTAG}/footprints/${IDTAG}_ploidy_removed_Minus_merged.wig
+FOOTPRINT_FILE_PLUS=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/${IDTAG}/footprints/${IDTAG}_ploidy_removed_Plus_merged.wig
+FOOTPRINT_FILE_MINUS=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/${IDTAG}/footprints/${IDTAG}_ploidy_removed_Minus_merged.wig
 
-BORDER_FILE_PLUS=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/${IDTAG}/footprints/${IDTAG}_ploidy_removed_Plus_merged_wig_borders
-BORDER_FILE_MINUS=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/${IDTAG}/footprints/${IDTAG}_ploidy_removed_Minus_merged_wig_borders
+BORDER_FILE_PLUS=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/${IDTAG}/footprints/${IDTAG}_ploidy_removed_Plus_merged_wig_borders
+BORDER_FILE_MINUS=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/${IDTAG}/footprints/${IDTAG}_ploidy_removed_Minus_merged_wig_borders
 
 #genome Build
 BUILD='hg18'

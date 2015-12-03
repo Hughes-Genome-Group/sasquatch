@@ -4,8 +4,8 @@
 #$ -q batchq
 #$ -M rschwess
 #$ -m eas
-#$ -e /hts/data4/rschwess/clustereo
-#$ -o /hts/data4/rschwess/clustereo
+#$ -e /t1-data1/WTSA_Dev/rschwess/clustereo
+#$ -o /t1-data1/WTSA_Dev/rschwess/clustereo
 
 #TEST ECHO
 echo "OUTPUT_DIR	${OUTPUT_DIR}"
@@ -28,12 +28,12 @@ do
 
 date 
 
-grep -P "chr${chromosome}\s+" ${BORDER_FILE_PLUS} | perl ${SCRIPT_DIR}/count_kmers_naked_hashed.pl /hts/data4/rschwess/dnase_motif_tissue/kmers/All_Possible_Sequences_${i}.txt ${FOOTPRINT_FILE_PLUS} ${i} - ${REF_GENOME} ${OUTPUT_DIR}/counts/kmer_${i}_${IDTAG}_plus_chromosome${chromosome}
+grep -P "chr${chromosome}\s+" ${BORDER_FILE_PLUS} | perl ${SCRIPT_DIR}/count_kmers_naked_hashed.pl /t1-data1/WTSA_Dev/rschwess/dnase_motif_tissue/kmers/All_Possible_Sequences_${i}.txt ${FOOTPRINT_FILE_PLUS} ${i} - ${REF_GENOME} ${OUTPUT_DIR}/counts/kmer_${i}_${IDTAG}_plus_chromosome${chromosome}
 
 echo "$i plus done"
 date
 
-grep -P "chr${chromosome}\s+" ${BORDER_FILE_MINUS} | perl ${SCRIPT_DIR}/count_kmers_naked_hashed_minus.pl /hts/data4/rschwess/dnase_motif_tissue/kmers/All_Possible_Sequences_${i}.txt ${FOOTPRINT_FILE_MINUS} ${i} - ${REF_GENOME} ${OUTPUT_DIR}/counts/kmer_${i}_${IDTAG}_minus_chromosome${chromosome}
+grep -P "chr${chromosome}\s+" ${BORDER_FILE_MINUS} | perl ${SCRIPT_DIR}/count_kmers_naked_hashed_minus.pl /t1-data1/WTSA_Dev/rschwess/dnase_motif_tissue/kmers/All_Possible_Sequences_${i}.txt ${FOOTPRINT_FILE_MINUS} ${i} - ${REF_GENOME} ${OUTPUT_DIR}/counts/kmer_${i}_${IDTAG}_minus_chromosome${chromosome}
 
 echo "$i minus done"
 date

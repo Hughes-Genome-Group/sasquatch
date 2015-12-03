@@ -3,20 +3,20 @@
 #$ -cwd
 #$ -q batchq
 #$ -M rschwess
-# -m eas
-#$ -e /hts/data4/rschwess/clustereo
-#$ -o /hts/data4/rschwess/clustereo
-#$ -N sasq_test
+#$ -m eas
+#$ -e /t1-data1/WTSA_Dev/rschwess/clustereo
+#$ -o /t1-data1/WTSA_Dev/rschwess/clustereo
+#$ -N sasq_haem_in_macs2_dhs_hery
 
-#qsub /hts/data4/rschwess/Sasquatch_offline/Sasquatch/workflow_scripts/use_vocabulary/Explanation_damage_multiple_seq_v3_pnorm_merged.sh
+#qsub /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/workflow_scripts/use_vocabulary/Explanation_damage_multiple_seq_v3_pnorm_merged.sh
 
 #run dissection and table creation on multiple sequences, assign a reference sequence and calulate the damage to 
 #the footprint contributing kmers and rank the sequences according to that
 
 #First set directories
-SCRIPT_DIR=/hts/data4/rschwess/Sasquatch_offline/Sasquatch/scripts		
+SCRIPT_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/scripts		
 COMMON_FUNCTIONS=${SCRIPT_DIR}/common_functions.R
-OUTPUT_DIR=/hts/data4/rschwess/dnase_motif_tissue/tool_compare/scl_snps
+OUTPUT_DIR=/t1-data1/WTSA_Dev/rschwess/dnase_motif_tissue/validate_snps/haemoglobin_vanderHarst/1000genomes_impute/sasq_results
 
 #select a background/normalization type (choose accordingly normalized kmer count files) there will pnorm dnase and pnorm atac files
 #we have to check how much the different backgrounds differ to tell how much different norm types we need to have but at least one for atac and one for dnase will be needed (currently only dnase available)
@@ -40,28 +40,31 @@ JSP_THRESH="80%"
 #for erythroid human example
 TISSUE="human_erythroid_hg18"
 
+#set a unique runid for clear tempfile naming/ avoiding double use in saeme results folder
+RUN_ID="${TISSUE}.macs.intersecting"
+
 #############
 ### INPUT ###
 #############
 #input file with sequences (first sequence is considered as the reference sequence,; relative to which all dmage is calculated later
-sequence_list=/hts/data4/rschwess/dnase_motif_tissue/tool_compare/scl_snps/sasq_results/Sas_in_all.txt
+sequence_list=/t1-data1/WTSA_Dev/rschwess/dnase_motif_tissue/validate_snps/haemoglobin_vanderHarst/1000genomes_impute/imputed_macs2default_peakcall_intersecting_sasq_query.txt
 
 #TEMPORARY WRITTEN FILES'
 #temporary sequence list per line
-temp_sequence_list=${OUTPUT_DIR}/temp_seqs_input
+temp_sequence_list=${OUTPUT_DIR}/temp_seqs_input.${RUN_ID}
 #file to write temporary table with fsr calculations to
-temp_fsr_file="${OUTPUT_DIR}/multiseq_fsr_table.${TISSUE}.txt"
+temp_fsr_file="${OUTPUT_DIR}/multiseq_fsr_table.${RUN_ID}.txt"
 
 #Specified output#
 #output file listing the highest dmg and higes dmg causing variant per line
-wrapper_dmg_outlist=${OUTPUT_DIR}/summary_dmg_table_sum.all.${TISSUE}
+wrapper_dmg_outlist=${OUTPUT_DIR}/summary_dmg_table_sum.${RUN_ID}
 wrapper_dmg_ordered=${wrapper_dmg_outlist}.ordered
 
 #length of sequences to split into
 kl=7
 
 #define DATA directory
-DATA_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/${ORGANISM}/${FRAG_TYPE}/
+DATA_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/${ORGANISM}/${FRAG_TYPE}/
 
 ### Take Vocabulary File
 VOCAB="${DATA_DIR}/${TISSUE}/vocabulary_${TISSUE}.txt"
@@ -209,8 +212,8 @@ Rscript ${SCRIPT_DIR}/w4_order_summary.R ${wrapper_dmg_outlist} ${wrapper_dmg_or
 if [ ${STEP_JASPAR} == 1 ]
 then
 
-	#load older R version for jaspar
-	module load R/3.1.1	
+	#load older R version as all dependencies are fixxed and available for every user
+	module load R/3.1.1
 	Rscript ${SCRIPT_DIR}/quick.jaspar.query.R ${wrapper_dmg_ordered} ${wrapper_dmg_ordered}.jsp $ORGANISM ${JSP_THRESH}
 
 fi

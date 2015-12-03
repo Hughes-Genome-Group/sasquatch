@@ -1,6 +1,6 @@
 options(warn=-1)
-suppressMessages(library("TFBSTools"))
 suppressMessages(library("Biostrings"))
+suppressMessages(library("TFBSTools"))
 options(warn=0)
 
 ### DEFINE FUNCTION
@@ -69,12 +69,12 @@ threshold <- args[4]
 #load.db accoridng to organism 
 if(organism == "human"){
   
-  load("/hts/data4/rschwess/database_assembly/jaspar/jaspar2014.human.9606.all.versions")
+  load("/t1-data1/WTSA_Dev/rschwess/database_assembly/jaspar/jaspar2014.human.9606.all.versions")
   pwm.in <- human.pwm
   
 }else if(organism == "mouse"){
 
-  load("/hts/data4/rschwess/database_assembly/jaspar/jaspar2014.mouse.10090.all.versions")
+  load("/t1-data1/WTSA_Dev/rschwess/database_assembly/jaspar/jaspar2014.mouse.10090.all.versions")
    pwm.in <- mouse.pwm
    
 }else{

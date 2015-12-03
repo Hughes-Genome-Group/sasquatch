@@ -4,13 +4,13 @@
 
 #First set directory for scripts, output directory and location of the common_functions.R file that contains 
 #all shared functions sourced from some of the latter scripts:
-SCRIPT_DIR=/hts/data4/rschwess/Sasquatch_offline/Sasquatch/scripts			
+SCRIPT_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/scripts			
 COMMON_FUNCTIONS=${SCRIPT_DIR}/common_functions.R
-OUTPUT_DIR=/hts/data4/rschwess/dnase_motif_tissue/idx_duke_testout/merge_strands
+OUTPUT_DIR=/t1-data1/WTSA_Dev/rschwess/dnase_motif_tissue/idx_duke_testout/merge_strands
 
 #Specify the directory where the background files (base frequency and naked dnaseI fibroblast cutting) are located,
 #Currently this links to files for chr1 only but I'm close to finish the complete genome as background.
-BACKGROUND_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/hg19_ploidy_removed/counts
+BACKGROUND_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg19_ploidy_removed/counts
 
 ORGANISM="human"
 
@@ -50,7 +50,7 @@ fi
 ##############################################################
 
 #define DATA directory
-DATA_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/human${ORGANISM}/${FRAG_TYPE}/
+DATA_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/human${ORGANISM}/${FRAG_TYPE}/
 
 ### BACKGROUNDs ###
 case "${ORGANISM}" in 
@@ -61,7 +61,7 @@ case "${ORGANISM}" in
 		
 		DNase)	
 			#Specify the directory where the background files (naked dnaseI fibroblast cutting) are located,
-			BACKGROUND_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH60/counts
+			BACKGROUND_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH60/counts
 			#defining full paths to naked background count files
 			infile_naked_plus=${BACKGROUND_DIR}/kmer_${kl}_hg18_human_JH60_plus_merged
 			infile_naked_minus=${BACKGROUND_DIR}/kmer_${kl}_hg18_human_JH60_minus_merged
@@ -70,7 +70,7 @@ case "${ORGANISM}" in
 			infile_minus=${DATA_DIR}/${TISSUE}/counts/kmers_${kl}_count_${TISSUE}_pnorm_${NORM_TYPE}_minus.txt
 		;;
 		ATAC)
-			BACKGROUND_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH_atac/counts
+			BACKGROUND_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH_atac/counts
 			infile_naked_plus=${BACKGROUND_DIR}/kmer_${kl}_hg18_human_atac_plus_merged
 			infile_naked_minus=${BACKGROUND_DIR}/kmer_${kl}_hg18_human_atac_minus_merged
 			infile_plus=${DATA_DIR}/${TISSUE}/counts/kmers_${kl}_count_${TISSUE}_pnorm_atac_plus.txt
@@ -84,14 +84,14 @@ case "${ORGANISM}" in
 		case "${FRAG_TYPE}" in
 		
 		DNase)	
-			BACKGROUND_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid/counts
+			BACKGROUND_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid/counts
 			infile_naked_plus=${BACKGROUND_DIR}/kmer_${kl}_mm9_plus_merged
 			infile_naked_minus=${BACKGROUND_DIR}/kmer_${kl}_mm9_minus_merged
 			infile_plus=${DATA_DIR}/${TISSUE}/kmers_${kl}_count_${TISSUE}_pnorm_mm9_plus.txt
 			infile_minus=${DATA_DIR}/${TISSUE}/kmers_${kl}_count_${TISSUE}_pnorm_mm9_minus.txt
 		;;
 		ATAC)
-			BACKGROUND_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid_atac/counts
+			BACKGROUND_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid_atac/counts
 			infile_naked_plus=${BACKGROUND_DIR}/kmer_${kl}_mm9_atac_plus_merged
 			infile_naked_minus=${BACKGROUND_DIR}/kmer_${kl}_mm9_atac_minus_merged
 			infile_plus=${DATA_DIR}/${TISSUE}/kmers_${kl}_count_${TISSUE}_pnorm_atac_mm9_plus.txt

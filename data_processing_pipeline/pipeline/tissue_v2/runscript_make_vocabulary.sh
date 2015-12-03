@@ -4,34 +4,37 @@
 #$ -q batchq
 #$ -M rschwess
 #$ -m eas
-#$ -e /hts/data4/rschwess/clustereo
-#$ -o /hts/data4/rschwess/clustereo
-#$ -N vocab_erythroid_hg18
+#$ -e /t1-data1/WTSA_Dev/rschwess/clustereo
+#$ -o /t1-data1/WTSA_Dev/rschwess/clustereo
+#$ -N vocab_ENCODE_GM12878_UW_merged
 
-#qsub /hts/data4/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/tissue_v2/runscript_make_vocabulary.sh
+#qsub /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/tissue_v2/runscript_make_vocabulary.sh
 
-SCRIPT_DIR=/hts/data4/rschwess/Sasquatch_offline/Sasquatch/scripts		
+SCRIPT_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/scripts		
 COMMON_FUNCTIONS=${SCRIPT_DIR}/common_functions.R
 
 #input possible kmers
-KMER_IN=/hts/data4/rschwess/scripts/dnase_tissue_motif/workflow/kmers/Kmers_5_6_7_combined.txt
+KMER_IN=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/kmers/Kmers_5_6_7_combined.txt
 
 ORGANISM="human"
 
-FRAG_TYPE="ATAC"
+FRAG_TYPE="DNase"
 
 #I use the following to create tissue specific sub directories and name the files accordingly when creating the tissue specific data,
 #so that by setting a data directory and the correct tag you get access to the tissue specific count files later.
-TISSUE="erythroid_hg18_macs2"
+TISSUE="ENCODE_GM12878_UW_merged"
 
 # currently available "laza" (human fibroblast) "JH60" (human erythroid 60% mapped)  "atac" for atac;  mm9 --> atac= atac_mm9
 NORM_TYPE="JH60"
 
 #define DATA directory
-DATA_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/${ORGANISM}/${FRAG_TYPE}/
+DATA_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/${ORGANISM}/${FRAG_TYPE}/
 OUTPUT_DIR=${DATA_DIR}/${TISSUE}
 #vocabularyfile definition
 VOCAB=${OUTPUT_DIR}/vocabulary_${TISSUE}.txt
+
+#override existing
+rm -f ${VOCAB}
 
 #go through all possible kmers
 for kmer in `cat ${KMER_IN}`

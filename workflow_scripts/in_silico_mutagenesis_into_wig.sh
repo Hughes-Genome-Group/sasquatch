@@ -4,19 +4,19 @@
 #$ -q batchq
 #$ -M rschwess
 #$ -m eas
-#$ -e /hts/data4/rschwess/clustereo
-#$ -o /hts/data4/rschwess/clustereo
+#$ -e /t1-data1/WTSA_Dev/rschwess/clustereo
+#$ -o /t1-data1/WTSA_Dev/rschwess/clustereo
 #$ -N mutagen_hg18_nprl3_globin_locus_kl7
 
-#qsub /hts/data4/rschwess/Sasquatch_offline/Sasquatch/workflow_scripts/in_silico_mutagenesis_into_wig.sh
+#qsub /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/workflow_scripts/in_silico_mutagenesis_into_wig.sh
 
 #run dissection and table creation on multiple sequences, assign a reference sequence and calulate the damage to 
 #the footprint contributing kmers and rank the sequences according to REGIONS
 
 #First set directories
-SCRIPT_DIR=/hts/data4/rschwess/Sasquatch_offline/Sasquatch/scripts	
+SCRIPT_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/scripts	
 COMMON_FUNCTIONS=${SCRIPT_DIR}/common_functions.R
-OUTPUT_DIR=/hts/data4/rschwess/dnase_motif_tissue/sliding_base_change/insilico_mutagenesis/hg18_nprl3_globin_locus
+OUTPUT_DIR=/t1-data1/WTSA_Dev/rschwess/dnase_motif_tissue/sliding_base_change/insilico_mutagenesis/hg18_nprl3_globin_locus
 mkdir -p ${OUTPUT_DIR}
 
 #select a background/normalization type (choose accordingly normalized kmer count files) there will pnorm dnase and pnorm atac files
@@ -65,7 +65,7 @@ temp_fsr_file=${OUTPUT_DIR}/multiseq_fsr_table.txt
 wrapper_dmg_outlist=${OUTPUT_DIR}/summary_dmg_table.txt
 
 #define DATA directory
-DATA_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/${ORGANISM}/${FRAG_TYPE}/
+DATA_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/${ORGANISM}/${FRAG_TYPE}/
 
 ### BACKGROUNDs ###
 case "${ORGANISM}" in 
@@ -76,7 +76,7 @@ case "${FRAG_TYPE}" in
 
 DNase)	
 #Specify the directory where the background files (naked dnaseI fibroblast cutting) are located,
-BACKGROUND_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH60/counts
+BACKGROUND_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH60/counts
 #defining full paths to naked background count files
 infile_naked_plus=${BACKGROUND_DIR}/kmer_${kl}_hg18_human_JH60_plus_merged
 infile_naked_minus=${BACKGROUND_DIR}/kmer_${kl}_hg18_human_JH60_minus_merged
@@ -85,7 +85,7 @@ infile_plus=${DATA_DIR}/${TISSUE}/counts/kmers_${kl}_count_${TISSUE}_pnorm_${NOR
 infile_minus=${DATA_DIR}/${TISSUE}/counts/kmers_${kl}_count_${TISSUE}_pnorm_${NORM_TYPE}_minus.txt
 ;;
 ATAC)
-BACKGROUND_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH_atac/counts
+BACKGROUND_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH_atac/counts
 infile_naked_plus=${BACKGROUND_DIR}/kmer_${kl}_hg18_human_atac_plus_merged
 infile_naked_minus=${BACKGROUND_DIR}/kmer_${kl}_hg18_human_atac_minus_merged
 infile_plus=${DATA_DIR}/${TISSUE}/counts/kmers_${kl}_count_${TISSUE}_pnorm_atac_plus.txt
@@ -99,14 +99,14 @@ mouse)
 case "${FRAG_TYPE}" in
 
 DNase)	
-BACKGROUND_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid/counts
+BACKGROUND_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid/counts
 infile_naked_plus=${BACKGROUND_DIR}/kmer_${kl}_mm9_plus_merged
 infile_naked_minus=${BACKGROUND_DIR}/kmer_${kl}_mm9_minus_merged
 infile_plus=${DATA_DIR}/${TISSUE}/counts/kmers_${kl}_count_${TISSUE}_pnorm_mm9_plus.txt
 infile_minus=${DATA_DIR}/${TISSUE}/counts/kmers_${kl}_count_${TISSUE}_pnorm_mm9_minus.txt
 ;;
 ATAC)
-BACKGROUND_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid_atac/counts
+BACKGROUND_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid_atac/counts
 infile_naked_plus=${BACKGROUND_DIR}/kmer_${kl}_mm9_atac_plus_merged
 infile_naked_minus=${BACKGROUND_DIR}/kmer_${kl}_mm9_atac_minus_merged
 infile_plus=${DATA_DIR}/${TISSUE}/counts/kmers_${kl}_count_${TISSUE}_pnorm_atac_mm9_plus.txt
@@ -140,7 +140,7 @@ do
 echo -n "" >${wrapper_dmg_outlist}
 
 ###
-perl /hts/data4/rschwess/scripts/dnase_tissue_motif/arrange_insilico_mutagenesis_queries.pl `perl /hts/data4/rschwess/scripts/get_ref_sequence.pl ${build} ${chromosome} ${totalid} ${stopid} | tail -n 1` ${kl} | cut -f 3,4 >${OUTPUT_DIR}/seq_list
+perl /t1-data1/WTSA_Dev/rschwess/scripts/dnase_tissue_motif/arrange_insilico_mutagenesis_queries.pl `perl /hts/data4/rschwess/scripts/get_ref_sequence.pl ${build} ${chromosome} ${totalid} ${stopid} | tail -n 1` ${kl} | cut -f 3,4 >${OUTPUT_DIR}/seq_list
 ###
 
 #read in every line of seqs_input and parse to fsr calulcation and perform dmg assessment
@@ -230,9 +230,9 @@ echo -ne "${totalid}\t$dmgout\n" >>${wrapper_dmg_outlist}
 done
 
 #get highest absolute of the variables and assemble wig entry
-perl /hts/data4/rschwess/scripts/dnase_tissue_motif/feed_highest_max_sasq_dmg_to_wig.pl $position ${wrapper_dmg_outlist} >>${wig_max_file}
+perl /t1-data1/WTSA_Dev/rschwess/scripts/dnase_tissue_motif/feed_highest_max_sasq_dmg_to_wig.pl $position ${wrapper_dmg_outlist} >>${wig_max_file}
 
-perl /hts/data4/rschwess/scripts/dnase_tissue_motif/feed_highest_abs_sasq_dmg_to_wig.pl $position ${wrapper_dmg_outlist} >>${wig_abs_file}
+perl /t1-data1/WTSA_Dev/rschwess/scripts/dnase_tissue_motif/feed_highest_abs_sasq_dmg_to_wig.pl $position ${wrapper_dmg_outlist} >>${wig_abs_file}
 
 totalid=$(( $totalid + 1))
 stopid=$(( $stopid + 1))

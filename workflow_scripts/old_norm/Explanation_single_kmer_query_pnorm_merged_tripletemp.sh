@@ -2,18 +2,18 @@
 
 #$ -cwd
 #$ -q batchq
-#$ -e /hts/data4/rschwess/clustereo
-#$ -o /hts/data4/rschwess/clustereo
+#$ -e /t1-data1/WTSA_Dev/rschwess/clustereo
+#$ -o /t1-data1/WTSA_Dev/rschwess/clustereo
 
-SCRIPT_DIR=/hts/data4/rschwess/Sasquatch_offline/Sasquatch/scripts			
+SCRIPT_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/scripts			
 COMMON_FUNCTIONS=${SCRIPT_DIR}/common_functions.R
-OUTPUT_DIR=/hts/data4/rschwess/dnase_motif_tissue/idx_duke_testout/merge_strands/ENCODE_H1_hESC_duke_merged/smoothed
+OUTPUT_DIR=/t1-data1/WTSA_Dev/rschwess/dnase_motif_tissue/idx_duke_testout/merge_strands/ENCODE_H1_hESC_duke_merged/smoothed
 
 #Specify the directory where the background files (naked dnaseI fibroblast cutting) are located,
-BACKGROUND_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH60/counts
+BACKGROUND_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH60/counts
 
 #Specify the location of the tissue specific data (for example human erythroid is located here):
-DATA_DIR=/hts/data4/rschwess/database_assembly/idx_correct_assembly/human_ploidy_correct
+DATA_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/human_ploidy_correct
 
 #I use the following TAG to create tissue specific sub directories and name the files accordingly when creating the tissue specific data,
 #so that by setting a data directory and the correct tag you get access to the tissue specific count files later.

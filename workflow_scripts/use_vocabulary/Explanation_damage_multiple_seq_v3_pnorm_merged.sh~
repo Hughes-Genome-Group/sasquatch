@@ -3,10 +3,10 @@
 #$ -cwd
 #$ -q batchq
 #$ -M rschwess
-#$ -m eas
+# -m eas
 #$ -e /hts/data4/rschwess/clustereo
 #$ -o /hts/data4/rschwess/clustereo
-#$ -N w4_vdHarst_kl7
+#$ -N sasq_test
 
 #qsub /hts/data4/rschwess/Sasquatch_offline/Sasquatch/workflow_scripts/use_vocabulary/Explanation_damage_multiple_seq_v3_pnorm_merged.sh
 
@@ -16,7 +16,7 @@
 #First set directories
 SCRIPT_DIR=/hts/data4/rschwess/Sasquatch_offline/Sasquatch/scripts		
 COMMON_FUNCTIONS=${SCRIPT_DIR}/common_functions.R
-OUTPUT_DIR=/hts/data4/rschwess/dnase_motif_tissue/validate_snps/fanis_microarray_snps
+OUTPUT_DIR=/hts/data4/rschwess/dnase_motif_tissue/tool_compare/scl_snps
 
 #select a background/normalization type (choose accordingly normalized kmer count files) there will pnorm dnase and pnorm atac files
 #we have to check how much the different backgrounds differ to tell how much different norm types we need to have but at least one for atac and one for dnase will be needed (currently only dnase available)
@@ -26,6 +26,9 @@ NORM_TYPE="JH60"
 ORGANISM="human"
 
 FRAG_TYPE="DNase"
+
+#select search mode exhaustive "e" or local "l"
+SEARCH_MODE="e"
 
 #choose if to run quick jaspar
 STEP_JASPAR=1
@@ -41,17 +44,18 @@ TISSUE="human_erythroid_hg18"
 ### INPUT ###
 #############
 #input file with sequences (first sequence is considered as the reference sequence,; relative to which all dmage is calculated later
-sequence_list=${OUTPUT_DIR}/sasq_query_all
+sequence_list=/hts/data4/rschwess/dnase_motif_tissue/tool_compare/scl_snps/sasq_results/Sas_in_all.txt
 
 #TEMPORARY WRITTEN FILES'
 #temporary sequence list per line
 temp_sequence_list=${OUTPUT_DIR}/temp_seqs_input
 #file to write temporary table with fsr calculations to
-temp_fsr_file="${OUTPUT_DIR}/multiseq_fsr_table.txt"
+temp_fsr_file="${OUTPUT_DIR}/multiseq_fsr_table.all.${TISSUE}.txt"
 
 #Specified output#
 #output file listing the highest dmg and higes dmg causing variant per line
-wrapper_dmg_outlist=${OUTPUT_DIR}/summary_dmg_table_sum.txt
+wrapper_dmg_outlist=${OUTPUT_DIR}/summary_dmg_table_sum.all.${TISSUE}
+wrapper_dmg_ordered=${wrapper_dmg_outlist}.ordered
 
 #length of sequences to split into
 kl=7
@@ -174,19 +178,40 @@ echo "" >>${temp_fsr_file}
 
 done
 
-dmgout=`Rscript ${SCRIPT_DIR}/multi_seq_dmg_v3_summing_up.R ${temp_fsr_file} ${kl} ${totalid}`
+#run assessing dmg procedure
+#either summing up 
+if [ "$SEARCH_MODE" == "e" ]
+then
+
+  dmgout=`Rscript ${SCRIPT_DIR}/multi_seq_dmg_v3_summing_up.R ${temp_fsr_file} ${kl} ${totalid}`
+
+#or single higehst scoring kmer dependend on run mode
+elif [ "$SEARCH_MODE" == "l" ]
+then
+
+    dmgout=`Rscript ${SCRIPT_DIR}/multi_seq_dmg_v3.R ${temp_fsr_file} ${kl} ${totalid}`
+
+else
+
+  echo "Specify a proper Run mode!"
+  exit 2;
+
+fi
+
 echo -ne "${totalid}\t$dmgout\n" >>${wrapper_dmg_outlist}
 
 echo "$totalid done"
 
 done
 
-Rscript ${SCRIPT_DIR}/w4_order_summary.R ${wrapper_dmg_outlist} ${OUTPUT_DIR}/ordered
+Rscript ${SCRIPT_DIR}/w4_order_summary.R ${wrapper_dmg_outlist} ${wrapper_dmg_ordered}
 
 if [ ${STEP_JASPAR} == 1 ]
 then
 
-	Rscript ${SCRIPT_DIR}/quick.jaspar.query.R ${OUTPUT_DIR}/ordered ${OUTPUT_DIR}/ordered.jsp $ORGANISM ${JSP_THRESH}
+	#load older R version for jaspar
+	module load R/3.1.1	
+	Rscript ${SCRIPT_DIR}/quick.jaspar.query.R ${wrapper_dmg_ordered} ${wrapper_dmg_ordered}.jsp $ORGANISM ${JSP_THRESH}
 
 fi
 
