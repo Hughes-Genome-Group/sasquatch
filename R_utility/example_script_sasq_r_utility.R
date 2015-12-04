@@ -84,8 +84,8 @@ dl <- QueryLongSequence(sequence=seq, kl=7, tissue=tissue, data.dir=data.dir,
 
 #make example dataframe
 tdf <- data.frame(
-        id=c(1,2,3), 
-        ref=c("ATAGATAATCGCT", "ATAGATAATCGCT", "ATAGATAATCGCT"),
+        id=c("rs11", "rs12", "rs123"), 
+        ref=c("ATAGATAATCGCT", "ATAGATAATCGCT", "ATATATTCTCGCT"),
         var=c("ATAGATCATCGCT", "ATAGATTATCGCT", "ATAGATGATCGCT")
         )
 
@@ -94,8 +94,19 @@ bcomp <- RefVarBatch(ref.var.df=tdf, kl=7, damage.mode="exhaustive",
 
 
 #jaspar batch
+#load Rdata object storing the jaspar 2014 pwms (all versions)
+library(Biostrings)
+library(TFBSTools)
 
+load("/home/ron/fusessh/database_assembly/jaspar/jaspar2014.human.9606.all.versions")
 
+#single Jaspar query
+QueryJaspar(sequence="AGATAATAG", threshold=0.8, pwm.data=pwm.in)
+
+#warpper for batch quary a batch Ref Var Dataframe
+#test with bcomp
+jbcomp <- QueryJasparBatch(df=bcomp, damage.threshold=0.3, match.threshold=0.8, pwm.data=human.pwm)
+  
 #wrapper to compare two sequences
 sequence1 <- "ATAGATAATCGCT"
 sequence2 <- "ATAGATCATCGCT"

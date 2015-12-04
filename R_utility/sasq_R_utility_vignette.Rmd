@@ -1,0 +1,49 @@
+---
+title: "SasQ R Utility"
+author: "Ron Schweßinger"
+date: "4 Dezember 2015"
+output:
+  pdf_document:
+    toc: yes
+  html_document:
+    toc: yes
+---
+
+
+# Introduction
+>>Insert tiny Introduction
+
+# Initial
+First of all *source* the the SasQ Functions distributet in *functions_sasq_r_utility.R*
+```{r, tidy=TRUE}
+source("/home/ron/fusessh/Sasquatch_offline/Sasquatch/R_utility/functions_sasq_r_utility.R")
+```
+
+We first set some parameters like the tissue and the fragmentation type to select the desired data.
+```{r}
+tissue <- "human_erythroid_hg18"
+
+frag.type <- "DNase"
+```
+
+And we set the path to the database directory
+```{r, tidy=TRUE}
+data.dir <- file.path("/home/ron/fusessh/database_assembly/idx_correct_assembly/human", frag.type)
+```
+```{r, echo=FALSE, tidy=T}
+print(data.dir)
+```
+
+and we also initialize the file path structure where to reach a precalculated vocabulary file if present.
+```{r, tidy=TRUE}
+vocab.file <- paste0(data.dir,tissue,"/vocabulary_", tissue,".txt")
+```
+
+```{r, echo=FALSE, tidy=TRUE}
+print(vocab.file)
+```
+
+
+
+
+

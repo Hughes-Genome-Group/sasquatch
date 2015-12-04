@@ -13,7 +13,6 @@ science_theme <- theme(
   text = element_text(size = 14)
 )
 
-
 ### BASIC FUNCTIONS ####
 DecodeKmer <- function(kmer){
   # Decode ambiguous FASTA characters of kmer input
@@ -527,6 +526,58 @@ PlotOverlap <- function(profile1, profile2, kmer1, kmer2, ylim=c(0,0.01), xlim=c
   
 }
 
+QueryJaspar <- function(sequence, threshold=0.8, pwm.data){
+  # Take a Sequence input and query it against the set of Jaspar2014 PWMs
+  #
+  # Args:
+  #   sequence: input sequence
+  #   threshold:percentage relative score thresh over which to report matches (default=0.8)
+  #   pwm.data: a stored pwm. RData object as retrieved and save from JASPAR2014 R package
+  #
+  # Returns:
+  #   Character string listing the PWM matches above a certain rel. threshold
+  
+  # 1  pad sequence with N's
+  sequence = paste0("NNNNN",sequence,"NNNNN")
+  
+  #make DNAString
+  sequence = DNAString(sequence)
+  
+  #match
+  suppressWarnings(out <- lapply(pwm.data, function(x) searchSeq(x, sequence, strand="*", min.score=threshold )) )
+  out <- out[sapply(out, function(x) nrow(writeGFF3(x)) > 0 )]
+  
+  # combine output
+  tmp <- ""
+  
+  if(length(out) >= 1){
+    
+    #make dataframes
+    out.frame <- lapply(out, function(x) writeGFF3(x) ) #make data frame
+    out.frame <- lapply(out.frame, function(x) x <- x[x[,6]==max(x[,6]),]) #pick highest matching strand
+    factors <- sapply(out.frame, function(x) strsplit(as.character(unlist(x[9])),";")[[1]][1] )
+    factors <- sapply(factors, function(x) gsub("TF=(\\w+)","\\1",x, perl=TRUE) )
+    
+    #get relative score
+    rel.scores <- lapply(out, function(x) relScore(x))
+    rel.scores <- lapply(rel.scores, max)
+    
+    #assemble data frame
+    df <- data.frame(factor=factors, rel.scores=unlist(rel.scores) )
+    df <- df[order(df$rel.scores, decreasing =TRUE),]
+    
+    #merge values
+    for(i in c(1:nrow(df))){
+      tmp <- paste0(tmp,df$factor[i],"=",round(df$rel.scores[[i]],digits=2),";")
+    }
+    
+  }else{	#if no match above threshold report nothing
+    tmp <- "no hits"
+  }
+  
+  return(tmp)
+  
+}
 
 
 ### WRAPPER FUNCTIONS ####
@@ -575,6 +626,58 @@ GetFootprint <- function(kmer, tissue, data.dir, frag.type, smooth, smooth.bandw
   }
   
   return(list(profile=profile.merge, count=l.plus$count)) #return
+  
+}
+
+GetFootprintStrand <- function(kmer, tissue="", data.dir="", frag.type, smooth, smooth.bandwidth=5, background.flag=FALSE){
+  # Wrapper to retrieve stradnspecific (smoothed) profiles of kmer from tissue or background
+  #
+  # Args:
+  #   kmer: input kmer 
+  #   tissue: input tissue to query the profile from
+  #   data.dir: repository storing processed kmer files per tissue
+  #   frag.type: fragmentation type ("DNase" or "ATAC")
+  #   smooth: flag if to smooth the profile (TRUE or FALSE)
+  #   smooth.bandwidth: bandwidth to use for normal kernel smoothing 
+  #     (default 5 which is fixed for most worklfows)
+  #   background.flag: indicate if to retrieve background cut frequencies 
+  #   (other data dir and file structure) [TRUE/FALSE] default FALSE
+  # Returns:
+  #   (smoothed) strand specific profiles and count of the kmer occurence
+  
+  #get kmer length
+  kl=nchar(kmer)
+  
+  #select flat strand specific files as inputs (depending on background flag)
+  if(!background.flag){
+    
+    infile.plus=file.path(data.dir, tissue,"counts", paste0("kmers_", kl, "_count_", tissue, "_pnorm_JH60_plus.txt"))
+    infile.minus=file.path(data.dir, tissue,"counts", paste0("kmers_", kl, "_count_", tissue, "_pnorm_JH60_minus.txt"))
+    
+  }else if(background.flag){
+    
+    infile.plus=file.path(data.dir, tissue, "counts", paste0("kmer_", kl, "_", tissue, "_plus_merged"))
+    infile.minus=file.path(data.dir, tissue, "counts", paste0("kmer_", kl, "_", tissue, "_minus_merged"))
+    
+  }else{
+    warning("Specifiy if to retrieve data from the background naked DNA cut frequencies or from tissue\n
+            background.flag=FALSE/TRUE !")
+    return("NA")
+  }
+  
+  #grep strand specific profiles & counts
+  l.plus <- GrepProfile(kmer, infile.plus)
+  l.minus <- GrepProfile(kmer, infile.minus)
+  
+  #smooth if specified so
+  if(smooth){
+    l.plus$profile <- ksmooth(c(1:length(l.plus$profile)), l.plus$profile, kernel="normal", bandwidth=smooth.bandwidth)$y
+    l.minus$profile <- ksmooth(c(1:length(l.minus$profile)), l.minus$profile, kernel="normal", bandwidth=smooth.bandwidth)$y
+  }
+  
+  return(list(profile.plus=l.plus$profile, profile.minus=l.minus$profile, 
+              count.plus=l.plus$count, count.minus=l.minus$count)) #return
+  
   
 }
 
@@ -699,65 +802,6 @@ QueryLongSequence <- function(sequence, kl, tissue, data.dir, vocab.flag, vocab.
     warnings("Specifiy if to make plots explicitly if they are desired! plots=TRUE/FALSE  Will return output without plots!")
     return(dl.df)
   }
-}
-
-PlotSingleKmer <- function(kmer, tissue, data.dir, frag.type, smooth, plot.shoulders=FALSE, ylim=c(0,0.01), xlim=c(-125,125)){
-  #Wrapper to produce a plot from kmer and tissue input only
-  #
-  # Args:
-  #   kmer: input kmer 
-  #   tissue: input tissue to query the profile from
-  #   data.dir: repository storing processed kmer files per tissue
-  #   frag.type: fragmentation type ("DNase" or "ATAC")
-  #   smooth: flag if to smooth the profile (TRUE or FALSE)  
-  #   plot.shoulders: flag if to plot the shoulder regions
-  #   ylim: ylim to fix for plot (default c(0, 0.01))
-  #   xlim: xlim to fix for plot (default c(-125, 125)) 
-  #
-  # Returns:
-  #   Plot of profile
-  
-  #1 Get smoothed or unsmoothed profile and shoulders
-  fp <- GetFootprint(kmer=kmer, tissue=tissue, data.dir=data.dir, frag.type=frag.type, smooth=smooth, smooth.bandwidth=smooth.bandwidth)
-  sh <- SobelBorders(fp$profile, kl=nchar(kmer))
-
-  #2 make plot
-  p <- PlotSingle(profile=fp$profile, kl=nchar(kmer), plot.shoulders=plot.shoulders, shoulders=sh, ylim=ylim, xlim=xlim)
-  
-}
-
-PlotOverlapKmers <- function(kmer1, kmer2, tissue1, tissue2, data.dir, frag.type, smooth, ylim=c(0,0.01), xlim=c(-125,125)){
-  #Wrapper to produce an overly plot from two kmers and tissues input only
-  #
-  # Args:
-  #   kmer1: input k-mer1
-  #   kmer2: input k-mer2 
-  #   tissue1: input tissue1 to query the profile from
-  #   tissue2: input tissue2 to query the profile from
-  #   data.dir: repository storing processed kmer files per tissue
-  #   frag.type: fragmentation type ("DNase" or "ATAC")
-  #   smooth: flag if to smooth the profile (TRUE or FALSE)  
-  #   ylim: ylim to fix for plot (default c(0, 0.01))
-  #   xlim: xlim to fix for plot (default c(-125, 125)) 
-  #
-  # Returns:
-  #   Overlay plot of profiles
-  
-  #check if smooth flag set properly
-  if((smooth != TRUE) & (smooth != FALSE)){
-    warning("Please specify if to smooth the overlay plots: smooth=TRUE/FALSE!")
-    return("NA")
-  }
-
-  #1 Get smoothed profiles  
-  fp1 <- GetFootprint(kmer=kmer1, tissue=tissue1, data.dir=data.dir, frag.type=frag.type, smooth=smooth)
-  fp2 <- GetFootprint(kmer=kmer2, tissue=tissue2, data.dir=data.dir, frag.type=frag.type, smooth=smooth)
-  
-  #2 Make plot
-  p <- PlotOverlap(fp1$profile, fp2$profile, kmer1, kmer2, ylim=ylim, xlim=xlim)  
-  
-  return(p)
-  
 }
 
 CompareSequences <- function(sequence1, sequence2, kl, damage.mode="exhaustive", tissue, data.dir, vocab.flag, vocab.file="", frag.type="", plots="highest", smooth=TRUE, ylim=c(0,0.01), xlim=c(-125,125)){
@@ -916,60 +960,128 @@ RefVarBatch <- function(ref.var.df, kl, damage.mode="exhaustive", tissue, data.d
   
   #2 rbind to output summary data frame
   out.df <- do.call(rbind, temp.list)
-  
+  #3 add id columns
+  out.df <- cbind(ref.var.df[, 1], out.df)
+  names(out.df)[1] <- "id"
+   
   return(out.df)
   
 }
 
-GetFootprintStrand <- function(kmer, tissue="", data.dir="", frag.type, smooth, smooth.bandwidth=5, background.flag=FALSE){
-  # Wrapper to retrieve stradnspecific (smoothed) profiles of kmer from tissue or background
+QueryJasparBatch <- function(df, damage.threshold=0, match.threshold=0.8, pwm.data){
+  # Take a data frame from RefVar Query Batch as input and query it against the 
+  # set of Jaspar2014 PWMs using a selected match.threshold 
+  # Select an absolute sasq damage above which to query jaspar
+  #
+  # Args:
+  #   df: input dataframe from RefVarBatch query 
+  #   damage.threshold: absolute damage threshold above which a RefVar pair is queried
+  #   match.threshold: percentage relative score thresh over which to report matches (default=0.8)
+  #   pwm.data: a stored pwm. RData object as retrieved and save from JASPAR2014 R package
+  #
+  # Returns:
+  #   Dataframe with additional column for jaspar query results
+  
+  #check input dataframe
+  if(ncol(df) != 8){
+    warning("Input dataframe df does not have 8 columns! Please make sure RefVarBatch has run properly:\n
+            Format: id sequence.ref  sequence.var kmer.ref kmer.var  SFR.ref  SFR.var total.damage")
+    return("NA")
+  }
+  
+  
+  
+  # go throug data frame and query jaspar
+  jsp <- apply(df, 1, function(x){
+
+    
+    if(abs(as.numeric(x[8])) >= damage.threshold){ #only query if absolute total damage is above threshold
+    
+      if(x[8] >= 0){ # if total.damage is positive --> quer reference sequence
+     
+         j <- QueryJaspar(sequence=x[2], threshold=match.threshold, pwm.data=pwm.data)
+    
+      }else if(x[8] <= 0){# if total.damage is negative query variant sequence
+        
+          j <- QueryJaspar(sequence=x[3], threshold=match.threshold, pwm.data=pwm.data)
+          
+      }
+    
+    }else{#dont query
+      
+      j <- "."
+      
+    }
+    
+    return(j) #return
+    
+  })
+  
+  #add new column
+  df$jaspar <- jsp
+  
+  #return data frame
+  return(df)
+  
+}
+
+#PLOT FUNCTIONS
+PlotSingleKmer <- function(kmer, tissue, data.dir, frag.type, smooth, plot.shoulders=FALSE, ylim=c(0,0.01), xlim=c(-125,125)){
+  #Wrapper to produce a plot from kmer and tissue input only
   #
   # Args:
   #   kmer: input kmer 
   #   tissue: input tissue to query the profile from
   #   data.dir: repository storing processed kmer files per tissue
   #   frag.type: fragmentation type ("DNase" or "ATAC")
-  #   smooth: flag if to smooth the profile (TRUE or FALSE)
-  #   smooth.bandwidth: bandwidth to use for normal kernel smoothing 
-  #     (default 5 which is fixed for most worklfows)
-  #   background.flag: indicate if to retrieve background cut frequencies 
-  #   (other data dir and file structure) [TRUE/FALSE] default FALSE
+  #   smooth: flag if to smooth the profile (TRUE or FALSE)  
+  #   plot.shoulders: flag if to plot the shoulder regions
+  #   ylim: ylim to fix for plot (default c(0, 0.01))
+  #   xlim: xlim to fix for plot (default c(-125, 125)) 
+  #
   # Returns:
-  #   (smoothed) strand specific profiles and count of the kmer occurence
+  #   Plot of profile
   
-  #get kmer length
-  kl=nchar(kmer)
+  #1 Get smoothed or unsmoothed profile and shoulders
+  fp <- GetFootprint(kmer=kmer, tissue=tissue, data.dir=data.dir, frag.type=frag.type, smooth=smooth, smooth.bandwidth=smooth.bandwidth)
+  sh <- SobelBorders(fp$profile, kl=nchar(kmer))
   
-  #select flat strand specific files as inputs (depending on background flag)
-  if(!background.flag){
- 
-    infile.plus=file.path(data.dir, tissue,"counts", paste0("kmers_", kl, "_count_", tissue, "_pnorm_JH60_plus.txt"))
-    infile.minus=file.path(data.dir, tissue,"counts", paste0("kmers_", kl, "_count_", tissue, "_pnorm_JH60_minus.txt"))
+  #2 make plot
+  p <- PlotSingle(profile=fp$profile, kl=nchar(kmer), plot.shoulders=plot.shoulders, shoulders=sh, ylim=ylim, xlim=xlim)
   
-  }else if(background.flag){
-    
-    infile.plus=file.path(data.dir, tissue, "counts", paste0("kmer_", kl, "_", tissue, "_plus_merged"))
-    infile.minus=file.path(data.dir, tissue, "counts", paste0("kmer_", kl, "_", tissue, "_minus_merged"))
+}
 
-  }else{
-    warning("Specifiy if to retrieve data from the background naked DNA cut frequencies or from tissue\n
-            background.flag=FALSE/TRUE !")
+PlotOverlapKmers <- function(kmer1, kmer2, tissue1, tissue2, data.dir, frag.type, smooth, ylim=c(0,0.01), xlim=c(-125,125)){
+  #Wrapper to produce an overly plot from two kmers and tissues input only
+  #
+  # Args:
+  #   kmer1: input k-mer1
+  #   kmer2: input k-mer2 
+  #   tissue1: input tissue1 to query the profile from
+  #   tissue2: input tissue2 to query the profile from
+  #   data.dir: repository storing processed kmer files per tissue
+  #   frag.type: fragmentation type ("DNase" or "ATAC")
+  #   smooth: flag if to smooth the profile (TRUE or FALSE)  
+  #   ylim: ylim to fix for plot (default c(0, 0.01))
+  #   xlim: xlim to fix for plot (default c(-125, 125)) 
+  #
+  # Returns:
+  #   Overlay plot of profiles
+  
+  #check if smooth flag set properly
+  if((smooth != TRUE) & (smooth != FALSE)){
+    warning("Please specify if to smooth the overlay plots: smooth=TRUE/FALSE!")
     return("NA")
   }
   
-  #grep strand specific profiles & counts
-  l.plus <- GrepProfile(kmer, infile.plus)
-  l.minus <- GrepProfile(kmer, infile.minus)
+  #1 Get smoothed profiles  
+  fp1 <- GetFootprint(kmer=kmer1, tissue=tissue1, data.dir=data.dir, frag.type=frag.type, smooth=smooth)
+  fp2 <- GetFootprint(kmer=kmer2, tissue=tissue2, data.dir=data.dir, frag.type=frag.type, smooth=smooth)
   
-  #smooth if specified so
-  if(smooth){
-    l.plus$profile <- ksmooth(c(1:length(l.plus$profile)), l.plus$profile, kernel="normal", bandwidth=smooth.bandwidth)$y
-    l.minus$profile <- ksmooth(c(1:length(l.minus$profile)), l.minus$profile, kernel="normal", bandwidth=smooth.bandwidth)$y
-  }
+  #2 Make plot
+  p <- PlotOverlap(fp1$profile, fp2$profile, kmer1, kmer2, ylim=ylim, xlim=xlim)  
   
-  return(list(profile.plus=l.plus$profile, profile.minus=l.minus$profile, 
-              count.plus=l.plus$count, count.minus=l.minus$count)) #return
-  
+  return(p)
   
 }
 
@@ -993,11 +1105,11 @@ PlotSingleStrands <- function(kmer, tissue, data.dir, frag.type, smooth, smooth.
   if(smooth){
     
     fp <- GetFootprintStrand(kmer=kmer, tissue=tissue, data.dir=data.dir, frag.type=frag.type, smooth=smooth, smooth.bandwidth=smooth.bandwidth, background.flag=background.flag)
-  
+    
   }else if(!smooth){
-  
+    
     fp <- GetFootprintStrand(kmer=kmer, tissue=tissue, data.dir=data.dir, frag.type=frag.type, smooth=smooth, smooth.bandwidth=smooth.bandwidth, background.flag=background.flag)
-  
+    
   }
   
   #2 make plot
@@ -1010,7 +1122,7 @@ PlotSingleStrands <- function(kmer, tissue, data.dir, frag.type, smooth, smooth.
   
 }
 
-#TODO: Jaspar and Jaspar Batch
+#TODO: insilico mutagenesis / rainbow plots?
 
 
 
