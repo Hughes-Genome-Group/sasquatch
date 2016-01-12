@@ -6,7 +6,7 @@
 #$ -m eas
 #$ -e /t1-data1/WTSA_Dev/rschwess/clustereo
 #$ -o /t1-data1/WTSA_Dev/rschwess/clustereo
-#$ -N vocab_ENCODE_GM12878_UW_merged
+#$ -N vocab_PancreaticIslets_D_duke
 
 #qsub /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/tissue_v2/runscript_make_vocabulary.sh
 
@@ -22,7 +22,7 @@ FRAG_TYPE="DNase"
 
 #I use the following to create tissue specific sub directories and name the files accordingly when creating the tissue specific data,
 #so that by setting a data directory and the correct tag you get access to the tissue specific count files later.
-TISSUE="ENCODE_GM12878_UW_merged"
+TISSUE="ENCODE_PancreaticIslets_D_duke_merged"
 
 # currently available "laza" (human fibroblast) "JH60" (human erythroid 60% mapped)  "atac" for atac;  mm9 --> atac= atac_mm9
 NORM_TYPE="JH60"

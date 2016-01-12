@@ -6,7 +6,7 @@
 #$ -m eas
 #$ -e /t1-data1/WTSA_Dev/rschwess/clustereo
 #$ -o /t1-data1/WTSA_Dev/rschwess/clustereo
-#$ -N bb_enc_uw_gm12878_refined_rep2
+#$ -N bb_enc_panc_is_rep3
 
 #qsub /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/tissue_v2/runscript_tissue_v2_backbone_public.sh
 
@@ -23,7 +23,7 @@ ORGANISM="human"
 BUILD='hg19'
 
 #IDtag to produce output directory and name the files
-IDTAG="ENCODE_GM12878_UW_peak_refined_rep2"
+IDTAG="ENCODE_pancreatic_islets_D_duke_rep3"
 
 #specify if DNaseI or ATAC data ("DNase" or "ATAC")
 DATA_TYPE="DNase"
@@ -35,11 +35,11 @@ OUTPUT_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/${
 SEQ_TYPE="singleend"
 
 #Source "Duke" "UW" "UW_DGF"; download path is chosen accordingly
-DWN_SOURCE="UW"
+DWN_SOURCE="duke"
 
-BAM_NAME="wgEncodeUwDnaseGm12878AlnRep2.bam"
-PEAK_NAME="merged_filtered_peaks"
-PEAK_FILE=${PEAK_NAME}.bed
+BAM_NAME="wgEncodeOpenChromDnasePanisdAlnRep1.bam"
+PEAK_NAME="wgEncodeOpenChromDnasePanisdPk"
+PEAK_FILE=${PEAK_NAME}.narrowPeak
 
 #select DOWNLOAD PATH accroding to DWN_SOURCE
 case "${DWN_SOURCE}" in
@@ -162,13 +162,13 @@ mkdir -p ${OUTPUT_DIR}
 
 cd ${OUTPUT_DIR}
 
-#rsync -a -P rsync://${DOWNLOAD_PATH}/${BAM_NAME} ${OUTPUT_DIR}
+rsync -a -P rsync://${DOWNLOAD_PATH}/${BAM_NAME} ${OUTPUT_DIR}
 
-#rsync -a -P rsync://${DOWNLOAD_PATH}/${BAM_NAME}.bai ${OUTPUT_DIR}
+rsync -a -P rsync://${DOWNLOAD_PATH}/${BAM_NAME}.bai ${OUTPUT_DIR}
 
-#rsync -a -P rsync://${DOWNLOAD_PATH}/${PEAK_FILE}.gz ${OUTPUT_DIR}
+rsync -a -P rsync://${DOWNLOAD_PATH}/${PEAK_FILE}.gz ${OUTPUT_DIR}
 
-#gzip -d ${OUTPUT_DIR}/${PEAK_FILE}.gz
+gzip -d ${OUTPUT_DIR}/${PEAK_FILE}.gz
 
 #### --------------------------------------
 #### filter regions file for ploidy regions
@@ -182,9 +182,9 @@ bedtools intersect -v -a ${REGIONS_FILE} -b ${PLOIDY_REGIONS} >${REGIONS_FILE_PL
 #### Submit Footprints
 #### -----------------
 
-#fpid=`qsub -N fp_${IDTAG} -v OUTPUT_DIR=${OUTPUT_DIR},DATA_TYPE=${DATA_TYPE},BAM_FILE=${BAM_FILE},SCRIPT_DIR=${SCRIPT_DIR},BIGWIG_CHRSIZES=${BIGWIG_CHRSIZES},SEQ_TYPE=${SEQ_TYPE},IDTAG=${IDTAG} ${PIPE_DIR}/runscript_tissue_v2_footprinting.sh | perl -ne '$_=~/\s+(\d+)\s+/; print $1;'`
+fpid=`qsub -N fp_${IDTAG} -v OUTPUT_DIR=${OUTPUT_DIR},DATA_TYPE=${DATA_TYPE},BAM_FILE=${BAM_FILE},SCRIPT_DIR=${SCRIPT_DIR},BIGWIG_CHRSIZES=${BIGWIG_CHRSIZES},SEQ_TYPE=${SEQ_TYPE},IDTAG=${IDTAG} ${PIPE_DIR}/runscript_tissue_v2_footprinting.sh | perl -ne '$_=~/\s+(\d+)\s+/; print $1;'`
 
-#echo "Footprinting Job $fpid submitted"
+echo "Footprinting Job $fpid submitted"
 
 ### ------------------------
 ### submit count k-mers pnorm
@@ -193,9 +193,9 @@ bedtools intersect -v -a ${REGIONS_FILE} -b ${PLOIDY_REGIONS} >${REGIONS_FILE_PL
 COUNTS=${OUTPUT_DIR}/counts
 mkdir -p ${COUNTS}
 
-#countpnormid=`qsub -N kmerpn_${IDTAG} -hold_jid $fpid -v COUNTS=${COUNTS},OUTPUT_DIR=${OUTPUT_DIR},REGIONS_FILE_PLOIDY_FILTERED=${REGIONS_FILE_PLOIDY_FILTERED},SCRIPT_DIR=${SCRIPT_DIR},REF_GENOME=${REF_GENOME},IDTAG=${IDTAG},PROPENSITY_PLUS=${PROPENSITY_PLUS},PROPENSITY_MINUS=${PROPENSITY_MINUS},pnormsource=${pnormsource} ${PIPE_DIR}/runscript_tissue_v2_kmercount_pnorm.sh  | perl -ne '$_=~/\s+(\d+)\s+/; print $1;'`
+countpnormid=`qsub -N kmerpn_${IDTAG} -hold_jid $fpid -v COUNTS=${COUNTS},OUTPUT_DIR=${OUTPUT_DIR},REGIONS_FILE_PLOIDY_FILTERED=${REGIONS_FILE_PLOIDY_FILTERED},SCRIPT_DIR=${SCRIPT_DIR},REF_GENOME=${REF_GENOME},IDTAG=${IDTAG},PROPENSITY_PLUS=${PROPENSITY_PLUS},PROPENSITY_MINUS=${PROPENSITY_MINUS},pnormsource=${pnormsource} ${PIPE_DIR}/runscript_tissue_v2_kmercount_pnorm.sh  | perl -ne '$_=~/\s+(\d+)\s+/; print $1;'`
 
-countpnormid=`qsub -N kmerpn_${IDTAG} -v COUNTS=${COUNTS},OUTPUT_DIR=${OUTPUT_DIR},REGIONS_FILE_PLOIDY_FILTERED=${REGIONS_FILE_PLOIDY_FILTERED},SCRIPT_DIR=${SCRIPT_DIR},REF_GENOME=${REF_GENOME},IDTAG=${IDTAG},PROPENSITY_PLUS=${PROPENSITY_PLUS},PROPENSITY_MINUS=${PROPENSITY_MINUS},pnormsource=${pnormsource} ${PIPE_DIR}/runscript_tissue_v2_kmercount_pnorm.sh  | perl -ne '$_=~/\s+(\d+)\s+/; print $1;'`
+# countpnormid=`qsub -N kmerpn_${IDTAG} -v COUNTS=${COUNTS},OUTPUT_DIR=${OUTPUT_DIR},REGIONS_FILE_PLOIDY_FILTERED=${REGIONS_FILE_PLOIDY_FILTERED},SCRIPT_DIR=${SCRIPT_DIR},REF_GENOME=${REF_GENOME},IDTAG=${IDTAG},PROPENSITY_PLUS=${PROPENSITY_PLUS},PROPENSITY_MINUS=${PROPENSITY_MINUS},pnormsource=${pnormsource} ${PIPE_DIR}/runscript_tissue_v2_kmercount_pnorm.sh  | perl -ne '$_=~/\s+(\d+)\s+/; print $1;'`
 
 echo "K-mer counting P-norm Job $countpnormid submitted"
 
@@ -211,5 +211,5 @@ echo "Reads in Peaks:: `bedtools intersect -abam -wa -a ${BAM_FILE} -b ${REGIONS
 ### Submit cleaner .sh for removing temporary stored bam files after jobs finished
 ### -------------------------------------------------------------------------------
 
-#qsub -N cleaner_${IDTAG} -hold_jid $fpid,$countpnormid -v OUTPUT_DIR=${OUTPUT_DIR},REGIONS_FILE=${REGIONS_FILE},REGIONS_FILE_PLOIDY_FILTERED=${REGIONS_FILE_PLOIDY_FILTERED},BAM_FILE=${BAM_FILE} ${PIPE_DIR}/runscript_tissue_v2_cleaner.sh
+qsub -N cleaner_${IDTAG} -hold_jid $fpid,$countpnormid -v OUTPUT_DIR=${OUTPUT_DIR},REGIONS_FILE=${REGIONS_FILE},REGIONS_FILE_PLOIDY_FILTERED=${REGIONS_FILE_PLOIDY_FILTERED},BAM_FILE=${BAM_FILE} ${PIPE_DIR}/runscript_tissue_v2_cleaner.sh
 
