@@ -20,7 +20,7 @@ frag.type <- "DNase"
 
 smooth <- TRUE
 
-vocab.file <- paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt")
+# vocab.file <- paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt")
 
 ### START ###
 
@@ -59,13 +59,24 @@ dl <- DissectSequence(seq, 7, list=TRUE)
 
 ### ===== TEST R WRAPPER FUNCTIONS ===== ###
 
+library(RColorBrewer)
+color.store <- brewer.pal(3,"Set1")
+
+
 #wrapper to get SFR
-sfr <- GetSFR(kmer, tissue, data.dir, vocab.flag=TRUE, vocab.file=vocab.file, frag.type="DNase")
+sfr <- GetSFR(kmer="CACGTG", tissue="human_erythroid_hg18", data.dir=data.dir, vocab.flag=T, frag.type="DNase")
+
+
+kmer = "CGCGTGC"
 
 #single plot wrapper
-p <- PlotSingleKmer(kmer="TGATAA", tissue=tissue, data.dir=data.dir, frag.type=frag.type, 
-                    smooth=TRUE, plot.shoulders=F, ylim=c(0,0.01), xlim=c(-75,75))
+p <- PlotSingleKmer(kmer=kmer, tissue=tissue, data.dir=data.dir, frag.type=frag.type, 
+                    smooth=TRUE, plot.shoulders=TRUE, ylim=c(0,0.01), xlim=c(-100,100),
+                    color="black")
 p
+
+ggsave(p, filename=paste0("/home/ron/fusessh/Sasquatch_paper/figures/figure3_working/pictures/single_profile_for_overlay_", kmer, "_humane_erythroid.svg"), width=10, height=10/2.5)
+
 
 #wrapper for overlap from kmers only
 p <- PlotOverlapKmers(
@@ -84,7 +95,7 @@ dl <- QueryLongSequence(sequence=seq, kl=7, tissue=tissue, data.dir=data.dir,
 
 #make example dataframe
 tdf <- data.frame(
-        id=c("rs11", "rs12", "rs123"), 
+        id=c("1", "2", "3"), 
         ref=c("ATAGATAATCGCT", "ATAGATAATCGCT", "ATATATTCTCGCT"),
         var=c("ATAGATCATCGCT", "ATAGATTATCGCT", "ATAGATGATCGCT")
         )
@@ -108,12 +119,20 @@ QueryJaspar(sequence="AGATAATAG", threshold=0.8, pwm.data=pwm.in)
 jbcomp <- QueryJasparBatch(df=bcomp, damage.threshold=0.3, match.threshold=0.8, pwm.data=human.pwm)
   
 #wrapper to compare two sequences
-sequence1 <- "ATAGATAATCGCT"
-sequence2 <- "ATAGATCATCGCT"
+sequence1 <- "AGTCCTA"
+sequence2 <- "AGTTCTA"
 
-comp <- CompareSequences(sequence1=sequence1, sequence2=sequence2, kl=6, damage.mode="exhaustive", 
-                             tissue=tissue, data.dir=data.dir, vocab.flag=TRUE, 
-                             vocab.file=vocab.file, frag.type=frag.type, plots=FALSE)
+comp <- CompareSequences(
+  sequence1=sequence1, 
+  sequence2=sequence2, 
+  kl=6, 
+  damage.mode="exhaustive",
+  tissue="ENCODE_PancreaticIslets_D_duke_merged", 
+  data.dir=data.dir, 
+  vocab.flag=TRUE,
+  frag.type="DNase", 
+  plots="all"
+  )
 
 
 #wrapper to get strand specific footprint profiles for tisue or background
@@ -127,5 +146,54 @@ splots <- PlotSingleStrands(kmer="WGATAA", tissue = background.tissue, data.dir 
 
 
 
-#
+##############################################################
+
+#insilico mutations
+
+#get mutation data frame
+d <- GetPossibleMutations(sequence=c("AGGGATACGTAGACGGTGTAAACCCGTGCATAGTAGA"), kl=7, chr="chrX", position=1345990)
+
+d$damage <- apply(d, 1, function(x) CompareSequences(sequence1=x[5], sequence2=x[6], kl=7, damage.mode="exhaustive", 
+                 tissue=tissue, data.dir=data.dir, vocab.flag=TRUE, 
+                 vocab.file=vocab.file, frag.type=frag.type, plots=FALSE)$summary$total.damage )
+
+#wrapper for mutating everything
+d1 <- InSilicoMutation(  sequence="AGGGATACGTAGACGGGTGT", 
+                                kl=7, 
+                                chr="chr1",
+                                position=13330000,
+                                report="all",
+                                damage.mode="exhaustive",
+                                tissue=tissue,
+                                data.dir=data.dir,
+                                vocab.flag=TRUE,
+                                frag.type=frag.type
+                                )
+
+rp <- RainbowPlot(d1)
+rp
+
+
+library(ggplot2)
+library(RColorBrewer)
+library(BSgenome)
+library(BSgenome.Hsapiens.UCSC.hg18)
+genome <- BSgenome.Hsapiens.UCSC.hg18
+
+seq <- as.character(getSeq(genome, "chr16", start=103489, end=103539))
+
+r2.df <- InSilicoMutation(sequence=seq, 
+                         kl=7, 
+                         chr="chr16",
+                         position=103489,
+                         report="all",
+                         damage.mode="exhaustive",
+                         tissue=tissue,
+                         data.dir=data.dir,
+                         vocab.flag=TRUE,
+                         frag.type=frag.type
+)
+
+rp <- RainbowPlot(r2.df)
+rp
 

@@ -13,7 +13,7 @@ science_theme <- theme(
   text = element_text(size = 14)
 )
 
-### BASIC FUNCTIONS ####
+### HELPER FUNCTIONS ####
 DecodeKmer <- function(kmer){
   # Decode ambiguous FASTA characters of kmer input
   #
@@ -120,6 +120,26 @@ DecodeKmer <- function(kmer){
   
 }
 
+Sobeln <- function(profile){
+  # Calculate 1st derivative approximation of profile by 1D sobel filtering
+  #
+  # Args:
+  #   profile: input profile
+  #
+  # Returns:
+  #   1st derivative approximation of profile 
+  
+  b=rep(0,length(profile))
+  for(i in c(2:(length(profile)-1))){
+    b[i] = ( profile[i-1] * -1 ) + ( profile[i] * 0 ) + ( profile[i+1] * 1 )
+  }
+  b[1] = b[2]
+  b[length(profile)] <- b[length(profile)-1]
+  return(b)
+}
+
+
+### BASIC FUNCTIONS ####
 DissectSequence <- function(sequence, kl, list=TRUE){
   # split longer Sequence into list of kmers
   #
@@ -140,7 +160,7 @@ DissectSequence <- function(sequence, kl, list=TRUE){
   
     dissectlist <- list()
     
-    for( i in c(1:(nchar(sequence)-kl))){	#split in all possible kl-mers
+    for( i in c(1:(nchar(sequence)-kl+1))){	#split in all possible kl-mers
      
        dissectlist <- c(dissectlist, substr(sequence, i, (i+kl-1)))
     
@@ -192,25 +212,11 @@ GrepProfile <- function(kmer, infile){
   
 }
 
-Sobeln <- function(profile){
-  # Calculate 1st derivative approximation of profile by 1D sobel filtering
-  #
-  # Args:
-  #   profile: input profile
-  #
-  # Returns:
-  #   1st derivative approximation of profile 
-  
-  b=rep(0,length(profile))
-  for(i in c(2:(length(profile)-1))){
-    b[i] = ( profile[i-1] * -1 ) + ( profile[i] * 0 ) + ( profile[i+1] * 1 )
-  }
-  b[1] = b[2]
-  b[length(profile)] <- b[length(profile)-1]
-  return(b)
-}
-
-CalcSFR <- function(profile, us.mid, ds.mid, range.us, range.ds){
+CalcSFR <- function(profile, 
+                    us.mid, 
+                    ds.mid, 
+                    range.us, 
+                    range.ds){
   # Calculate Shoulder to Footprint Ratio of a footprint profile
   #
   # Args:
@@ -269,7 +275,7 @@ SobelBorders <- function(profile, kl){
   us.cross <- subset(us.cross, us.cross >= 126 - search.range)
   ds.cross <- subset(ds.cross, ds.cross <= (125 + kl + search.range))
   
-  ### === first round to get optimal maximas === ###
+  ### === first round with fixed shoulder range to get optimal maximas === ###
   peak.range <- c(6) #select fixed range to speed up first round
   cross.combs <- as.matrix(expand.grid(us.cross, ds.cross, peak.range, peak.range))	#get a matrix with all combinations of the relevant crossings
   #cover cases with no relevant maxima 
@@ -391,7 +397,13 @@ PruneProfile <- function(profile, desired.length){
   
 }
 
-PlotSingle <- function(profile, kl=6, plot.shoulders=FALSE, shoulders=FALSE, ylim=c(0,0.01), xlim=c(-125,125)){
+PlotSingle <- function(profile, 
+                       kl=6, 
+                       plot.shoulders=FALSE, 
+                       shoulders=FALSE, 
+                       ylim=c(0,0.01), 
+                       xlim=c(-125,125), 
+                       color="black"){
   # Plot the average profile given an input profile
   # plot the shoulders if plot.shoulders is set to TRUE use shoulders list provided or determine
   #
@@ -401,7 +413,8 @@ PlotSingle <- function(profile, kl=6, plot.shoulders=FALSE, shoulders=FALSE, yli
   #   plot.shoulders: flag if to plot the shoulder regions
   #   shoulders: estiamted shoulder border and ranges (list object as produced from SobelBorders)
   #   ylim: ylim to fix for plot (default c(0, 0.01))
-  #   xlim: xlim to fix for plot (default c(-125, 125)) 
+  #   xlim: xlim to fix for plot (default c(-125, 125))
+  #   clor: color to plot the profile
   #
   # Returns:
   #   Profile plot
@@ -444,8 +457,8 @@ PlotSingle <- function(profile, kl=6, plot.shoulders=FALSE, shoulders=FALSE, yli
     ds.border <- ds.border - (1+(window.size/2))
       
     #MAKE PLOT
-    p <- ggplot(df, aes(x=x, y=y)) + geom_line(size=1) + 
-      geom_vline(xintercept = c((0),(kl-1)), linetype = "dashed", size=1.5) + 
+    p <- ggplot(df, aes(x=x, y=y)) + geom_line(size=1, color=color) + 
+      geom_vline(xintercept = c((0),(kl-1)), linetype = "dashed", size=1) + 
       geom_vline(xintercept = c(
         (us.border+(us.range/2)), ds.border-(ds.range/2)
       ), colour="red", size=1) + 
@@ -459,7 +472,7 @@ PlotSingle <- function(profile, kl=6, plot.shoulders=FALSE, shoulders=FALSE, yli
     
     }else{		#border could not be estimated
     
-    p <- ggplot(df, aes(x=x, y=y)) + geom_line(size=1) + 
+    p <- ggplot(df, aes(x=x, y=y)) + geom_line(size=1, color=color) + 
         geom_vline(xintercept = c((0),(kl-1)), linetype = "dashed", size=1) + 
         labs(x="Relative position [bp]", y="Relative cut probability") + 
         coord_cartesian(ylim=ylim, xlim=xlim) + 
@@ -473,7 +486,12 @@ PlotSingle <- function(profile, kl=6, plot.shoulders=FALSE, shoulders=FALSE, yli
     
 }
 
-PlotOverlap <- function(profile1, profile2, kmer1, kmer2, ylim=c(0,0.01), xlim=c(-125,125)){
+PlotOverlap <- function(profile1, 
+                        profile2, 
+                        kmer1, 
+                        kmer2, 
+                        ylim=c(0,0.01), 
+                        xlim=c(-125,125)){
   # Plot two average profiles overlapping given two input profiles
   # plot the shoulders if plot.shoulders is set to TRUE use shoulders list provided or determine
   #
@@ -526,7 +544,9 @@ PlotOverlap <- function(profile1, profile2, kmer1, kmer2, ylim=c(0,0.01), xlim=c
   
 }
 
-QueryJaspar <- function(sequence, threshold=0.8, pwm.data){
+QueryJaspar <- function(sequence, 
+                        threshold=0.8, 
+                        pwm.data){
   # Take a Sequence input and query it against the set of Jaspar2014 PWMs
   #
   # Args:
@@ -581,7 +601,12 @@ QueryJaspar <- function(sequence, threshold=0.8, pwm.data){
 
 
 ### WRAPPER FUNCTIONS ####
-GetFootprint <- function(kmer, tissue, data.dir, frag.type, smooth, smooth.bandwidth=5){
+GetFootprint <- function(kmer, 
+                         tissue, 
+                         data.dir, 
+                         frag.type, 
+                         smooth=TRUE, 
+                         smooth.bandwidth=5){
   # Wrapper to retrieve merged, pruned, smoothed profile of kmer
   #
   # Args:
@@ -629,7 +654,13 @@ GetFootprint <- function(kmer, tissue, data.dir, frag.type, smooth, smooth.bandw
   
 }
 
-GetFootprintStrand <- function(kmer, tissue="", data.dir="", frag.type, smooth, smooth.bandwidth=5, background.flag=FALSE){
+GetFootprintStrand <- function(kmer, 
+                               tissue="", 
+                               data.dir="", 
+                               frag.type, 
+                               smooth, 
+                               smooth.bandwidth=5, 
+                               background.flag=FALSE){
   # Wrapper to retrieve stradnspecific (smoothed) profiles of kmer from tissue or background
   #
   # Args:
@@ -681,7 +712,12 @@ GetFootprintStrand <- function(kmer, tissue="", data.dir="", frag.type, smooth, 
   
 }
 
-GetSFR <- function(kmer, tissue, data.dir, vocab.flag, vocab.file="", frag.type=""){
+GetSFR <- function(kmer, 
+                   tissue, 
+                   data.dir, 
+                   vocab.flag=FALSE, 
+                   vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"), 
+                   frag.type=""){
   # Wrapper function to get the SFR ratio
   # If indicated and available, use the present vocabulary file to directly grep the SFR
   # Else get the average profile, estimate the borders and calculate the SFR
@@ -745,7 +781,18 @@ GetSFR <- function(kmer, tissue, data.dir, vocab.flag, vocab.file="", frag.type=
   
     }
 
-QueryLongSequence <- function(sequence, kl, tissue, data.dir, vocab.flag, vocab.file="", frag.type="", plots=FALSE, smooth, plot.shoulders=TRUE, ylim=c(0,0.01), xlim=c(-125,125)){
+QueryLongSequence <- function(sequence, 
+                              kl, 
+                              tissue, 
+                              data.dir, 
+                              vocab.flag=FALSE, 
+                              vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"), 
+                              frag.type="", 
+                              plots=FALSE, 
+                              smooth, 
+                              plot.shoulders=TRUE, 
+                              ylim=c(0,0.01), 
+                              xlim=c(-125,125)){
   # Wrapper function to get split longer sequence into kmer of length kl and return kmer, SFR 
   # plots if specified
   #
@@ -804,7 +851,19 @@ QueryLongSequence <- function(sequence, kl, tissue, data.dir, vocab.flag, vocab.
   }
 }
 
-CompareSequences <- function(sequence1, sequence2, kl, damage.mode="exhaustive", tissue, data.dir, vocab.flag, vocab.file="", frag.type="", plots="highest", smooth=TRUE, ylim=c(0,0.01), xlim=c(-125,125)){
+CompareSequences <- function(sequence1, 
+                             sequence2, 
+                             kl, 
+                             damage.mode="exhaustive", 
+                             tissue, 
+                             data.dir, 
+                             vocab.flag=FALSE, 
+                             vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"), 
+                             frag.type="", 
+                             plots="highest", 
+                             smooth=TRUE, 
+                             ylim=c(0,0.01), 
+                             xlim=c(-125,125)){
   # Wrapper function to analyse multiple Ref-Var-Sequence pairs
   # split each sequence into k-mers of lenfth kl, get their SFRs form vocab file 
   # or calculate new and calculate the damage associated with each kmer pair and 
@@ -814,7 +873,7 @@ CompareSequences <- function(sequence1, sequence2, kl, damage.mode="exhaustive",
   #   ref.var.df: three column data frame listing id referecne and variance sequence 
   #   in the following scheme (id reference variance)
   #   kl: length of k-mers to split sequences into
-  #     damage.mode: mode for calculating the toal damage 
+  #   damage.mode: mode for calculating the total damage 
   #   (local: get highest pair, exhaustive: sum up over entire sequence)
   #   tissue: input tissue to query the profile from
   #   data.dir: repository storing processed kmer files per tissue
@@ -920,7 +979,14 @@ CompareSequences <- function(sequence1, sequence2, kl, damage.mode="exhaustive",
   
 }
 
-RefVarBatch <- function(ref.var.df, kl, damage.mode="exhaustive", tissue, data.dir, vocab.flag, vocab.file="", frag.type=""){
+RefVarBatch <- function(ref.var.df, 
+                        kl, 
+                        damage.mode="exhaustive", 
+                        tissue, 
+                        data.dir, 
+                        vocab.flag, 
+                        vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"), 
+                        frag.type=""){
   # Wrapper function to analyse multiple Ref-Var-Sequence pairs
   # split each sequence into k-mers of lenfth kl, get their SFRs form vocab file 
   # or calculate new and calculate the damage associated with each kmer pair and 
@@ -968,7 +1034,10 @@ RefVarBatch <- function(ref.var.df, kl, damage.mode="exhaustive", tissue, data.d
   
 }
 
-QueryJasparBatch <- function(df, damage.threshold=0, match.threshold=0.8, pwm.data){
+QueryJasparBatch <- function(df, 
+                             damage.threshold=0, 
+                             match.threshold=0.8, 
+                             pwm.data){
   # Take a data frame from RefVar Query Batch as input and query it against the 
   # set of Jaspar2014 PWMs using a selected match.threshold 
   # Select an absolute sasq damage above which to query jaspar
@@ -1025,8 +1094,17 @@ QueryJasparBatch <- function(df, damage.threshold=0, match.threshold=0.8, pwm.da
   
 }
 
-#PLOT FUNCTIONS
-PlotSingleKmer <- function(kmer, tissue, data.dir, frag.type, smooth, plot.shoulders=FALSE, ylim=c(0,0.01), xlim=c(-125,125)){
+#PLOT FUNCTION WRAPPER
+PlotSingleKmer <- function(kmer, 
+                           tissue, 
+                           data.dir, 
+                           frag.type, 
+                           smooth=TRUE, 
+                           smooth.bandwidth=5, 
+                           plot.shoulders=FALSE, 
+                           ylim=c(0,0.01), 
+                           xlim=c(-125,125), 
+                           color="black"){
   #Wrapper to produce a plot from kmer and tissue input only
   #
   # Args:
@@ -1038,20 +1116,32 @@ PlotSingleKmer <- function(kmer, tissue, data.dir, frag.type, smooth, plot.shoul
   #   plot.shoulders: flag if to plot the shoulder regions
   #   ylim: ylim to fix for plot (default c(0, 0.01))
   #   xlim: xlim to fix for plot (default c(-125, 125)) 
+  #   color: color for profile to plot
   #
   # Returns:
   #   Plot of profile
   
   #1 Get smoothed or unsmoothed profile and shoulders
   fp <- GetFootprint(kmer=kmer, tissue=tissue, data.dir=data.dir, frag.type=frag.type, smooth=smooth, smooth.bandwidth=smooth.bandwidth)
-  sh <- SobelBorders(fp$profile, kl=nchar(kmer))
+  
+  if(plot.shoulders){
+    sh <- SobelBorders(fp$profile, kl=nchar(kmer))
+  }  
   
   #2 make plot
-  p <- PlotSingle(profile=fp$profile, kl=nchar(kmer), plot.shoulders=plot.shoulders, shoulders=sh, ylim=ylim, xlim=xlim)
+  p <- PlotSingle(profile=fp$profile, kl=nchar(kmer), plot.shoulders=plot.shoulders, shoulders=sh, ylim=ylim, xlim=xlim, color=color)
   
 }
 
-PlotOverlapKmers <- function(kmer1, kmer2, tissue1, tissue2, data.dir, frag.type, smooth, ylim=c(0,0.01), xlim=c(-125,125)){
+PlotOverlapKmers <- function(kmer1, 
+                             kmer2, 
+                             tissue1, 
+                             tissue2, 
+                             data.dir, 
+                             frag.type, 
+                             smooth=TRUE, 
+                             ylim=c(0,0.01), 
+                             xlim=c(-125,125)){
   #Wrapper to produce an overly plot from two kmers and tissues input only
   #
   # Args:
@@ -1085,7 +1175,15 @@ PlotOverlapKmers <- function(kmer1, kmer2, tissue1, tissue2, data.dir, frag.type
   
 }
 
-PlotSingleStrands <- function(kmer, tissue, data.dir, frag.type, smooth, smooth.bandwidth=5, background.flag=FALSE, ylim=c(0,0.01), xlim=c(-125,125)){
+PlotSingleStrands <- function(kmer, 
+                              tissue, 
+                              data.dir, 
+                              frag.type, 
+                              smooth=TRUE, 
+                              smooth.bandwidth=5, 
+                              background.flag=FALSE, 
+                              ylim=c(0,0.01), 
+                              xlim=c(-125,125)){
   #Wrapper to produce a strand specific plots from kmer and tissue input only
   #
   # Args:
@@ -1122,8 +1220,215 @@ PlotSingleStrands <- function(kmer, tissue, data.dir, frag.type, smooth, smooth.
   
 }
 
-#TODO: insilico mutagenesis / rainbow plots?
+GetPossibleMutations <- function(sequence, 
+                                 kl=7, 
+                                 chr=".", 
+                                 position=1){
+  # Take a Sequence input and split into kmers of length kl*2-1 with reference and variance.
+  # Take the parsed position as index for the first base to mutate (kl'th sequence to fill window)
+  # (e.g. for kl 7 always take the 13 surrounding bases)
+  #
+  # Args:
+  #   sequence: input sequence
+  #   kl: k-mer lengh to split the sequence into k-mers
+  #   chr: chromosome
+  #   position: Start base position where to predict the 
+  #
+  # Returns:
+  #   Six columns dataframe c(chr, position, ref.base, var.base, ref.sequence, var.sequence).
 
+  #check if sequence is long enough
+  if(nchar(sequence) < (kl*2-1)){
+    warning("Sequence is to short! Has to be a minimum of: kl*2-1 !")
+    return(NA_real_)
+  }
 
+  window.size <- kl*2-1
+  
+  #make moving window sequence split
+  seq.list <- c()
+  for(i in c(1:(nchar(sequence)-window.size+1))){
+    
+    seq.list <- c(seq.list, substr(sequence, i, i+window.size-1))
+  
+  }
+  
+  #get ref base per sequqnce window
+  ref.list <- substr(seq.list, kl, kl)
+  
+  bases <- c("A", "C", "G", "T")
+  
+  #make dataframe
+  df <- data.frame(
+    
+    chr = rep(chr, length(seq.list)*3),
+    
+    pos = as.numeric(unlist( lapply( c(position:(length(seq.list)+position-1)), function(x) rep(x, 3) ))),
+    
+    ref.base = unlist( lapply( ref.list, function(x) rep(x, 3) )) 
+    
+  )
+  
+  #add all possible substitutions
+  temp <- c()
+  for(j in c(position:(length(seq.list)+position-1))){
+    
+   temp <- c(temp, bases[!(bases %in% c(as.character(df[df$pos == j, ]$ref.base[1])))])
+   
+  }
+  df$var.base <- temp
+  
+  #add ref sequence windows
+  df$ref.seq <- unlist( lapply( seq.list, function(x) rep(x, 3) ))
+  
+  #add mutated sequence windows
+  df$var.seq <- df$ref.seq 
+  substr(df$var.seq, kl, kl) <- df$var.base
+  
+  #return data frame
+  return(df)
+  
+}
 
+InSilicoMutation <- function(  sequence,
+                                      kl=7,
+                                      chr=".",
+                                      position=1,
+                                      report="all",
+                                      damage.mode="exhaustive",
+                                      tissue=tissue,
+                                      data.dir=data.dir,
+                                      vocab.flag=TRUE,
+                                      vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"),
+                                      frag.type=frag.type){
+# Wrapper for max/abs damage insilico mutation
+# Take a sequence, split into dataframe of kmerlength matching window and 
+# compare reference an possible mutation sequences
+# report according to report mode ("all", "max", "maxabs")
+#
+# Args:
+#   sequence: input sequence
+#   kl: k-mer lengh to split the sequence into k-mers
+#   chr: chromosome
+#   position: Start base position where to predict the base substitution
+#   report: which mutations to report; 
+#     "all" = report all 3 possible substitutions per position
+#     "max" = only report substitution with highest positive damage
+#     "maxabs" = only report substitution with highest absolute damage
+#   damage.mode: mode for calculating the total damage 
+#   tissue: input tissue to query the profile from
+#   data.dir: repository storing processed kmer files per tissue
+#   vocab.flag: indicating if a preprocessed vocabulary file is present and to be used [TRUE/FALSE]
+#   vocab.file: path to preprocessed vocabulary file
+#   frag.type: fragmentation type ("DNase" or "ATAC")
+#
+# Returns:
+#   Seven columns dataframe c(chr, position, ref.base, var.base, ref.sequence, var.sequence, damage).  
 
+require(pbapply)  
+  
+# make split sequence dataframe for query
+df <- GetPossibleMutations(sequence=sequence, kl=7, chr=chr, position=position)
+
+print(paste0("Processing ",nrow(df)," sequence windows:"))
+
+#inslico mutation for set mode
+df$damage <- pbapply(df, 1, function(x) CompareSequences(
+  sequence1=x[5], 
+  sequence2=x[6], 
+  kl=kl, 
+  damage.mode=damage.mode,
+  tissue=tissue, 
+  data.dir=data.dir,
+  vocab.flag=vocab.flag,
+  vocab.file=vocab.file,
+  frag.type=frag.type,
+  plots=FALSE
+  )$summary$total.damage
+  )
+
+#filter dataframe according to report mode
+if(report == "all"){
+
+   return(df)
+
+}else if(report == "max"){
+  
+  dftemp <- df[0,]
+  
+  #select max of 3 matching rows
+  for(i in df$pos[seq(from=3, to=nrow(df), by=3)]){
+    
+    temp <- df[df$pos %in% i, ]
+    
+    temp <- temp[which(temp$damage == max(temp$damage)), ]
+    
+    if(dim(temp)[1] > 1){  #sample randomly if equal damages
+      temp <- temp[sample(c(1:dim(temp)[1]),1), ]
+    }
+    
+    dftemp <- rbind(dftemp, temp)
+    
+  }
+  
+  return(dftemp)
+  
+}else if(report == "maxabs"){
+  
+  dftemp <- df[0,]
+  
+  #select max of absolute of 3 matching rows
+  for(i in df$pos[seq(from=3, to=nrow(df), by=3)]){
+    
+    temp <- df[df$pos %in% i, ]
+    
+    temp <- temp[which(temp$damage == max(abs(temp$damage))), ]
+    
+    if(dim(temp)[1] > 1){  #sample randomly if equal damages
+      temp <- temp[sample(c(1:dim(temp)[1]),1), ]
+    }
+    
+    dftemp <- rbind(dftemp, temp)
+    
+  }
+  
+  return(dftemp)
+  
+}else{
+  
+  warning("Select a mode for reporting! Will report default (all possible substitutions)!")
+  return(df)
+
+}
+  
+}
+
+#wrapper for rainbow plot
+RainbowPlot <- function(df, ylim=c(-2,2)){
+  # Wrapper for max/abs damage insilico mutation
+  # Take a sequence, split into dataframe of kmerlength matching window and 
+  # compare reference an possible mutation sequences
+  # report according to report mode ("all", "max", "maxabs")
+  #
+  # Args:
+  #   df: Dataframe from InSilicoMutation (report="all")
+  #   ylim: y-limits for plot
+  #
+  # Returns:
+  #   Seven columns dataframe c(chr, position, ref.base, var.base, ref.sequence, var.sequence, damage).  
+  
+  
+  #check data frame
+  
+  #make plot
+  p <- ggplot(df, aes(x=pos, y=damage, col=var.base)) + 
+  geom_segment(aes(x=pos, xend=pos, y=0, yend=damage), col="Grey") + 
+  geom_point(size=2) + 
+  coord_cartesian(xlim=c(df$pos[1], tail(df$pos, 1)), ylim=ylim) + 
+  labs(x=df$chr[1], y="Sum of Damage") +
+  scale_color_manual(values=brewer.pal(6, "Set1")[c(1,2,4,3)], name="Variant") + 
+  theme_bw() + science_theme
+
+  return(p)
+  
+}
