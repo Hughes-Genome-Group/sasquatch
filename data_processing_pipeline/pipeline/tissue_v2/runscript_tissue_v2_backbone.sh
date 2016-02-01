@@ -49,7 +49,7 @@ PEAK_FILE="${OUTPUT_DIR}/PeakCall.gff"
 
 #the perl script handling the region file is a bit lazy coded. it basically decides based on the end of of the file name (.gff or (.bed or .narroweak)) in which columns is has to look for the chromosome and start and stop coordinates
 REGIONS_FILE=${PEAK_FILE}
-REGIONS_FILE_PLOIDY_FILTERED=${OUTPUT_DIR}/${PEAK_NAME}_ploidy_filtered.bed
+REGIONS_FILE_PLOIDY_FILTERED=${OUTPUT_DIR}/${PEAK_NAME}_ploidy_filtered.gff
 
 # ============================================================================================================== #
 # Select reference genome, ploidy regions and cut propensities according to organism and genome build aligned to #

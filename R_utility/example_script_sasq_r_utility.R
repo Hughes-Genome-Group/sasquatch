@@ -6,13 +6,13 @@ data.dir <- "/home/ron/fusessh/database_assembly/idx_correct_assembly/human/DNas
 background.dir <- "/home/ron/fusessh/database_assembly/idx_correct_assembly/background/"
 background.tissue <- "hg18_human_JH60"
   
-out.dir <- "/home/ron/Daten/WIMM/Sasquatch_working/temp_out"
+out.dir <- "/home/ron/Daten/WIMM/Sasquatch_working/"
 
 
 #TODO(rschwess): Include example of how to retrieve single strand profiles
 
 ### === Set Some Parameters === ###
-kmer <- "CACGTG"
+kmer <- "AGATAA"
 
 tissue <- "human_erythroid_hg18"
 
@@ -42,13 +42,14 @@ p <- PlotSingle(profile=fp$profile, kl=nchar(kmer), plot.shoulders=F, shoulders=
 p
 
 #plot overlap
-kmer1 <- "AGATAA"
-kmer2 <- "GGATAA"
-fp1 <- GetFootprint(kmer="WGATAA", tissue=tissue, data.dir=data.dir, frag.type=frag.type, smooth=T)
+kmer1 <- "WGATAA"
+kmer2 <- "WGATTA"
+fp1 <- GetFootprint(kmer=kmer1, tissue=tissue, data.dir=data.dir, frag.type=frag.type, smooth=T)
 fp2 <- GetFootprint(kmer=kmer2, tissue=tissue, data.dir=data.dir, frag.type=frag.type, smooth=T)
 
-p <- PlotOverlap(fp1$profile, fp2$profile, kmer1, kmer2)
+p <- PlotOverlap(fp1$profile, fp2$profile, kmer1, kmer2, ymode="separate", xlim=c(-80,80), ylim=c(0.0020, 0.0100))
 p
+
 
 
 #disect a longer sequence
@@ -67,15 +68,15 @@ color.store <- brewer.pal(3,"Set1")
 sfr <- GetSFR(kmer="CACGTG", tissue="human_erythroid_hg18", data.dir=data.dir, vocab.flag=T, frag.type="DNase")
 
 
-kmer = "CGCGTGC"
+kmer = "AGATCA"
 
 #single plot wrapper
 p <- PlotSingleKmer(kmer=kmer, tissue=tissue, data.dir=data.dir, frag.type=frag.type, 
-                    smooth=TRUE, plot.shoulders=TRUE, ylim=c(0,0.01), xlim=c(-100,100),
-                    color="black")
+                    smooth=TRUE, plot.shoulders=F, ylim=c(0,0.01), xlim=c(-70,70),
+                    color="red")
 p
 
-ggsave(p, filename=paste0("/home/ron/fusessh/Sasquatch_paper/figures/figure3_working/pictures/single_profile_for_overlay_", kmer, "_humane_erythroid.svg"), width=10, height=10/2.5)
+ggsave(p, filename=paste0("/home/ron/Dokumente/phd_application/interviews/presentation/figures/single_profile_", kmer, "_humane_erythroid.svg"), width=10, height=10/2.5)
 
 
 #wrapper for overlap from kmers only
@@ -119,19 +120,19 @@ QueryJaspar(sequence="AGATAATAG", threshold=0.8, pwm.data=pwm.in)
 jbcomp <- QueryJasparBatch(df=bcomp, damage.threshold=0.3, match.threshold=0.8, pwm.data=human.pwm)
   
 #wrapper to compare two sequences
-sequence1 <- "AGTCCTA"
-sequence2 <- "AGTTCTA"
+sequence1 <- "CAGTTTCATGAGG"
+sequence2 <- "CAGTTTTATGAGG"
 
 comp <- CompareSequences(
   sequence1=sequence1, 
   sequence2=sequence2, 
-  kl=6, 
+  kl=7,
+  data.dir=data.dir,
   damage.mode="exhaustive",
-  tissue="ENCODE_PancreaticIslets_D_duke_merged", 
-  data.dir=data.dir, 
-  vocab.flag=TRUE,
+  tissue="DNase_He_refined_LNCaP_50U_50_100bp_L_D", 
+  vocab.flag=FALSE,
   frag.type="DNase", 
-  plots="all"
+  plots="highest"
   )
 
 

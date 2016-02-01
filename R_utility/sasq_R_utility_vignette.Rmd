@@ -1,6 +1,6 @@
 ---
-title: "Sasquatch R Utility"
-author: "Ron Schweßinger"
+title: "Vignette: Sasquatch in R"
+author: "Ron Schweßinger, Maria Suciu, Simon McGowan, Jelena Telenius, Doug Higgs and Jim Hughes"
 date: "31 Dezember 2015"
 output:
   pdf_document:

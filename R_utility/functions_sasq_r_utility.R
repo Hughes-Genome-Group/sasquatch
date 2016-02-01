@@ -3,6 +3,8 @@
 ############################################
 
 library(ggplot2)
+# library(gridExtra)
+# library(grid)
 library(RColorBrewer)
 
 ### THEMES ####
@@ -340,8 +342,8 @@ SobelBorders <- function(profile, kl){
     }
     sfr.store <- sfr.store[-which(sfr.store == max(sfr.store))]
     
-    us.border <- as.numeric(cross.combs[which(fos.store == max(sfr.store)),][1])
-    ds.border <- as.numeric(cross.combs[which(fos.store == max(sfr.store)),][2])
+    us.border <- as.numeric(cross.combs[which(sfr.store == max(sfr.store)),][1])
+    ds.border <- as.numeric(cross.combs[which(sfr.store == max(sfr.store)),][2])
     sfr.maxima <- max(sfr.store)
     us.range <- as.numeric(cross.combs[which(sfr.store == max(sfr.store)),][3])
     ds.range <- as.numeric(cross.combs[which(sfr.store == max(sfr.store)),][4])
@@ -489,7 +491,8 @@ PlotSingle <- function(profile,
 PlotOverlap <- function(profile1, 
                         profile2, 
                         kmer1, 
-                        kmer2, 
+                        kmer2,
+                        ymode="merged",
                         ylim=c(0,0.01), 
                         xlim=c(-125,125)){
   # Plot two average profiles overlapping given two input profiles
@@ -499,8 +502,7 @@ PlotOverlap <- function(profile1,
   #   profile: input profile
   #   kmer1: input k-mer 1 (reference)
   #   kmer2: input k-mer 2 (variant)
-  #   plot.shoulders: flag if to plot the shoulder regions
-  #   shoulders: estiamted shoulder border and ranges (list object as produced from SobelBorders)
+  #   ymode: mode how to plot the overlapping profiles ("merged" or as "separate" profiles above each other)
   #   ylim: ylim to fix for plot (default c(0, 0.01))
   #   xlim: xlim to fix for plot (default c(-125, 125)) 
   #
@@ -512,7 +514,13 @@ PlotOverlap <- function(profile1,
     warning("kmers do bot have equal length")
     return("NA")
   }
+  #check if ymode is set properly
+  if((ymode != "merged") & (ymode != "separate")){
+    warning("Select ymode (\"merged\" or \"separate\"")
+    return("NA")
+  }
   
+  #get kmer length
   kl=nchar(kmer1)
   
   #get window size of profile arround kmer
@@ -522,24 +530,58 @@ PlotOverlap <- function(profile1,
   df <-data.frame(
     x=rep(c(-(window.size/2):((window.size/2)+kl-1)), 2),
     y=c(profile1, profile2),
-    Source=c(rep(paste0("Ref: ", kmer1), length(profile1)), rep(paste0("Var: ", kmer2), length(profile2)))
+    Source=c(
+      rep(paste0("Ref: ", kmer1), length(profile1)), 
+      rep(paste0("Var: ", kmer2), length(profile2))
+      )
+    
   )
  
    #sort source for colors
   df$Source <- factor(df$Source, levels=c(paste0("Ref: ",kmer1), paste0("Var: ",kmer2)))
   
-  #make plot
-  p <- ggplot(df, aes(x=x, y=y, colour=Source)) + geom_line(size=1) + 
-    geom_vline(xintercept = c((0),(kl-1)), linetype = "dashed", size=1) + 
-    labs(x="Relative position [bp]", y="Relative cut probability") + 
-    coord_cartesian(ylim=ylim, xlim=xlim) + 
-    scale_colour_manual(values=rev(brewer.pal(3,"Set1")[c(1,2)])) +
-    theme_bw() + science_theme + 
-    theme(
-      legend.position = c(0.85,0.8), legend.title=element_blank(), 
-      panel.grid = element_blank(), text = element_text(size=20)
+  #MAKE THE PLOT
+  #mode one merged probfiles on same y-axis
+  if(ymode == "merged"){
+    
+    p <- ggplot( df, aes(x=x, y=y, colour=Source)) + geom_line(size=1) + 
+      geom_vline(xintercept = c((0),(kl-1)), linetype = "dashed", size=1) + 
+      labs(x="Relative position [bp]", y="Relative cut probability") + 
+      coord_cartesian(ylim=ylim, xlim=xlim) + 
+      scale_colour_manual(values=rev(brewer.pal(3,"Set1")[c(1,2)])) +
+      theme_bw() + science_theme + 
+      theme(
+        legend.position = c(0.85,0.8), legend.title=element_blank(), 
+        panel.grid = element_blank(), text = element_text(size=20)
+        )
+    
+  #mode two separate y-axis above each other  
+  }else if(ymode == "separate"){
+    
+    #part one reference (top) without x-axis
+    p <- ggplot(df, aes(x=x, y=y, colour=Source)) + 
+      geom_line(size=1) + 
+      scale_color_manual(values=rev(brewer.pal(3,"Set1")[c(1,2)])) +
+      facet_grid(Source ~ .) +
+      labs(x="Relative position [bp]", y="Relative cut probability") +
+      geom_vline(xintercept = c((0),(kl-1)), linetype = "dashed", size=1) + 
+      coord_cartesian(ylim=ylim, xlim=xlim) + 
+      theme_bw() + science_theme + 
+      theme(
+        legend.position = "top",
+        legend.direction = "horizontal",
+        legend.title=element_blank(),
+        legend.margin= unit("0", "lines"),
+        panel.grid.major.x = element_blank(), 
+        text = element_text(size=20),
+        panel.border = element_blank(),
+        panel.margin = unit("1.15", "lines"),
+        strip.text.y = element_blank(),  #remove strips from facetting
+        strip.background = element_blank()
       )
-  
+
+  }
+
   return(p)
   
 }
@@ -714,7 +756,7 @@ GetFootprintStrand <- function(kmer,
 
 GetSFR <- function(kmer, 
                    tissue, 
-                   data.dir, 
+                   data.dir="", 
                    vocab.flag=FALSE, 
                    vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"), 
                    frag.type=""){
@@ -740,7 +782,7 @@ GetSFR <- function(kmer,
     
     #check if kmer is has ambivalent characters (Only )
     if(grepl("[^(A,C,G,T)]", kmer, perl=T)){
-      warning("The Entered kmer hast ambivalent characters, for usign the preprocessed vocabulary
+      warning("The Entered kmer hast ambivalent characters, for using the preprocessed vocabulary
               file please specify non-ambivalent chars or run the alternative vocab.flag=TRUE!")
       return(NA_real_)
     }
@@ -784,7 +826,7 @@ GetSFR <- function(kmer,
 QueryLongSequence <- function(sequence, 
                               kl, 
                               tissue, 
-                              data.dir, 
+                              data.dir="", 
                               vocab.flag=FALSE, 
                               vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"), 
                               frag.type="", 
@@ -856,7 +898,7 @@ CompareSequences <- function(sequence1,
                              kl, 
                              damage.mode="exhaustive", 
                              tissue, 
-                             data.dir, 
+                             data.dir="", 
                              vocab.flag=FALSE, 
                              vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"), 
                              frag.type="", 
@@ -888,6 +930,12 @@ CompareSequences <- function(sequence1,
   #   Dataframe listing Ref and Var sequence with highest scoring kmer pair and 
   #   the according SFRs and calculated (exhaustive or local) damage 
   
+  #check if indicated vocab file is readable
+  if((vocab.flag == TRUE) & (!file.exists(vocab.file))){
+    warning(paste0("File ", vocab.file, "does not exists! Please indicate the appropriate 
+                     path to the vocabulary file or select vocab.flag=FALSE instead!"))
+    return(NA_real_)
+  }
   
   #capture if sequences are to short
   if((nchar(sequence1) < kl) | (nchar(sequence2) < kl)){
@@ -907,10 +955,10 @@ CompareSequences <- function(sequence1,
   
   #2 get SFRs for each k-mer 
   dl1.sfr <- lapply(dl1, function(x){
-    x <- GetSFR(kmer=x, tissue=tissue, vocab.flag = vocab.flag, vocab.file = vocab.file, frag.type = frag.type)
+    x <- GetSFR(kmer=x, tissue=tissue, data.dir=data.dir, vocab.flag = vocab.flag, vocab.file = vocab.file, frag.type = frag.type)
   })
   dl2.sfr <- lapply(dl2, function(x){
-    x <- GetSFR(kmer=x, tissue=tissue, vocab.flag = vocab.flag, vocab.file = vocab.file, frag.type = frag.type)
+    x <- GetSFR(kmer=x, tissue=tissue, data.dir=data.dir, vocab.flag = vocab.flag, vocab.file = vocab.file, frag.type = frag.type)
   })
   
   #3 compose data frame
@@ -950,9 +998,16 @@ CompareSequences <- function(sequence1,
     plot.list <- apply(dl.df[, c("kmer.ref", "kmer.var")], 1, function(x){
       
       pp <- PlotOverlapKmers(
-        kmer1=x[1], kmer2=x[2],
-        tissue1=tissue, tissue2=tissue, data.dir=data.dir, frag.type=frag.type, 
-        smooth=smooth, ylim=ylim, xlim=xlim)
+        kmer1=x[1], 
+        kmer2=x[2],
+        tissue1=tissue, 
+        tissue2=tissue, 
+        data.dir=data.dir, 
+        frag.type=frag.type, 
+        smooth=smooth,
+        ylim=ylim, 
+        xlim=xlim
+        )
         
       return(pp)
       
@@ -961,9 +1016,15 @@ CompareSequences <- function(sequence1,
   }else if(plots == "highest"){
     
     plot.list <- PlotOverlapKmers(
-      kmer1=as.character(dl.df[highest.id, ]$kmer.ref), kmer2=as.character(dl.df[highest.id, ]$kmer.var),
-      tissue1=tissue, tissue2=tissue, data.dir=data.dir, frag.type=frag.type, 
-      smooth=smooth, ylim=ylim, xlim=xlim
+      kmer1=as.character(dl.df[highest.id, ]$kmer.ref), 
+      kmer2=as.character(dl.df[highest.id, ]$kmer.var),
+      tissue1=tissue, 
+      tissue2=tissue, 
+      data.dir=data.dir, 
+      frag.type=frag.type, 
+      smooth=smooth, 
+      ylim=ylim, 
+      xlim=xlim
       )
     
   }else if(!plots){
