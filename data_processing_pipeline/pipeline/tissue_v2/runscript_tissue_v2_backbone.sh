@@ -1,4 +1,4 @@
-#!usr/bin/bash
+#!/bin/bash
 
 #$ -cwd
 #$ -q batchq
@@ -6,7 +6,7 @@
 #$ -m eas
 #$ -e /t1-data1/WTSA_Dev/rschwess/clustereo
 #$ -o /t1-data1/WTSA_Dev/rschwess/clustereo
-#$ -N bb_human_ery_macs2_atac_oldnorm
+#$ -N bb_lncap_dnase_he_l_v
 
 #qsub /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/tissue_v2/runscript_tissue_v2_backbone.sh
 	
@@ -25,27 +25,27 @@ SCRIPT_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processi
 ORGANISM="human"	
 
 #genome Build ["hg18", "hg19", "mm9"] currently choosable
-BUILD='hg18'
+BUILD='hg19'
 
 #IDtag to produce output directory and name the files
-IDTAG="erythroid_hg18_macs2"
+IDTAG="DNase_He_refined_LNCaP_50U_50_100bp_L_V"
 
 #specify if DNaseI or ATAC data ("DNase" or "ATAC")
-DATA_TYPE="ATAC"
+DATA_TYPE="DNase"
 
 #type of sequencing ["singleend" / "pairedend"] 
-SEQ_TYPE="pairedend"
+SEQ_TYPE="singleend"
 
 #set output directory
 OUTPUT_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/${ORGANISM}/${DATA_TYPE}/${IDTAG}/
 
 #path to aligned reads bam file
-BAM_FILE="/hts/data1/msuciu/ATAC-Seq/hProg/JH_d10/pipe/JH_d10_cd34pos_ATAC/hg18/filtered_Sorted.bam"
+BAM_FILE="${OUTPUT_DIR}/filtered.bam"
  
 #identifier name of the peak file to produce the ploidy filtered peaks
-PEAK_NAME="macs2_peakcall"
+PEAK_NAME="PeakCall"
 #full path to peak file
-PEAK_FILE="${OUTPUT_DIR}/macs2_peakcall.bed"
+PEAK_FILE="${OUTPUT_DIR}/PeakCall.gff"
 
 #the perl script handling the region file is a bit lazy coded. it basically decides based on the end of of the file name (.gff or (.bed or .narroweak)) in which columns is has to look for the chromosome and start and stop coordinates
 REGIONS_FILE=${PEAK_FILE}
@@ -62,14 +62,14 @@ case "${ORGANISM}" in
 
 			hg19)
 				REF_GENOME="/databank/igenomes/Homo_sapiens/UCSC/hg19/Sequence/WholeGenomeFasta/genome.fa"
-				BIGWIG_CHRSIZES='/hts/data0/config/bigwig/hg19_sizes.txt'
+				BIGWIG_CHRSIZES='/t1-data/user/config/bigwig/hg19_sizes.txt'
 				#ploidy regions to filter
 				PLOIDY_REGIONS='/t1-data1/WTSA_Dev/rschwess/database_assembly/region_exclude/hg19/wgEncodeDukeMapabilityRegionsExcludable.bed'
 			;;
 
 			hg18)
 				REF_GENOME="/databank/raw/hg18_full/hg18_full.fa"
-				BIGWIG_CHRSIZES='/hts/data0/config/bigwig/hg18_sizes.txt'
+				BIGWIG_CHRSIZES='/t1-data/user/config/bigwig/hg18_sizes.txt'
 				#ploidy regions to filter
 				PLOIDY_REGIONS='/t1-data1/WTSA_Dev/rschwess/database_assembly/region_exclude/hg18/wgEncodeDukeRegionsExcluded.bed'
 			;;
@@ -102,7 +102,7 @@ case "${ORGANISM}" in
 
 			mm9)	
 				REF_GENOME="/databank/igenomes/Mus_musculus/UCSC/mm9/Sequence/WholeGenomeFasta/genome.fa"
-				BIGWIG_CHRSIZES='/hts/data0/config/bigwig/mm9_sizes.txt'
+				BIGWIG_CHRSIZES='/t1-data/user/config/bigwig/mm9_sizes.txt'
 				#ploidy regions to filter
 				PLOIDY_REGIONS='/t1-data1/WTSA_Dev/rschwess/database_assembly/region_exclude/mm9/Ploidy_mm9_sorted.bed'							
 			;;
@@ -143,39 +143,40 @@ date
 
 module add bedtools
 
-#bedtools intersect -v -a ${REGIONS_FILE} -b ${PLOIDY_REGIONS} >${REGIONS_FILE_PLOIDY_FILTERED}
+bedtools intersect -v -a ${REGIONS_FILE} -b ${PLOIDY_REGIONS} >${REGIONS_FILE_PLOIDY_FILTERED}
 
-### -----------------
-### Submit Footprints
-### -----------------
+## -----------------
+## Submit Footprints
+## -----------------
 
-#fpid=`qsub -N fp_${IDTAG} -v OUTPUT_DIR=${OUTPUT_DIR},DATA_TYPE=${DATA_TYPE},BAM_FILE=${BAM_FILE},SCRIPT_DIR=${SCRIPT_DIR},BIGWIG_CHRSIZES=${BIGWIG_CHRSIZES},SEQ_TYPE=${SEQ_TYPE},IDTAG=${IDTAG} ${PIPE_DIR}/runscript_tissue_v2_footprinting.sh | perl -ne '$_=~/\s+(\d+)\s+/; print $1;'`
+fpid=`qsub -N fp_${IDTAG} -v OUTPUT_DIR=${OUTPUT_DIR},DATA_TYPE=${DATA_TYPE},BAM_FILE=${BAM_FILE},SCRIPT_DIR=${SCRIPT_DIR},BIGWIG_CHRSIZES=${BIGWIG_CHRSIZES},SEQ_TYPE=${SEQ_TYPE},IDTAG=${IDTAG} ${PIPE_DIR}/runscript_tissue_v2_footprinting.sh | perl -ne '$_=~/\s+(\d+)\s+/; print $1;'`
 
-#echo "Footprinting Job $fpid submitted"
+echo "Footprinting Job $fpid submitted"
 
 ### ------------------------
 ### submit count k-mers old
 ### ------------------------
 
-##make counts directory
-mkdir -p ${OUTPUT_DIR}/counts	
- -hold_jid $fpid
-countoldid=`qsub -N kmerco_${IDTAG} -v OUTPUT_DIR=${OUTPUT_DIR},REGIONS_FILE_PLOIDY_FILTERED=${REGIONS_FILE_PLOIDY_FILTERED},SCRIPT_DIR=${SCRIPT_DIR},REF_GENOME=${REF_GENOME},IDTAG=${IDTAG} ${PIPE_DIR}/runscript_tissue_v2_kmercountold.sh  | perl -ne '$_=~/\s+(\d+)\s+/; print $1;'`
+#####make counts directory
+###mkdir -p ${OUTPUT_DIR}/counts	
+### -hold_jid $fpid
+###countoldid=`qsub -N kmerco_${IDTAG} -v OUTPUT_DIR=${OUTPUT_DIR},REGIONS_FILE_PLOIDY_FILTERED=${REGIONS_FILE_PLOIDY_FILTERED},SCRIPT_DIR=${SCRIPT_DIR},REF_GENOME=${REF_GENOME},IDTAG=${IDTAG} ${PIPE_DIR}/runscript_tissue_v2_kmercountold.sh  | perl -ne '$_=~/\s+(\d+)\s+/; print $1;'`
 
-echo "K-mer counting Job $countoldid submitted"
+###echo "K-mer counting Job $countoldid submitted"
 
 ### ------------------------
 ### submit count k-mers pnorm
 ### ------------------------
 #make counts directory
 
-#sleep 15
+sleep 15
 
-#COUNTS=${OUTPUT_DIR}/counts
-#mkdir -p ${COUNTS}
-#	
-#countpnormid=`qsub -N kmerpn_${IDTAG} -hold_jid $fpid -v  COUNTS=${COUNTS},OUTPUT_DIR=${OUTPUT_DIR},REGIONS_FILE_PLOIDY_FILTERED=${REGIONS_FILE_PLOIDY_FILTERED},SCRIPT_DIR=${SCRIPT_DIR},REF_GENOME=${REF_GENOME},IDTAG=${IDTAG},PROPENSITY_PLUS=${PROPENSITY_PLUS},PROPENSITY_MINUS=${PROPENSITY_MINUS},pnormsource=${pnormsource} ${PIPE_DIR}/runscript_tissue_v2_kmercount_pnorm.sh  | perl -ne '$_=~/\s+(\d+)\s+/; print $1;'`
+COUNTS=${OUTPUT_DIR}/counts
+mkdir -p ${COUNTS}
+	
+countpnormid=`qsub -N kmerpn_${IDTAG} -hold_jid $fpid -v  COUNTS=${COUNTS},OUTPUT_DIR=${OUTPUT_DIR},REGIONS_FILE_PLOIDY_FILTERED=${REGIONS_FILE_PLOIDY_FILTERED},SCRIPT_DIR=${SCRIPT_DIR},REF_GENOME=${REF_GENOME},IDTAG=${IDTAG},PROPENSITY_PLUS=${PROPENSITY_PLUS},PROPENSITY_MINUS=${PROPENSITY_MINUS},pnormsource=${pnormsource} ${PIPE_DIR}/runscript_tissue_v2_kmercount_pnorm.sh  | perl -ne '$_=~/\s+(\d+)\s+/; print $1;'`
 
+##without hold
 #countpnormid=`qsub -N kmerpn_${IDTAG} -v  COUNTS=${COUNTS},OUTPUT_DIR=${OUTPUT_DIR},REGIONS_FILE_PLOIDY_FILTERED=${REGIONS_FILE_PLOIDY_FILTERED},SCRIPT_DIR=${SCRIPT_DIR},REF_GENOME=${REF_GENOME},IDTAG=${IDTAG},PROPENSITY_PLUS=${PROPENSITY_PLUS},PROPENSITY_MINUS=${PROPENSITY_MINUS},pnormsource=${pnormsource} ${PIPE_DIR}/runscript_tissue_v2_kmercount_pnorm.sh  | perl -ne '$_=~/\s+(\d+)\s+/; print $1;'`
 
 echo "K-mer counting P-norm Job $countpnormid submitted"
@@ -184,9 +185,9 @@ echo "K-mer counting P-norm Job $countpnormid submitted"
 ### count reads, peaks and reads in peaks
 ### --------------------------------------
 
-#echo "Total reads: `samtools view ${BAM_FILE} | wc -l`" >${OUTPUT_DIR}/read_stats.txt
-#echo "Number of Peaks:: `wc -l ${REGIONS_FILE_PLOIDY_FILTERED}`" >>${OUTPUT_DIR}/read_stats.txt 
-#echo "Reads in Peaks:: `bedtools intersect -abam -wa -a ${BAM_FILE} -b ${REGIONS_FILE_PLOIDY_FILTERED} | wc -l`" >>${OUTPUT_DIR}/read_stats.txt 
+echo "Total reads: `samtools view ${BAM_FILE} | wc -l`" >${OUTPUT_DIR}/read_stats.txt
+echo "Number of Peaks:: `wc -l ${REGIONS_FILE_PLOIDY_FILTERED}`" >>${OUTPUT_DIR}/read_stats.txt 
+echo "Reads in Peaks:: `bedtools intersect -abam -wa -a ${BAM_FILE} -b ${REGIONS_FILE_PLOIDY_FILTERED} | wc -l`" >>${OUTPUT_DIR}/read_stats.txt 
 
 #### -------------------------------------------------------------------------------
 #### Submit cleaner .sh for removing temporary stored bam files after jobs finished

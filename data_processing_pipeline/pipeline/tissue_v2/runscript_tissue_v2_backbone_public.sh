@@ -81,14 +81,14 @@ case "${ORGANISM}" in
 
 			hg19)
 				REF_GENOME="/databank/igenomes/Homo_sapiens/UCSC/hg19/Sequence/WholeGenomeFasta/genome.fa"
-				BIGWIG_CHRSIZES='/hts/data0/config/bigwig/hg19_sizes.txt'
+				BIGWIG_CHRSIZES='/t1-data/user/config/bigwig/hg19_sizes.txt'
 				#ploidy regions to filter
 				PLOIDY_REGIONS='/t1-data1/WTSA_Dev/rschwess/database_assembly/region_exclude/hg19/wgEncodeDukeMapabilityRegionsExcludable.bed'
 			;;
 
 			hg18)
 				REF_GENOME="/databank/raw/hg18_full/hg18_full.fa"
-				BIGWIG_CHRSIZES='/hts/data0/config/bigwig/hg18_sizes.txt'
+				BIGWIG_CHRSIZES='/t1-data/user/config/bigwig/hg18_sizes.txt'
 				#ploidy regions to filter
 				PLOIDY_REGIONS='/t1-data1/WTSA_Dev/rschwess/database_assembly/region_exclude/hg18/wgEncodeDukeRegionsExcluded.bed'
 			;;
@@ -121,7 +121,7 @@ case "${ORGANISM}" in
 
 			mm9)	
 				REF_GENOME="/databank/igenomes/Mus_musculus/UCSC/mm9/Sequence/WholeGenomeFasta/genome.fa"
-				BIGWIG_CHRSIZES='/hts/data0/config/bigwig/mm9_sizes.txt'
+				BIGWIG_CHRSIZES='/t1-data/user/config/bigwig/mm9_sizes.txt'
 				#ploidy regions to filter
 				PLOIDY_REGIONS='/t1-data1/WTSA_Dev/rschwess/database_assembly/region_exclude/mm9/Ploidy_mm9_sorted.bed'							
 			;;

@@ -23,14 +23,14 @@ BUILD='hg18'
 if [ "${BUILD}" == "hg19" ]
 then
 	REF_GENOME="/databank/igenomes/Homo_sapiens/UCSC/hg19/Sequence/WholeGenomeFasta/genome.fa"
-	BIGWIG_CHRSIZES='/hts/data0/config/bigwig/hg19_sizes.txt'
+	BIGWIG_CHRSIZES='/t1-data1/user/config/bigwig/hg19_sizes.txt'
 	#ploidy regions to filter
 	PLOIDY_REGIONS='/t1-data1/WTSA_Dev/rschwess/database_assembly/region_exclude/hg19/wgEncodeDukeMapabilityRegionsExcludable.bed'
 	
 elif [ "${BUILD}" == "hg18" ]   
 then
 	REF_GENOME="/databank/raw/hg18_full/hg18_full.fa"
-	BIGWIG_CHRSIZES='/hts/data0/config/bigwig/hg18_sizes.txt'
+	BIGWIG_CHRSIZES='/t1-data1/user/config/bigwig/hg18_sizes.txt'
 	#ploidy regions to filter
 	PLOIDY_REGIONS='/t1-data1/WTSA_Dev/rschwess/database_assembly/region_exclude/hg18/wgEncodeDukeMapabilityRegionsExcludable.bed'
 fi
