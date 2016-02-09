@@ -4,7 +4,7 @@
 
 library(ggplot2)
 # library(gridExtra)
-# library(grid)
+library(grid)
 library(RColorBrewer)
 
 ### THEMES ####
@@ -492,16 +492,21 @@ PlotOverlap <- function(profile1,
                         profile2, 
                         kmer1, 
                         kmer2,
-                        ymode="merged",
-                        ylim=c(0,0.01), 
-                        xlim=c(-125,125)){
+                        count1 = "NA",
+                        count2 = "NA",
+                        ymode = "separate",
+                        ylim = c(0,0.01), 
+                        xlim = c(-125,125)){
   # Plot two average profiles overlapping given two input profiles
   # plot the shoulders if plot.shoulders is set to TRUE use shoulders list provided or determine
   #
   # Args:
-  #   profile: input profile
+  #   profile1: input profile1
+  #   profile2: input profile2
   #   kmer1: input k-mer 1 (reference)
   #   kmer2: input k-mer 2 (variant)
+  #   count1: count of k-mer1 occurence 
+  #   count2: count of k-mer2 occurence 
   #   ymode: mode how to plot the overlapping profiles ("merged" or as "separate" profiles above each other)
   #   ylim: ylim to fix for plot (default c(0, 0.01))
   #   xlim: xlim to fix for plot (default c(-125, 125)) 
@@ -531,28 +536,43 @@ PlotOverlap <- function(profile1,
     x=rep(c(-(window.size/2):((window.size/2)+kl-1)), 2),
     y=c(profile1, profile2),
     Source=c(
-      rep(paste0("Ref: ", kmer1), length(profile1)), 
-      rep(paste0("Var: ", kmer2), length(profile2))
+      rep(kmer1, length(profile1)), 
+      rep(kmer2, length(profile2))
       )
-    
   )
  
-   #sort source for colors
-  df$Source <- factor(df$Source, levels=c(paste0("Ref: ",kmer1), paste0("Var: ",kmer2)))
+  #sort source for colors
+  df$Source <- factor(df$Source, levels=c(kmer1, kmer2))
+  
+  #make dataframe for annotation
+  anno.df <- data.frame(
+    Source = c(kmer1, kmer2),
+    x=rep((xlim[2]-(xlim[2]-xlim[1])/9), 2), 
+    y=rep((ylim[2]-(ylim[2]-ylim[1])/12), 2),
+    label=c(paste0(kmer1," #",count1), paste0(kmer2," #",count2))
+  )
   
   #MAKE THE PLOT
   #mode one merged probfiles on same y-axis
   if(ymode == "merged"){
+    
+    #adjust annotation dataframe y values for nonoverlapping labels
+    anno.df$y <- c((ylim[2]-(ylim[2]-ylim[1])/13), (ylim[2]-(ylim[2]-ylim[1])/8))
     
     p <- ggplot( df, aes(x=x, y=y, colour=Source)) + geom_line(size=1) + 
       geom_vline(xintercept = c((0),(kl-1)), linetype = "dashed", size=1) + 
       labs(x="Relative position [bp]", y="Relative cut probability") + 
       coord_cartesian(ylim=ylim, xlim=xlim) + 
       scale_colour_manual(values=rev(brewer.pal(3,"Set1")[c(1,2)])) +
+      #add annotation
+      geom_text(data=anno.df, aes(x=x, y=y, label=label)) +
       theme_bw() + science_theme + 
       theme(
-        legend.position = c(0.85,0.8), legend.title=element_blank(), 
-        panel.grid = element_blank(), text = element_text(size=20)
+        legend.position = "none", 
+        # legend.title=element_blank(), 
+        panel.grid = element_blank(), 
+        axis.title.y = element_text(size=16),
+        axis.title.x = element_text(size=16)
         )
     
   #mode two separate y-axis above each other  
@@ -565,15 +585,15 @@ PlotOverlap <- function(profile1,
       facet_grid(Source ~ .) +
       labs(x="Relative position [bp]", y="Relative cut probability") +
       geom_vline(xintercept = c((0),(kl-1)), linetype = "dashed", size=1) + 
+      #add annotation
+      geom_text(data=anno.df, aes(x=x, y=y, label=label)) +
       coord_cartesian(ylim=ylim, xlim=xlim) + 
       theme_bw() + science_theme + 
       theme(
-        legend.position = "top",
-        legend.direction = "horizontal",
-        legend.title=element_blank(),
-        legend.margin= unit("0", "lines"),
+        legend.position = "none",
         panel.grid.major.x = element_blank(), 
-        text = element_text(size=20),
+        axis.title.y = element_text(size=16),
+        axis.title.x = element_text(size=16),
         panel.border = element_blank(),
         panel.margin = unit("1.15", "lines"),
         strip.text.y = element_blank(),  #remove strips from facetting
@@ -599,7 +619,10 @@ QueryJaspar <- function(sequence,
   # Returns:
   #   Character string listing the PWM matches above a certain rel. threshold
   
-  # 1  pad sequence with N's
+  require(Biostrings)
+  require(TFBSTools)
+  
+  # 1 pad sequence with N's
   sequence = paste0("NNNNN",sequence,"NNNNN")
   
   #make DNAString
@@ -783,10 +806,10 @@ GetSFR <- function(kmer,
     #check if kmer is has ambivalent characters (Only )
     if(grepl("[^(A,C,G,T)]", kmer, perl=T)){
       warning("The Entered kmer hast ambivalent characters, for using the preprocessed vocabulary
-              file please specify non-ambivalent chars or run the alternative vocab.flag=TRUE!")
+              file please specify non-ambivalent chars or run the alternative vocab.flag=FALSE !")
       return(NA_real_)
     }
-    #check if indicated vocab file is readable
+    #check if indicated vocab file exists
     if(!file.exists(vocab.file)){
       warning(paste0("File ", vocab.file, "does not exists! Please indicate the appropriate 
                      path to the vocabulary file or select vocab.flag=FALSE instead!"))
@@ -846,7 +869,7 @@ QueryLongSequence <- function(sequence,
   #   vocab.flag: indicating if a preprocessed vocabulary file is present and to be used [TRUE/FALSE]
   #   vocab.file= path to preprocessed vocabulary file
   #   frag.type: fragmentation type ("DNase" or "ATAC")
-  #   plots: TURE/FALSE indicate if to make the profile plot for every k-mer
+  #   plots: TRUE/FALSE indicate if to make the profile plot for every k-mer
   #   smooth: flag if to smooth the profile (TRUE or FALSE)  
   #   plot.shoulders: flag if to plot the shoulder regions
   #   ylim: ylim to fix for plot (default c(0, 0.01))
@@ -867,7 +890,7 @@ QueryLongSequence <- function(sequence,
   
   #2 get SFR per k-mer 
   dl.sfr <- lapply(dl, function(x){
-    x <- GetSFR(kmer=x, tissue=tissue, vocab.flag = vocab.flag, vocab.file = vocab.file, frag.type = frag.type)
+    x <- GetSFR(kmer=x, tissue=tissue, data.dir=data.dir, vocab.flag = vocab.flag, vocab.file = vocab.file, frag.type = frag.type)
   })
   
   #3 compose data frame for output
@@ -944,7 +967,7 @@ CompareSequences <- function(sequence1,
   }
   #check if sequences have equal length
   if(nchar(sequence1) != nchar(sequence2)){
-    warning("Input sequences have unequla length! Currently only equal length is suported! Returning NA!")
+    warning("Input sequences have unequal length! Currently only equal length is suported! Returning NA!")
     return("NA")
   }
   
@@ -1228,9 +1251,13 @@ PlotOverlapKmers <- function(kmer1,
   #1 Get smoothed profiles  
   fp1 <- GetFootprint(kmer=kmer1, tissue=tissue1, data.dir=data.dir, frag.type=frag.type, smooth=smooth)
   fp2 <- GetFootprint(kmer=kmer2, tissue=tissue2, data.dir=data.dir, frag.type=frag.type, smooth=smooth)
+
   
   #2 Make plot
-  p <- PlotOverlap(fp1$profile, fp2$profile, kmer1, kmer2, ylim=ylim, xlim=xlim)  
+  p <- PlotOverlap(profile1 = fp1$profile, profile2 = fp2$profile, 
+                   kmer1 = kmer1, kmer2 = kmer2, 
+                   count1 = fp1$count, count2 = fp2$count, 
+                   ylim=ylim, xlim=xlim)  
   
   return(p)
   
@@ -1483,12 +1510,17 @@ RainbowPlot <- function(df, ylim=c(-2,2)){
   
   #make plot
   p <- ggplot(df, aes(x=pos, y=damage, col=var.base)) + 
+  geom_hline(yintercept=0) +
   geom_segment(aes(x=pos, xend=pos, y=0, yend=damage), col="Grey") + 
   geom_point(size=2) + 
   coord_cartesian(xlim=c(df$pos[1], tail(df$pos, 1)), ylim=ylim) + 
   labs(x=df$chr[1], y="Sum of Damage") +
   scale_color_manual(values=brewer.pal(6, "Set1")[c(1,2,4,3)], name="Variant") + 
-  theme_bw() + science_theme
+  theme_bw() + science_theme +
+  theme(
+    panel.grid.major.x=element_blank(), 
+    panel.border = element_blank()
+  )
 
   return(p)
   

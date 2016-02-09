@@ -47,7 +47,17 @@ kmer2 <- "WGATTA"
 fp1 <- GetFootprint(kmer=kmer1, tissue=tissue, data.dir=data.dir, frag.type=frag.type, smooth=T)
 fp2 <- GetFootprint(kmer=kmer2, tissue=tissue, data.dir=data.dir, frag.type=frag.type, smooth=T)
 
-p <- PlotOverlap(fp1$profile, fp2$profile, kmer1, kmer2, ymode="separate", xlim=c(-80,80), ylim=c(0.0020, 0.0100))
+p <- PlotOverlap(
+  fp1$profile, 
+  fp2$profile, 
+  kmer1, 
+  kmer2,
+  fp1$count,
+  fp2$count,
+  ymode="separate", 
+  xlim=c(-80,80), 
+  ylim=c(0.0020, 0.0100)
+  )
 p
 
 
@@ -63,10 +73,8 @@ dl <- DissectSequence(seq, 7, list=TRUE)
 library(RColorBrewer)
 color.store <- brewer.pal(3,"Set1")
 
-
 #wrapper to get SFR
 sfr <- GetSFR(kmer="CACGTG", tissue="human_erythroid_hg18", data.dir=data.dir, vocab.flag=T, frag.type="DNase")
-
 
 kmer = "AGATCA"
 
@@ -77,7 +85,6 @@ p <- PlotSingleKmer(kmer=kmer, tissue=tissue, data.dir=data.dir, frag.type=frag.
 p
 
 ggsave(p, filename=paste0("/home/ron/Dokumente/phd_application/interviews/presentation/figures/single_profile_", kmer, "_humane_erythroid.svg"), width=10, height=10/2.5)
-
 
 #wrapper for overlap from kmers only
 p <- PlotOverlapKmers(
@@ -181,20 +188,20 @@ library(BSgenome)
 library(BSgenome.Hsapiens.UCSC.hg18)
 genome <- BSgenome.Hsapiens.UCSC.hg18
 
-seq <- as.character(getSeq(genome, "chr16", start=103489, end=103539))
+seq <- as.character(getSeq(genome, "chr16", start=145846, end=145949))
 
 r2.df <- InSilicoMutation(sequence=seq, 
                          kl=7, 
                          chr="chr16",
-                         position=103489,
+                         position=145852,
                          report="all",
                          damage.mode="exhaustive",
-                         tissue=tissue,
+                         tissue="human_erythroid_hg18",
                          data.dir=data.dir,
                          vocab.flag=TRUE,
                          frag.type=frag.type
 )
 
-rp <- RainbowPlot(r2.df)
+rp <- RainbowPlot(r2.df, ylim=c(-4,4)) + geom_vline(xintercept=145912, linetype="dashed")
 rp
 
