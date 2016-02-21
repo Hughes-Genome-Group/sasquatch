@@ -1,21 +1,21 @@
-############################################
-# Functions& Theme for Sasquatch R utility #
-############################################
+#############################################
+# Functions & Theme for Sasquatch R utility #
+#############################################
 
 library(ggplot2)
 # library(gridExtra)
 library(grid)
 library(RColorBrewer)
 
-### THEMES ####
+### THEMES ----------------------------------------------------------------------
 #define theme for plotting
 science_theme <- theme(
   panel.grid.major = element_line(size = 0.5, color = "grey"),
   axis.line = element_line(size = 0.7, color = "black"),
-  text = element_text(size = 14)
+  text = element_text(size = 14, family="Arial")
 )
 
-### HELPER FUNCTIONS ####
+### HELPER FUNCTIONS -----------------------------------------------------------
 DecodeKmer <- function(kmer){
   # Decode ambiguous FASTA characters of kmer input
   #
@@ -141,7 +141,7 @@ Sobeln <- function(profile){
 }
 
 
-### BASIC FUNCTIONS ####
+### BASIC FUNCTIONS -----------------------------------------------------------
 DissectSequence <- function(sequence, kl, list=TRUE){
   # split longer Sequence into list of kmers
   #
@@ -413,10 +413,10 @@ PlotSingle <- function(profile,
   #   profile: input profile
   #   kl: k-mer length to plot dashed lines in the center
   #   plot.shoulders: flag if to plot the shoulder regions
-  #   shoulders: estiamted shoulder border and ranges (list object as produced from SobelBorders)
+  #   shoulders: estimated shoulder border and ranges (list object as produced from SobelBorders)
   #   ylim: ylim to fix for plot (default c(0, 0.01))
   #   xlim: xlim to fix for plot (default c(-125, 125))
-  #   clor: color to plot the profile
+  #   color: color to plot the profile
   #
   # Returns:
   #   Profile plot
@@ -496,7 +496,10 @@ PlotOverlap <- function(profile1,
                         count2 = "NA",
                         ymode = "separate",
                         ylim = c(0,0.01), 
-                        xlim = c(-125,125)){
+                        xlim = c(-125,125),
+                        plot.shoulders=FALSE,
+                        shoulders1=FALSE,
+                        shoulders2=FALSE){
   # Plot two average profiles overlapping given two input profiles
   # plot the shoulders if plot.shoulders is set to TRUE use shoulders list provided or determine
   #
@@ -509,14 +512,23 @@ PlotOverlap <- function(profile1,
   #   count2: count of k-mer2 occurence 
   #   ymode: mode how to plot the overlapping profiles ("merged" or as "separate" profiles above each other)
   #   ylim: ylim to fix for plot (default c(0, 0.01))
-  #   xlim: xlim to fix for plot (default c(-125, 125)) 
+  #   xlim: xlim to fix for plot (default c(-125, 125))
+  #   plot.shoulders: flag TRUE/FALSE if to plot the estimated shoulders with the profiles
+  #     note that it is only plotted if the separate profile option was selected to keep the plots tidy
+  #   shoulders1: list object of estiamte shoulder postion and ranges for profile 1
+  #   shoulders2: list object of estiamte shoulder postion and ranges for profile 2
   #
   # Returns:
   #   Overlapping profile plot
   
   #check if kmer have equal length
+  if(kmer1 == kmer2){
+    warning("kmers are similiar, no overlap plot is created!")
+    return("NA")
+  }
+  #check if kmer have equal length
   if(nchar(kmer1) != nchar(kmer2)){
-    warning("kmers do bot have equal length")
+    warning("kmers do not have equal length!")
     return("NA")
   }
   #check if ymode is set properly
@@ -524,6 +536,26 @@ PlotOverlap <- function(profile1,
     warning("Select ymode (\"merged\" or \"separate\"")
     return("NA")
   }
+  
+  #check if shoulders supplied when plot.shoulder flag set to TRUE
+  if((plot.shoulders == TRUE) && ((shoulders1 == FALSE) || (shoulders2 == FALSE))){
+    warning("No shoulder details list specified!\n Please run 
+            SobelBorders or indicate to not plot the shoulders via plot.shoulders=FALSE!\n
+            Will produce the plot without shoulders.")
+    plot.shoulders <- FALSE
+  }
+  #cover if no border could be estimated but should be plotted
+  if((plot.shoulders == TRUE) && ((shoulders1$flag == FALSE) || (shoulders2$flag == FALSE))){
+    warning("No shoulders could be estimated in the provided shoulder list.\n
+            Will plot the profile without shoulders.")
+    plot.shoulders <- FALSE
+  }
+  #check if plot mode separate when trying to plot the shoulders
+  if((plot.shoulders == TRUE) && (ymode != "separate")){
+    warning("Shoulders are only plotted for the separate plot mode! Changing plot.shoulders to FALSE!")
+    plot.shoulders <- FALSE
+  }
+  
   
   #get kmer length
   kl=nchar(kmer1)
@@ -547,7 +579,7 @@ PlotOverlap <- function(profile1,
   #make dataframe for annotation
   anno.df <- data.frame(
     Source = c(kmer1, kmer2),
-    x=rep((xlim[2]-(xlim[2]-xlim[1])/9), 2), 
+    x=rep((xlim[2]-(xlim[2]-xlim[1])/7), 2), 
     y=rep((ylim[2]-(ylim[2]-ylim[1])/12), 2),
     label=c(paste0(kmer1," #",count1), paste0(kmer2," #",count2))
   )
@@ -557,7 +589,7 @@ PlotOverlap <- function(profile1,
   if(ymode == "merged"){
     
     #adjust annotation dataframe y values for nonoverlapping labels
-    anno.df$y <- c((ylim[2]-(ylim[2]-ylim[1])/13), (ylim[2]-(ylim[2]-ylim[1])/8))
+    anno.df$y <- c((ylim[2]-(ylim[2]-ylim[1])/12), (ylim[2]-(ylim[2]-ylim[1])/8))
     
     p <- ggplot( df, aes(x=x, y=y, colour=Source)) + geom_line(size=1) + 
       geom_vline(xintercept = c((0),(kl-1)), linetype = "dashed", size=1) + 
@@ -568,13 +600,12 @@ PlotOverlap <- function(profile1,
       geom_text(data=anno.df, aes(x=x, y=y, label=label)) +
       theme_bw() + science_theme + 
       theme(
-        legend.position = "none", 
-        # legend.title=element_blank(), 
+        legend.position = "none",
         panel.grid = element_blank(), 
         axis.title.y = element_text(size=16),
         axis.title.x = element_text(size=16)
-        )
-    
+      )
+      
   #mode two separate y-axis above each other  
   }else if(ymode == "separate"){
     
@@ -599,6 +630,45 @@ PlotOverlap <- function(profile1,
         strip.text.y = element_blank(),  #remove strips from facetting
         strip.background = element_blank()
       )
+    
+    #add shoulder if plot.shoulders is specified as TRUE
+    if(plot.shoulders){
+      
+      #get borders and range from shoulders list
+      us.border1 <- unlist(shoulders1["us"])
+      ds.border1 <- unlist(shoulders1["ds"])
+      us.border2 <- unlist(shoulders2["us"])
+      ds.border2 <- unlist(shoulders2["ds"])
+      us.range1 <- shoulders1$range.us
+      ds.range1 <- shoulders1$range.ds
+      us.range2 <- shoulders2$range.us
+      ds.range2 <- shoulders2$range.ds
+      
+      #convert shoulder positions to relative positions surrounding kmer
+      us.border1 <- us.border1 - (1+(window.size/2))
+      ds.border1 <- ds.border1 - (1+(window.size/2))
+      us.border2 <- us.border2 - (1+(window.size/2))
+      ds.border2 <- ds.border2 - (1+(window.size/2))
+      
+      #make df for shoulders
+      shoulder.frame <- data.frame(
+        inner=c(
+          (us.border1+(us.range1/2)), (ds.border1-(ds.range1/2)), 
+          (us.border2+(us.range2/2)), (ds.border2-(ds.range2/2))),
+        outer=c(
+          (us.border1-(us.range1/2)), (ds.border1+(ds.range1/2)),
+          (us.border2-(us.range2/2)), (ds.border2+(ds.range2/2))
+        ),
+        Source=c(rep(kmer1, 2), rep(kmer2, 2))
+      )
+
+      #add shoulders to plot
+      p <- p + 
+        geom_vline(data=shoulder.frame, aes(xintercept=inner), colour="darkgreen", size=0.75) + 
+        geom_vline(data=shoulder.frame, aes(xintercept=outer), linetype="longdash", colour="darkgreen", size=0.75) + 
+        facet_grid(Source ~ .)
+
+    }
 
   }
 
@@ -665,7 +735,7 @@ QueryJaspar <- function(sequence,
 }
 
 
-### WRAPPER FUNCTIONS ####
+# WRAPPER FUNCTIONS -----------------------------------------------------------
 GetFootprint <- function(kmer, 
                          tissue, 
                          data.dir, 
@@ -928,7 +998,8 @@ CompareSequences <- function(sequence1,
                              plots="highest", 
                              smooth=TRUE, 
                              ylim=c(0,0.01), 
-                             xlim=c(-125,125)){
+                             xlim=c(-125,125),
+                             plot.shoulders=FALSE){
   # Wrapper function to analyse multiple Ref-Var-Sequence pairs
   # split each sequence into k-mers of lenfth kl, get their SFRs form vocab file 
   # or calculate new and calculate the damage associated with each kmer pair and 
@@ -951,7 +1022,8 @@ CompareSequences <- function(sequence1,
   #
   # Returns:
   #   Dataframe listing Ref and Var sequence with highest scoring kmer pair and 
-  #   the according SFRs and calculated (exhaustive or local) damage 
+  #   the according SFRs and calculated (exhaustive or local) damage
+  #   and the percentage change of the footprinting strength
   
   #check if indicated vocab file is readable
   if((vocab.flag == TRUE) & (!file.exists(vocab.file))){
@@ -987,35 +1059,66 @@ CompareSequences <- function(sequence1,
   #3 compose data frame
   dl.df <- data.frame(kmer.ref=unlist(dl1), kmer.var=unlist(dl2), sfr.ref=unlist(dl1.sfr), sfr.var=unlist(dl2.sfr))
   
-  #4 callc single kmer overlap damag
+  #4 calc single kmer overlap damage
   dl.df$damage <- dl.df$sfr.ref - dl.df$sfr.var
   
   #5 pick highest scoring kmers
-  highest.id <- which(abs(dl.df$damage) == max(abs(dl.df$damage)))[1]
+  highest.damage.id <- which(abs(dl.df$damage) == max(abs(dl.df$damage)))[1]
   
   #6 calculate total damage according to selected mode
   if(damage.mode == "exhaustive"){
     total.damage <- sum(dl.df$damage)
   }else if(damage.mode == "local"){
-    total.damage <- dl.df[highest.id, ]$damage
+    total.damage <- dl.df[highest.damage.id, ]$damage
   }else{
     warning("Specify a mode to calculate the total damage for comparing the sequences! damage.mode=exhaustive/local")
     return("NA")
   }
   
-  #7 make summary line like for batch query
+  #7 calculate the percentage change
+  #make copy of the dl.df to screw with it
+  dl.df.copy <- dl.df
+  
+  #get rid of lines with ref equals var kmer
+  dl.df.copy <- subset(dl.df.copy, as.character(dl.df.copy$kmer.ref) != as.character(dl.df$kmer.var))
+  
+  #get highest kmer either ref or var
+  highest.ref.sfr.id <- which(dl.df.copy$sfr.ref == max(dl.df.copy$sfr.ref))[1]
+  highest.var.sfr.id <- which(dl.df.copy$sfr.var == max(dl.df.copy$sfr.var))[1]
+  
+  #pick ref or var as highest
+  if( max(dl.df.copy$sfr.var) > max(dl.df.copy$sfr.ref)){
+    highest.sfr.id <- highest.var.sfr.id
+  }else{
+    highest.sfr.id <- highest.ref.sfr.id
+  }
+  
+  #calculate the % change by scaling the highest SFR to 100 % comparing
+  #select max and min again 
+  max <- max(c(dl.df.copy[highest.sfr.id, ]$sfr.ref, dl.df.copy[highest.sfr.id, ]$sfr.var))
+  min <- min(c(dl.df.copy[highest.sfr.id, ]$sfr.ref, dl.df.copy[highest.sfr.id, ]$sfr.var))
+  
+  #remove 1 from each cause thats the background
+  max <- max - 1
+  min <- min - 1
+  
+  #scale them to percentage of max and calculate difference
+  perc.change <- 1 - ((1/max) * min)
+
+  #8 make summary line like for batch query
   summary.line <- data.frame(
     sequence.ref=sequence1,
     sequence.var=sequence2,
-    kmer.ref=as.character(dl.df[highest.id, ]$kmer.ref), 
-    kmer.var=as.character(dl.df[highest.id, ]$kmer.var),
-    SFR.ref=dl.df[highest.id, ]$sfr.ref,
-    SFR.var=dl.df[highest.id, ]$sfr.var,
-    total.damage=total.damage
+    kmer.ref=as.character(dl.df[highest.damage.id, ]$kmer.ref), 
+    kmer.var=as.character(dl.df[highest.damage.id, ]$kmer.var),
+    SFR.ref=round(dl.df[highest.damage.id, ]$sfr.ref, digits = 3),
+    SFR.var=round(dl.df[highest.damage.id, ]$sfr.var, digits = 3),
+    total.damage=round(total.damage, digits = 3),
+    perc.change=round(perc.change, digits = 3)
     )
   
   
-  #8 make plots if desired 
+  #9 make plots if desired 
   if(plots == "all"){
     
     plot.list <- apply(dl.df[, c("kmer.ref", "kmer.var")], 1, function(x){
@@ -1029,7 +1132,8 @@ CompareSequences <- function(sequence1,
         frag.type=frag.type, 
         smooth=smooth,
         ylim=ylim, 
-        xlim=xlim
+        xlim=xlim,
+        plot.shoulders=FALSE
         )
         
       return(pp)
@@ -1039,15 +1143,16 @@ CompareSequences <- function(sequence1,
   }else if(plots == "highest"){
     
     plot.list <- PlotOverlapKmers(
-      kmer1=as.character(dl.df[highest.id, ]$kmer.ref), 
-      kmer2=as.character(dl.df[highest.id, ]$kmer.var),
+      kmer1=as.character(dl.df[highest.damage.id, ]$kmer.ref), 
+      kmer2=as.character(dl.df[highest.damage.id, ]$kmer.var),
       tissue1=tissue, 
       tissue2=tissue, 
       data.dir=data.dir, 
       frag.type=frag.type, 
       smooth=smooth, 
       ylim=ylim, 
-      xlim=xlim
+      xlim=xlim,
+      plot.shoulders=plot.shoulders
       )
     
   }else if(!plots){
@@ -1057,7 +1162,7 @@ CompareSequences <- function(sequence1,
     plot.list <- "No Plots specified"
   }
         
-  #8 assemble output
+  #10 assemble output
   newlist <- list(df=dl.df, summary=summary.line, plots=plot.list, damage.mode=damage.mode)
   return(newlist)
   
@@ -1072,12 +1177,12 @@ RefVarBatch <- function(ref.var.df,
                         vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"), 
                         frag.type=""){
   # Wrapper function to analyse multiple Ref-Var-Sequence pairs
-  # split each sequence into k-mers of lenfth kl, get their SFRs form vocab file 
+  # split each sequence into k-mers of length kl, get their SFRs form vocab file 
   # or calculate new and calculate the damage associated with each kmer pair and 
   # from that the local or exhaustive summed up dmage of entire sequence pair
   #
   # Args:
-  #   ref.var.df: three column data frame listing id referecne and variance sequence 
+  #   ref.var.df: three column data frame listing id reference and variance sequence 
   #   in the following scheme (id reference variance)
   #   kl: length of k-mers to split sequences into
   #   damage.mode: mode for calculating the toal damage 
@@ -1136,8 +1241,8 @@ QueryJasparBatch <- function(df,
   #   Dataframe with additional column for jaspar query results
   
   #check input dataframe
-  if(ncol(df) != 8){
-    warning("Input dataframe df does not have 8 columns! Please make sure RefVarBatch has run properly:\n
+  if(ncol(df) != 9){
+    warning("Input dataframe df does not have 9 columns! Please make sure RefVarBatch has run properly:\n
             Format: id sequence.ref  sequence.var kmer.ref kmer.var  SFR.ref  SFR.var total.damage")
     return("NA")
   }
@@ -1225,7 +1330,8 @@ PlotOverlapKmers <- function(kmer1,
                              frag.type, 
                              smooth=TRUE, 
                              ylim=c(0,0.01), 
-                             xlim=c(-125,125)){
+                             xlim=c(-125,125),
+                             plot.shoulders=FALSE){
   #Wrapper to produce an overly plot from two kmers and tissues input only
   #
   # Args:
@@ -1252,12 +1358,18 @@ PlotOverlapKmers <- function(kmer1,
   fp1 <- GetFootprint(kmer=kmer1, tissue=tissue1, data.dir=data.dir, frag.type=frag.type, smooth=smooth)
   fp2 <- GetFootprint(kmer=kmer2, tissue=tissue2, data.dir=data.dir, frag.type=frag.type, smooth=smooth)
 
+  #1.2 (if plot.shoulders == TRUE estimate the shoudler positions and sizes)
+  if(plot.shoulders){
+    shoulders1 <- SobelBorders(fp1$profile, kl=nchar(kmer1))
+    shoulders2 <- SobelBorders(fp2$profile, kl=nchar(kmer2))
+  }
   
   #2 Make plot
   p <- PlotOverlap(profile1 = fp1$profile, profile2 = fp2$profile, 
                    kmer1 = kmer1, kmer2 = kmer2, 
                    count1 = fp1$count, count2 = fp2$count, 
-                   ylim=ylim, xlim=xlim)  
+                   ylim=ylim, xlim=xlim, plot.shoulders=plot.shoulders, 
+                   shoulders1=shoulders1, shoulders2=shoulders2)  
   
   return(p)
   
@@ -1378,17 +1490,17 @@ GetPossibleMutations <- function(sequence,
   
 }
 
-InSilicoMutation <- function(  sequence,
-                                      kl=7,
-                                      chr=".",
-                                      position=1,
-                                      report="all",
-                                      damage.mode="exhaustive",
-                                      tissue=tissue,
-                                      data.dir=data.dir,
-                                      vocab.flag=TRUE,
-                                      vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"),
-                                      frag.type=frag.type){
+InSilicoMutation <- function( sequence,
+                              kl=7,
+                              chr=".",
+                              position=1,
+                              report="all",
+                              damage.mode="exhaustive",
+                              tissue=tissue,
+                              data.dir=data.dir,
+                              vocab.flag=TRUE,
+                              vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"),
+                              frag.type=frag.type){
 # Wrapper for max/abs damage insilico mutation
 # Take a sequence, split into dataframe of kmerlength matching window and 
 # compare reference an possible mutation sequences
@@ -1414,7 +1526,7 @@ InSilicoMutation <- function(  sequence,
 #   Seven columns dataframe c(chr, position, ref.base, var.base, ref.sequence, var.sequence, damage).  
 
 require(pbapply)  
-  
+
 # make split sequence dataframe for query
 df <- GetPossibleMutations(sequence=sequence, kl=7, chr=chr, position=position)
 
@@ -1422,76 +1534,75 @@ print(paste0("Processing ",nrow(df)," sequence windows:"))
 
 #inslico mutation for set mode
 df$damage <- pbapply(df, 1, function(x) CompareSequences(
-  sequence1=x[5], 
-  sequence2=x[6], 
-  kl=kl, 
-  damage.mode=damage.mode,
-  tissue=tissue, 
-  data.dir=data.dir,
-  vocab.flag=vocab.flag,
-  vocab.file=vocab.file,
-  frag.type=frag.type,
-  plots=FALSE
-  )$summary$total.damage
-  )
+sequence1=x[5], 
+sequence2=x[6], 
+kl=kl, 
+damage.mode=damage.mode,
+tissue=tissue, 
+data.dir=data.dir,
+vocab.flag=vocab.flag,
+vocab.file=vocab.file,
+frag.type=frag.type,
+plots=FALSE
+)$summary$total.damage
+)
 
 #filter dataframe according to report mode
 if(report == "all"){
 
-   return(df)
+return(df)
 
 }else if(report == "max"){
-  
-  dftemp <- df[0,]
-  
-  #select max of 3 matching rows
-  for(i in df$pos[seq(from=3, to=nrow(df), by=3)]){
-    
-    temp <- df[df$pos %in% i, ]
-    
-    temp <- temp[which(temp$damage == max(temp$damage)), ]
-    
-    if(dim(temp)[1] > 1){  #sample randomly if equal damages
-      temp <- temp[sample(c(1:dim(temp)[1]),1), ]
-    }
-    
-    dftemp <- rbind(dftemp, temp)
-    
-  }
-  
-  return(dftemp)
-  
+
+dftemp <- df[0,]
+
+#select max of 3 matching rows
+for(i in df$pos[seq(from=3, to=nrow(df), by=3)]){
+
+temp <- df[df$pos %in% i, ]
+
+temp <- temp[which(temp$damage == max(temp$damage)), ]
+
+if(dim(temp)[1] > 1){  #sample randomly if equal damages
+temp <- temp[sample(c(1:dim(temp)[1]),1), ]
+}
+
+dftemp <- rbind(dftemp, temp)
+
+}
+
+return(dftemp)
+
 }else if(report == "maxabs"){
-  
-  dftemp <- df[0,]
-  
-  #select max of absolute of 3 matching rows
-  for(i in df$pos[seq(from=3, to=nrow(df), by=3)]){
-    
-    temp <- df[df$pos %in% i, ]
-    
-    temp <- temp[which(temp$damage == max(abs(temp$damage))), ]
-    
-    if(dim(temp)[1] > 1){  #sample randomly if equal damages
-      temp <- temp[sample(c(1:dim(temp)[1]),1), ]
-    }
-    
-    dftemp <- rbind(dftemp, temp)
-    
-  }
-  
-  return(dftemp)
-  
+
+dftemp <- df[0,]
+
+#select max of absolute of 3 matching rows
+for(i in df$pos[seq(from=3, to=nrow(df), by=3)]){
+
+temp <- df[df$pos %in% i, ]
+
+temp <- temp[which(temp$damage == max(abs(temp$damage))), ]
+
+if(dim(temp)[1] > 1){  #sample randomly if equal damages
+temp <- temp[sample(c(1:dim(temp)[1]),1), ]
+}
+
+dftemp <- rbind(dftemp, temp)
+
+}
+
+return(dftemp)
+
 }else{
-  
-  warning("Select a mode for reporting! Will report default (all possible substitutions)!")
-  return(df)
+
+warning("Select a mode for reporting! Will report default (all possible substitutions)!")
+return(df)
 
 }
-  
+
 }
 
-#wrapper for rainbow plot
 RainbowPlot <- function(df, ylim=c(-2,2)){
   # Wrapper for max/abs damage insilico mutation
   # Take a sequence, split into dataframe of kmerlength matching window and 
@@ -1515,7 +1626,7 @@ RainbowPlot <- function(df, ylim=c(-2,2)){
   geom_point(size=2) + 
   coord_cartesian(xlim=c(df$pos[1], tail(df$pos, 1)), ylim=ylim) + 
   labs(x=df$chr[1], y="Sum of Damage") +
-  scale_color_manual(values=brewer.pal(6, "Set1")[c(1,2,4,3)], name="Variant") + 
+  scale_color_manual(values=brewer.pal(6, "Set1")[c(3,2,4,1)], name="Variant") + 
   theme_bw() + science_theme +
   theme(
     panel.grid.major.x=element_blank(), 
@@ -1524,4 +1635,195 @@ RainbowPlot <- function(df, ylim=c(-2,2)){
 
   return(p)
   
+}
+
+MakeRainbowTrackHub <- function(  input.df = "",
+                                  id.tag = "SasQ_RP",
+                                  store.tracks = paste0("~/", id.tag, "_tracks"),
+                                  store.hub = paste0("~/", id.tag,"_track_hub"),
+                                  genome.build = "hg19",
+                                  path.chr.sizes = "",
+                                  short.label = "SasQ In silico mutation Rainbow plot",
+                                  long.label = "",
+                                  set.email = "none",
+                                  bedgraph.to.bigwig.path = "",
+                                  make.softlinks = FALSE){
+                                # Input is a data frame in the same format as the output data frame of the InSilicoMutation function
+                                # 7 columns:  chr pos ref.base var.base ref.seq var.seq damage
+                                #
+                                # Args:
+                                #   input.df: input 7 column data frame
+                                #   id.tag: id tag to name the hub directory and bw tracks
+                                #   store.tracks: directory to store the bigwig tracks
+                                #   store.hub: were to store the hub & visualization folder
+                                #   genome.build: select genome build ("hg19", "hg18", "mm9", ...)
+                                #   path.chr.sizes: full.path to chrsizes file amtching to the selected genome
+                                #   short.label: shortLabel for track hub
+                                #   long.label: longLabel for track hub (default = short.label)
+                                #   set.email: email to appaer in trackHub
+                                #   bedgraph.to.bigwig.path: full path to UCSC bedGraphtoBigWig convertion tool
+                                #   make.softlinks:  [TRUE/FALSE] set flag if to directly make softlinks in hub folder 
+                                #     (e.g. set TRUE if running directly on cluster (deva .. etc.) so that the final softlinks paths are already correct
+                                #     default = FALSE if data files will be copied to a different direction afterwards (e.g. when mounted and ran locally)
+                                #     if set to FALSE: 
+                                #     After creation copy data hub to desired location and create softlinks in the hub folder to the tracks in the track folder
+                                #     e.g. "ln -s store.tracks/*.bw store.hub"
+                                #
+                                # Returns:
+                                #   Writes bigWig tracks into desired dirctory and creates a trackHub structure to migrate to public domain and import to UCSC.
+                                
+                                # === Sanity Checks === #
+                              
+                                #check if input.df has desired format
+                                if(ncol(input.df != 7)){
+                                  warnings("input.df does not meet the required format!\n
+                                           Has to be a 7 column data frame with:\n
+                                           chr\tpos\tref.base\tvar.base\tref.seq\tvar.seq\tdamage\n
+                                           Please Check ou input! \n Aborting ...")
+                                  return
+                                }
+                                
+                                #check if convertion too is accessible and executable
+                                if(!file.exists(bedgraph.to.bigwig.path)){
+                                  warnings(paste0("The specified bedgraph.to.bigwig.path: ", 
+                                                  bedgraph.to.bigwig.path, " does not link to a readable and executable file!\n Aborting ..."))
+                                  return
+                                }
+                                
+                                #check if chrom sizes is a file and readable
+                                if(!file.exists(path.chr.sizes)){
+                                  warnings(paste0("The specified file: ", 
+                                                  path.chr.sizes, " does not exist or is not reable!\n Aborting ..."))
+                                  return
+                                }
+                                
+                                #if not set explicitly set long.lable as short.lable
+                                if(long.label == ""){
+                                  long.label <- short.label
+                                }
+                                
+                                # === create dirs === #
+                              
+                                system(paste0("mkdir -p ", store.hub, " ", store.tracks))
+                                
+                                # === make tracks === #
+                                  
+                                #separate into 1 track per base and only keep chr pos damage
+                                a.track <- subset(input.df, var.base == "A")[, c(1, 2, 2, 7)]
+                                c.track <- subset(input.df, var.base == "C")[, c(1, 2, 2, 7)]
+                                g.track <- subset(input.df, var.base == "G")[, c(1, 2, 2, 7)]
+                                t.track <- subset(input.df, var.base == "T")[, c(1, 2, 2, 7)]
+                                #format to match bedGraph format
+                                a.track[, 2] <- a.track[, 2] - 1
+                                c.track[, 2] <- c.track[, 2] - 1
+                                g.track[, 2] <- g.track[, 2] - 1
+                                t.track[, 2] <- t.track[, 2] - 1
+                                #write bdg files
+                                write.table(a.track, file=file.path(store.tracks, "track_A_sasq_insilico_mutation_RP.bdg"), quote=F, sep="\t", col.names=F, row.names=F)
+                                write.table(c.track, file=file.path(store.tracks, "track_C_sasq_insilico_mutation_RP.bdg"), quote=F, sep="\t", col.names=F, row.names=F)
+                                write.table(g.track, file=file.path(store.tracks, "track_G_sasq_insilico_mutation_RP.bdg"), quote=F, sep="\t", col.names=F, row.names=F)
+                                write.table(t.track, file=file.path(store.tracks, "track_T_sasq_insilico_mutation_RP.bdg"), quote=F, sep="\t", col.names=F, row.names=F)
+                                #convert to bw files
+                                system(paste0(bedgraph.to.bigwig.path, " ",file.path(store.tracks, "track_A_sasq_insilico_mutation_RP.bdg"), " ", path.chr.sizes, " ",  file.path(store.tracks, "track_A_sasq_insilico_mutation_RP.bw")))
+                                system(paste0(bedgraph.to.bigwig.path, " ",file.path(store.tracks, "track_C_sasq_insilico_mutation_RP.bdg"), " ", path.chr.sizes, " ",  file.path(store.tracks, "track_C_sasq_insilico_mutation_RP.bw")))
+                                system(paste0(bedgraph.to.bigwig.path, " ",file.path(store.tracks, "track_G_sasq_insilico_mutation_RP.bdg"), " ", path.chr.sizes, " ",  file.path(store.tracks, "track_G_sasq_insilico_mutation_RP.bw")))
+                                system(paste0(bedgraph.to.bigwig.path, " ",file.path(store.tracks, "track_T_sasq_insilico_mutation_RP.bdg"), " ", path.chr.sizes, " ",  file.path(store.tracks, "track_T_sasq_insilico_mutation_RP.bw")))
+                                #remove bedgraph files
+                                system(paste0("rm ", file.path(store.tracks, "track_A_sasq_insilico_mutation_RP.bdg")))
+                                system(paste0("rm ", file.path(store.tracks, "track_C_sasq_insilico_mutation_RP.bdg")))
+                                system(paste0("rm ", file.path(store.tracks, "track_G_sasq_insilico_mutation_RP.bdg")))
+                                system(paste0("rm ", file.path(store.tracks, "track_T_sasq_insilico_mutation_RP.bdg")))
+                                # make softlinks to tracks in hub folder
+                                if(make.softlinks == TRUE){
+                                  system(paste0("ln -s ", store.tracks, "/*.bw" , " ", store.hub))
+                                }
+                                
+                                # === populate HUB dir with config files === #
+                                
+                                #genomes.txt
+                                fileConn <- file(paste0(store.hub, "/genomes.txt"))
+                                writeLines(c(
+                                  paste0("genome ", genome.build), 
+                                  "trackDb tracks.txt"
+                                ),
+                                con = fileConn
+                                )
+                                close(fileConn)
+                                
+                                #hub.txt
+                                fileConn <- file(paste0(store.hub, "/hub.txt"))
+                                writeLines(c(
+                                  paste0("hub ",  id.tag),
+                                  paste0("shortLabel ", short.label),
+                                  paste0("longLabel ", long.label),
+                                  "genomesFile genomes.txt",
+                                  paste0("email ", set.email)
+                                ),
+                                con = fileConn
+                                )
+                                close(fileConn)
+                                
+                                # set up tracks.txt trackDB
+                                fileConn <- file(paste0(store.hub, "/tracks.txt"))
+                                writeLines(c(
+                                  "track Damage",
+                                  "container multiWig",
+                                  "shortLabel Damage",
+                                  "longLabel Damage per variant A=green, T=blue C=orange G=red",
+                                  "type bigWig",
+                                  "visibility full",
+                                  "aggregate solidOverlay",
+                                  "showSubtrackColorOnUi on",
+                                  "windowingFunction maximum",
+                                  "configurable on",
+                                  "#autoScale on",
+                                  "#alwaysZero on",
+                                  "dragAndDrop subtracks",
+                                  "graphTypeDefault points",
+                                  "maxHeightPixels 400:100:20",
+                                  "viewLimits 0:4",
+                                  "yLineOnOff on",
+                                  "",
+                                  "track variantA",
+                                  "parent Damage",
+                                  "bigDataUrl track_A_sasq_insilico_mutation_RP.bw",
+                                  "shortLabel A",
+                                  "longLabel A",
+                                  "type bigWig",
+                                  "color 77,175,74",
+                                  "",
+                                  "track variantT",
+                                  "parent Damage",
+                                  "bigDataUrl track_T_sasq_insilico_mutation_RP.bw",
+                                  "shortLabel T",
+                                  "longLabel T",
+                                  "type bigWig",
+                                  "color 228,26,28",
+                                  "",
+                                  "track variantC",
+                                  "parent Damage",
+                                  "bigDataUrl track_C_sasq_insilico_mutation_RP.bw",
+                                  "shortLabel C",
+                                  "longLabel C",
+                                  "type bigWig",
+                                  "color 55,126,184",
+                                  "",
+                                  "track variantG",
+                                  "parent Damage",
+                                  "bigDataUrl track_G_sasq_insilico_mutation_RP.bw",
+                                  "shortLabel G",
+                                  "longLabel G",
+                                  "type bigWig",
+                                  "color 152,78,163"
+                                ),
+                                con = fileConn
+                                )
+                                close(fileConn)
+                                
+                                # === set reading and executing access and finish === #
+                                system(paste0("chmod -R 755 ", store.hub, " ", store.tracks))
+                                
+                                # === return === #
+                                return(store.hub)
+                              
 }

@@ -25,7 +25,7 @@ smooth <- TRUE
 ### START ###
 
 ### ===== TEST R BASIC FUNCTIONS ===== ###
-
+kmer <- "CACGTG"
 #get the footprint
 fp <- GetFootprint(kmer=kmer, tissue=tissue, data.dir=data.dir, frag.type=frag.type, smooth=F)
 
@@ -56,7 +56,8 @@ p <- PlotOverlap(
   fp2$count,
   ymode="separate", 
   xlim=c(-80,80), 
-  ylim=c(0.0020, 0.0100)
+  ylim=c(0.0020, 0.0100),
+  plot.shoulders=FALSE
   )
 p
 
@@ -89,7 +90,7 @@ ggsave(p, filename=paste0("/home/ron/Dokumente/phd_application/interviews/presen
 #wrapper for overlap from kmers only
 p <- PlotOverlapKmers(
   kmer1="CACGTG", kmer2="CACGTT", tissue1=tissue, tissue2=tissue, data.dir, frag.type="DNase", 
-  smooth=F, ylim=c(0,0.01), xlim=c(-75,75)
+  smooth=T, ylim=c(0,0.01), xlim=c(-75,75), plot.shoulders = TRUE
   )
 p
 
@@ -109,7 +110,7 @@ tdf <- data.frame(
         )
 
 bcomp <- RefVarBatch(ref.var.df=tdf, kl=7, damage.mode="exhaustive", 
-                        tissue, data.dir, vocab.flag=TRUE, vocab.file=vocab.file, frag.type=frag.type)
+                        tissue, data.dir, vocab.flag=TRUE, frag.type=frag.type)
 
 
 #jaspar batch
