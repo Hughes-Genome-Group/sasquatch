@@ -2,51 +2,68 @@ library(ggplot2)
 
 source("/home/ron/fusessh/Sasquatch_offline/Sasquatch/R_utility/functions_sasq_r_utility.R")
 
+### === Set Some Parameters ===============================================================
+
 data.dir <- "/home/ron/fusessh/database_assembly/idx_correct_assembly/human/DNase/"
+
+# only for background plots
 background.dir <- "/home/ron/fusessh/database_assembly/idx_correct_assembly/background/"
 background.tissue <- "hg18_human_JH60"
-  
+
+# output directory for tables and plots  
 out.dir <- "/home/ron/Daten/WIMM/Sasquatch_working/"
 
-
-#TODO(rschwess): Include example of how to retrieve single strand profiles
-
-### === Set Some Parameters === ###
-kmer <- "AGATAA"
-
+# select tissue (e.g. "list.files(data.dir)")
 tissue <- "human_erythroid_hg18"
 
+# select fragmentation type
 frag.type <- "DNase"
 
-smooth <- TRUE
+### ===== TEST R BASIC FUNCTIONS ==================================================================
 
-# vocab.file <- paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt")
+# single k-mers analysis  ---------------------------------------------------------------------
 
-### START ###
+# select a k-mer of interest
+kmer <- "CGCATGC"
 
-### ===== TEST R BASIC FUNCTIONS ===== ###
-kmer <- "CACGTG"
-#get the footprint
-fp <- GetFootprint(kmer=kmer, tissue=tissue, data.dir=data.dir, frag.type=frag.type, smooth=F)
+# get the footprint 
+fp <- GetFootprint(kmer=kmer, tissue=tissue, data.dir=data.dir, frag.type=frag.type, smooth=TRUE)
+#retruns list object with $profile and $count
 
-#get shoulder list (use smoothed profile or smooth within call)
+
+# estimate the shoulders from the profile (use smoothed profile or smooth within call!)
 sh <- SobelBorders(fp$profile, kl=nchar(kmer))
-# sh <- SobelBorders(SmoothProfile(fp$profile, 5), kl=nchar(kmer))
+# returns list object: 
+#   $us and $ds shoulder positions upstream and downstream respectively
+#   $range.us $range.ds range(size) of the respective shoulder; 
+#   $flag TRUE/FALSE indicating if shoulders could be estimated 
 
-#make single profile plot
-p <- PlotSingle(profile=fp$profile, kl=nchar(kmer), plot.shoulders=TRUE, shoulders=sh, ylim=c(0,0.01))
-p
 
-#make pruned profile plot
-p <- PlotSingle(profile=fp$profile, kl=nchar(kmer), plot.shoulders=F, shoulders=sh, ylim=c(0,0.01), xlim=c(-50,50))
-p
+# make single, merged profile plot 
+p <- PlotSingle(profile=fp$profile, 
+                kl=nchar(kmer), 
+                plot.shoulders=TRUE, 
+                shoulders = sh, 
+                ylim=c(0,0.0123))
+plot(p)
 
-#plot overlap
-kmer1 <- "WGATAA"
+# further example: make a pruned profile plot with no shoulders
+p <- PlotSingle(profile=fp$profile, 
+                kl=nchar(kmer), 
+                plot.shoulders=FALSE, 
+                ylim=c(0,0.01), 
+                xlim=c(-50,50))
+plot(p)
+
+# Get overlap of profiles ----------------------------------------------------------------------
+
+kmer1 <- "WGATAA" #note FASTA ambiguous code is supported
 kmer2 <- "WGATTA"
+
 fp1 <- GetFootprint(kmer=kmer1, tissue=tissue, data.dir=data.dir, frag.type=frag.type, smooth=T)
 fp2 <- GetFootprint(kmer=kmer2, tissue=tissue, data.dir=data.dir, frag.type=frag.type, smooth=T)
 
+# make an overlap plot
 p <- PlotOverlap(
   fp1$profile, 
   fp2$profile, 
@@ -59,81 +76,99 @@ p <- PlotOverlap(
   ylim=c(0.0020, 0.0100),
   plot.shoulders=FALSE
   )
+
 p
 
-
-
-#disect a longer sequence
+# dissect a longer sequence  ----------------------------------------------------------------------
 seq <- "GGATATGATAGATACCT"
 
-dl <- DissectSequence(seq, 7, list=TRUE)
+# helper function to dissect sequence into list of 1 bp sliding k-mers
+dl <- DissectSequence(seq, kl=7, list=FALSE)
+# returns: list (list=TRUE) or vector (list = FALSE)
+# use with lapply or sapply how you like
 
+### ===== TEST R WRAPPER FUNCTIONS =================================================================
 
-### ===== TEST R WRAPPER FUNCTIONS ===== ###
+# library(RColorBrewer)
+# color.store <- brewer.pal(3,"Set1")
 
-library(RColorBrewer)
-color.store <- brewer.pal(3,"Set1")
+# Wrapper to get SFR from k-mer and tissues --> returns single SFR value --------------------------
+sfr <- GetSFR(kmer="CACGTG", 
+              tissue="human_erythroid_hg18", 
+              data.dir=data.dir, 
+              vocab.flag=TRUE, 
+              frag.type="DNase")
 
-#wrapper to get SFR
-sfr <- GetSFR(kmer="CACGTG", tissue="human_erythroid_hg18", data.dir=data.dir, vocab.flag=T, frag.type="DNase")
-
-kmer = "AGATCA"
-
-#single plot wrapper
+# Wrapper for single plot
 p <- PlotSingleKmer(kmer=kmer, tissue=tissue, data.dir=data.dir, frag.type=frag.type, 
-                    smooth=TRUE, plot.shoulders=F, ylim=c(0,0.01), xlim=c(-70,70),
+                    smooth=TRUE, plot.shoulders=FALSE, ylim=c(0,0.01), xlim=c(-70,70),
                     color="red")
 p
 
-ggsave(p, filename=paste0("/home/ron/Dokumente/phd_application/interviews/presentation/figures/single_profile_", kmer, "_humane_erythroid.svg"), width=10, height=10/2.5)
+# Example to save a plot --------------------------------------------------------------------------
+ggsave(p, filename=file.path(out.dir,
+       paste0("single_profile_", kmer, "_humane_erythroid.svg")), 
+       width=10, height=10/2.5)
 
-#wrapper for overlap from kmers only
+# Wrapper for overlap plots from k-mers -----------------------------------------------------------
 p <- PlotOverlapKmers(
-  kmer1="CACGTG", kmer2="CACGTT", tissue1=tissue, tissue2=tissue, data.dir, frag.type="DNase", 
-  smooth=T, ylim=c(0,0.01), xlim=c(-75,75), plot.shoulders = TRUE
+  kmer1="CACGTG", kmer2="CACGTT", 
+  tissue1=tissue, tissue2=tissue, 
+  data.dir=data.dir, frag.type="DNase", 
+  smooth=TRUE, plot.shoulders = TRUE,
+  ylim=c(0,0.01), xlim=c(-75,75)
   )
 p
 
-#wrapper to query longer sequence
-dl <- QueryLongSequence(sequence=seq, kl=7, tissue=tissue, data.dir=data.dir, 
-                        vocab.flag=TRUE, vocab.file=vocab.file, frag.type=frag.type, 
-                        plots=TRUE, smooth=smooth, plot.shoulders=TRUE, ylim=c(0,0.01), xlim=c(-125,125)
+# Wrapper to query longer sequence ----------------------------------------------------------------
+dl <- QueryLongSequence(sequence=seq, 
+                        kl=7, 
+                        tissue=tissue, 
+                        data.dir=data.dir, 
+                        vocab.flag=TRUE, 
+                        frag.type=frag.type, 
+                        plots=TRUE, 
+                        smooth=TRUE, 
+                        plot.shoulders=TRUE, 
+                        ylim=c(0,0.01), 
+                        xlim=c(-125,125)
                         )
 
-#wrapper for Ref-Var Batch query
-
-#make example dataframe
+# Wrapper for Ref-Var Batch query -----------------------------------------------------------------
+# make example dataframe
 tdf <- data.frame(
         id=c("1", "2", "3"), 
         ref=c("ATAGATAATCGCT", "ATAGATAATCGCT", "ATATATTCTCGCT"),
         var=c("ATAGATCATCGCT", "ATAGATTATCGCT", "ATAGATGATCGCT")
         )
 
-bcomp <- RefVarBatch(ref.var.df=tdf, kl=7, damage.mode="exhaustive", 
-                        tissue, data.dir, vocab.flag=TRUE, frag.type=frag.type)
+bcomp <- RefVarBatch(ref.var.df=tdf, 
+                     kl=7, 
+                     damage.mode="exhaustive", 
+                     tissue=tissue, 
+                     data.dir=data.dir, 
+                     vocab.flag=TRUE, 
+                     frag.type=frag.type)
 
+# Meet old JASPAR -----------------------------------------------------------------------------------
 
-#jaspar batch
 #load Rdata object storing the jaspar 2014 pwms (all versions)
 library(Biostrings)
 library(TFBSTools)
 
 load("/home/ron/fusessh/database_assembly/jaspar/jaspar2014.human.9606.all.versions")
 
-#single Jaspar query
+# Single JASPAR query
 QueryJaspar(sequence="AGATAATAG", threshold=0.8, pwm.data=pwm.in)
 
-#warpper for batch quary a batch Ref Var Dataframe
-#test with bcomp
+# Wrapper for batch quary a batch Ref Var Dataframe
 jbcomp <- QueryJasparBatch(df=bcomp, damage.threshold=0.3, match.threshold=0.8, pwm.data=human.pwm)
   
-#wrapper to compare two sequences
-sequence1 <- "CAGTTTCATGAGG"
-sequence2 <- "CAGTTTTATGAGG"
 
+# Wrapper to compare two sequences -------------------------------------------------------------------
 comp <- CompareSequences(
-  sequence1=sequence1, 
-  sequence2=sequence2, 
+  sequence1="CAGTTTCATGAGG", 
+  sequence2="CAGTTTTATGAGG", 
   kl=7,
   data.dir=data.dir,
   damage.mode="exhaustive",
@@ -143,31 +178,26 @@ comp <- CompareSequences(
   plots="highest"
   )
 
-
-#wrapper to get strand specific footprint profiles for tisue or background
+# Wrapper to get strand specific footprint profiles for tissue or background -------------------------
 sfp <- GetFootprintStrand(kmer="WGATAA", tissue=tissue, data.dir=data.dir, frag.type=frag.type, smooth=TRUE, smooth.bandwidth=5, background.flag=FALSE)
 
 bfp <- GetFootprintStrand(kmer="WGATAA", tissue=background.tissue, data.dir=background.dir, frag.type=frag.type, smooth=TRUE, smooth.bandwidth=5, background.flag=TRUE)
 
-
+# plot single strands
 splots <- PlotSingleStrands(kmer="WGATAA", tissue = background.tissue, data.dir = background.dir, frag.type = frag.type,
                             smooth=TRUE, background.flag = TRUE)
 
+# Insilico mutations ---------------------------------------------------------------------------------
 
+# will split the sequence into windows matching to the selected k-mer length kl
+# e.g. for kl=7 it wil split the sequence into 1 bp sliding windows of 13 bp length
 
-##############################################################
+# !!!Note!!! The first base position where the damage is predcited is the ("kl"th) position
+# in the sequence. E.g. for kl=7 the position value should refer to the 7th base in the sequence. 
+# Vice Versa the sequence input should start kl-1 bp before your base position of interest and the 
+# last kl-1 bp positions will not be analysed explicitly
 
-#insilico mutations
-
-#get mutation data frame
-d <- GetPossibleMutations(sequence=c("AGGGATACGTAGACGGTGTAAACCCGTGCATAGTAGA"), kl=7, chr="chrX", position=1345990)
-
-d$damage <- apply(d, 1, function(x) CompareSequences(sequence1=x[5], sequence2=x[6], kl=7, damage.mode="exhaustive", 
-                 tissue=tissue, data.dir=data.dir, vocab.flag=TRUE, 
-                 vocab.file=vocab.file, frag.type=frag.type, plots=FALSE)$summary$total.damage )
-
-#wrapper for mutating everything
-d1 <- InSilicoMutation(  sequence="AGGGATACGTAGACGGGTGT", 
+df.insilico <- InSilicoMutation(sequence="GTGCCCGCATGTGCTTATTTCTGCAAAAATAAACCATGGCAGG", 
                                 kl=7, 
                                 chr="chr1",
                                 position=13330000,
@@ -176,33 +206,63 @@ d1 <- InSilicoMutation(  sequence="AGGGATACGTAGACGGGTGT",
                                 tissue=tissue,
                                 data.dir=data.dir,
                                 vocab.flag=TRUE,
-                                frag.type=frag.type
+                                frag.type=frag.type,
+                                progress.bar=TRUE
                                 )
+head(df.insilico)
 
-rp <- RainbowPlot(d1)
+# Note: progress.bar = TRUE will require the package "pbapply" which visualized the progress
+# install packagew with install.packages("pbapply") or set to FALSE
+
+# Make a rainbowplot from the processed in silico mutation data.frame
+rp <- RainbowPlot(df.insilico)
 rp
 
-
+# Full example for in silico mutation data frame and rainbowplot --------------
 library(ggplot2)
 library(RColorBrewer)
 library(BSgenome)
 library(BSgenome.Hsapiens.UCSC.hg18)
 genome <- BSgenome.Hsapiens.UCSC.hg18
 
-seq <- as.character(getSeq(genome, "chr16", start=145846, end=145949))
+# To get the next 30 bases starting from start.pos
+chr <- "chr16"
+start.pos <- 145852
+end.pos <- start.pos + 30
 
-r2.df <- InSilicoMutation(sequence=seq, 
+# Get sequence
+seq <- as.character(getSeq(genome, "chr16", start=start.pos-6, end=end.pos+6))
+
+df.insilico <- InSilicoMutation(sequence=seq, 
                          kl=7, 
                          chr="chr16",
-                         position=145852,
+                         position=start.pos,
                          report="all",
                          damage.mode="exhaustive",
                          tissue="human_erythroid_hg18",
                          data.dir=data.dir,
                          vocab.flag=TRUE,
-                         frag.type=frag.type
-)
+                         frag.type=frag.type,
+                         progress.bar = TRUE
+                         )
 
-rp <- RainbowPlot(r2.df, ylim=c(-4,4)) + geom_vline(xintercept=145912, linetype="dashed")
+rp <- RainbowPlot(df.insilico, ylim=c(-4,4))
 rp
 
+# Manual alternative --------------------------------------------------------------------------------
+
+# Get mutation data frame
+d <- GetPossibleMutations(sequence=c("AGGGATACGTAGACGGTGTAA"), kl=7, chr="chrX", position=1345990)
+
+# calculate damage using apply and the more basic functions
+d$damage <- apply(d, 1, function(x) CompareSequences(sequence1=x[5], 
+                                                     sequence2=x[6], 
+                                                     kl=7, 
+                                                     damage.mode="exhaustive", 
+                                                     tissue=tissue, 
+                                                     data.dir=data.dir, 
+                                                     vocab.flag=TRUE, 
+                                                     frag.type=frag.type, 
+                                                     plots=FALSE
+                                                     )$summary$total.damage
+                  )

@@ -1,5 +1,7 @@
 #############################################
 # Functions & Theme for Sasquatch R utility #
+# Author: Ron Schwessinger                  #
+# Contact: ron.schwessinger@ndcls.ox.ac.uk  #
 #############################################
 
 library(ggplot2)
@@ -142,14 +144,14 @@ Sobeln <- function(profile){
 
 
 ### BASIC FUNCTIONS -----------------------------------------------------------
-DissectSequence <- function(sequence, kl, list=TRUE){
+DissectSequence <- function(sequence, kl, list=FALSE){
   # split longer Sequence into list of kmers
   #
   # Args:
   #   kmer: input kmer
   #   kl: length of kmer to split the sequence into 
   #   (currently 5, 6 or 7 is supported for subsequent functions)
-  #   list: TRUE/FALSE idnicate if to return a list
+  #   list: TRUE/FALSE indicate if to return a list
   #
   # Returns:
   #   splitted list of k-mers of length kl 
@@ -581,7 +583,7 @@ PlotOverlap <- function(profile1,
     Source = c(kmer1, kmer2),
     x=rep((xlim[2]-(xlim[2]-xlim[1])/7), 2), 
     y=rep((ylim[2]-(ylim[2]-ylim[1])/12), 2),
-    label=c(paste0(kmer1," #",count1), paste0(kmer2," #",count2))
+    label=c(paste0(kmer1, " #", count1), paste0(kmer2," #", count2))
   )
   
   #MAKE THE PLOT
@@ -664,8 +666,8 @@ PlotOverlap <- function(profile1,
 
       #add shoulders to plot
       p <- p + 
-        geom_vline(data=shoulder.frame, aes(xintercept=inner), colour="darkgreen", size=0.75) + 
-        geom_vline(data=shoulder.frame, aes(xintercept=outer), linetype="longdash", colour="darkgreen", size=0.75) + 
+        geom_vline(data=shoulder.frame, aes(xintercept=inner), colour=brewer.pal(3,"Set1")[3], linetype="dashed", size=1) + 
+        geom_vline(data=shoulder.frame, aes(xintercept=outer), linetype="dashed", colour=brewer.pal(3,"Set1")[3], size=1) + 
         facet_grid(Source ~ .)
 
     }
@@ -915,6 +917,29 @@ GetSFR <- function(kmer,
   } 
   
     }
+
+GetCount <- function(kmer, 
+                   tissue, 
+                   data.dir="", 
+                   frag.type=""){
+  # Wrapper function to get the count of the k-mer in DHS in the tissue of interest
+  #
+  # Args:
+  #   kmer: k-mer to query
+  #   tissue: input tissue to query the profile from
+  #   data.dir: repository storing processed kmer files per tissue
+  #   frag.type: fragmentation type ("DNase" or "ATAC")
+  #
+  # Returns:
+  #   Count
+
+    fp <- GetFootprint(kmer=kmer, tissue=tissue, data.dir=data.dir, frag.type=frag.type, 
+                       smooth=FALSE)
+    return(fp$count)
+  
+}
+
+
 
 QueryLongSequence <- function(sequence, 
                               kl, 
@@ -1432,7 +1457,7 @@ GetPossibleMutations <- function(sequence,
   #   sequence: input sequence
   #   kl: k-mer lengh to split the sequence into k-mers
   #   chr: chromosome
-  #   position: Start base position where to predict the 
+  #   position: Start base position where to predict the damage
   #
   # Returns:
   #   Six columns dataframe c(chr, position, ref.base, var.base, ref.sequence, var.sequence).
@@ -1500,7 +1525,8 @@ InSilicoMutation <- function( sequence,
                               data.dir=data.dir,
                               vocab.flag=TRUE,
                               vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"),
-                              frag.type=frag.type){
+                              frag.type=frag.type,
+                              progress.bar=FALSE){
 # Wrapper for max/abs damage insilico mutation
 # Take a sequence, split into dataframe of kmerlength matching window and 
 # compare reference an possible mutation sequences
@@ -1521,79 +1547,100 @@ InSilicoMutation <- function( sequence,
 #   vocab.flag: indicating if a preprocessed vocabulary file is present and to be used [TRUE/FALSE]
 #   vocab.file: path to preprocessed vocabulary file
 #   frag.type: fragmentation type ("DNase" or "ATAC")
+#   progress.bar: flag if to use the pbapply packge for showing a progress bar
 #
 # Returns:
 #   Seven columns dataframe c(chr, position, ref.base, var.base, ref.sequence, var.sequence, damage).  
 
-require(pbapply)  
+ 
 
 # make split sequence dataframe for query
 df <- GetPossibleMutations(sequence=sequence, kl=7, chr=chr, position=position)
 
 print(paste0("Processing ",nrow(df)," sequence windows:"))
 
-#inslico mutation for set mode
-df$damage <- pbapply(df, 1, function(x) CompareSequences(
-sequence1=x[5], 
-sequence2=x[6], 
-kl=kl, 
-damage.mode=damage.mode,
-tissue=tissue, 
-data.dir=data.dir,
-vocab.flag=vocab.flag,
-vocab.file=vocab.file,
-frag.type=frag.type,
-plots=FALSE
-)$summary$total.damage
-)
+#inslico mutation for set mode with progress bar
+if(progress.bar){
+  
+  require(pbapply)
+  
+  df$damage <- pbapply(df, 1, function(x) CompareSequences(
+    sequence1=x[5], 
+    sequence2=x[6], 
+    kl=kl, 
+    damage.mode=damage.mode,
+    tissue=tissue, 
+    data.dir=data.dir,
+    vocab.flag=vocab.flag,
+    vocab.file=vocab.file,
+    frag.type=frag.type,
+    plots=FALSE
+  )$summary$total.damage
+  )
+  
+}else{  #without progress bar
+  
+  df$damage <- apply(df, 1, function(x) CompareSequences(
+    sequence1=x[5], 
+    sequence2=x[6], 
+    kl=kl, 
+    damage.mode=damage.mode,
+    tissue=tissue, 
+    data.dir=data.dir,
+    vocab.flag=vocab.flag,
+    vocab.file=vocab.file,
+    frag.type=frag.type,
+    plots=FALSE
+  )$summary$total.damage
+  )
+  
+}
 
 #filter dataframe according to report mode
 if(report == "all"){
 
-return(df)
+  return(df)
 
 }else if(report == "max"){
 
-dftemp <- df[0,]
+  dftemp <- df[0,]
 
 #select max of 3 matching rows
 for(i in df$pos[seq(from=3, to=nrow(df), by=3)]){
 
-temp <- df[df$pos %in% i, ]
+  temp <- df[df$pos %in% i, ]
+  
+  temp <- temp[which(temp$damage == max(temp$damage)), ]
 
-temp <- temp[which(temp$damage == max(temp$damage)), ]
+    if(dim(temp)[1] > 1){  #sample randomly if equal damages
+    temp <- temp[sample(c(1:dim(temp)[1]),1), ]
+  }
+    dftemp <- rbind(dftemp, temp)
+  }
 
-if(dim(temp)[1] > 1){  #sample randomly if equal damages
-temp <- temp[sample(c(1:dim(temp)[1]),1), ]
-}
-
-dftemp <- rbind(dftemp, temp)
-
-}
-
-return(dftemp)
+  return(dftemp)
 
 }else if(report == "maxabs"){
 
-dftemp <- df[0,]
+  dftemp <- df[0,]
 
-#select max of absolute of 3 matching rows
-for(i in df$pos[seq(from=3, to=nrow(df), by=3)]){
-
-temp <- df[df$pos %in% i, ]
-
-temp <- temp[which(temp$damage == max(abs(temp$damage))), ]
-
-if(dim(temp)[1] > 1){  #sample randomly if equal damages
-temp <- temp[sample(c(1:dim(temp)[1]),1), ]
-}
-
-dftemp <- rbind(dftemp, temp)
-
-}
-
-return(dftemp)
-
+  #select max of absolute of 3 matching rows
+  for(i in df$pos[seq(from=3, to=nrow(df), by=3)]){
+  
+  temp <- df[df$pos %in% i, ]
+  
+  temp <- temp[which(temp$damage == max(abs(temp$damage))), ]
+  
+  if(dim(temp)[1] > 1){  #sample randomly if equal damages
+   temp <- temp[sample(c(1:dim(temp)[1]),1), ]
+  }
+  
+  dftemp <- rbind(dftemp, temp)
+  
+  }
+  
+  return(dftemp)
+  
 }else{
 
 warning("Select a mode for reporting! Will report default (all possible substitutions)!")
@@ -1618,6 +1665,12 @@ RainbowPlot <- function(df, ylim=c(-2,2)){
   
   
   #check data frame
+  if(ncol(df) != 7){
+    warnings("Dataframe does not show 8 columns as expected! \n
+             Please check th input, has InsilicoMutation ran properly?\n
+             rturning NA")
+    return(NA_real_)
+  }
   
   #make plot
   p <- ggplot(df, aes(x=pos, y=damage, col=var.base)) + 
