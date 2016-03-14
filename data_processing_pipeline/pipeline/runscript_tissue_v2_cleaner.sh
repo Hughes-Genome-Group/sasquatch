@@ -14,6 +14,6 @@ rm -f ${REGIONS_FILE}
 rm -f ${OUTPUT_DIR}/*.bam
 rm -f ${OUTPUT_DIR}/*.bam.bai
 
-#cd ${OUTPUT_DIR}
-#rm -Rf ${OUTPUT_DIR}/footprints
+cd ${OUTPUT_DIR}
+rm -Rf ${OUTPUT_DIR}/footprints
 
