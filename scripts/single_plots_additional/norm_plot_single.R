@@ -1,0 +1,49 @@
+suppressMessages(library(ggplot2))
+
+#get Arguments
+args <- commandArgs(trailingOnly = TRUE)
+
+source(args[9])	#get common functions from file
+
+kmer <- args[1]	#kmer of interest
+
+profile.plus <- as.numeric( strsplit(args[2], ":")[[1]] )	#data plus strand profile #split the combined string at :s
+
+profile.minus <- as.numeric( strsplit(args[3], ":")[[1]] )	#data minus strand profile #split the combined string at :s
+
+profile.naked.plus <- as.numeric( strsplit(args[4], ":")[[1]] )	#background plus strand profile #split the combined string at :s
+
+profile.naked.minus <- as.numeric( strsplit(args[5], ":")[[1]] )	#background minus strand profile #split the combined string
+
+
+skip.flag <- args[6]
+
+extension <- as.numeric(args[7])
+
+plot.dir <- args[8]
+
+# START #
+kl=nchar(kmer)
+
+#make plots in lists
+profile.norm.list <- plot.profile.normalized(kmer, profile.plus, profile.minus, profile.naked.plus, profile.naked.minus, skip.flag, extension)
+
+#plot is stored in theplot object #my current solution is to plot it to the desired dir if Flag TRUE /not sure hwo you want to handle plots
+#plus
+png.file=paste0(plot.dir,'/norm_plot_',kmer,'_plus.png')
+png(png.file, width=900, height=300)
+
+		print( profile.norm.list$pp )	#real
+
+suppress.output <- dev.off()
+
+#minus
+png.file=paste0(plot.dir,'/norm_plot_',kmer,'_minus.png')
+png(png.file, width=900, height=300)
+
+		print( profile.norm.list$pm )	#real
+
+suppress.output <- dev.off()
+
+
+
