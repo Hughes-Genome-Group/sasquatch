@@ -4,10 +4,11 @@
 # Contact: ron.schwessinger@ndcls.ox.ac.uk  #
 #############################################
 
+### SOURCE Requirements ----------------------------------------------------------------------
 library(ggplot2)
-# library(gridExtra)
 library(grid)
 library(RColorBrewer)
+library(methods)
 
 ### THEMES ----------------------------------------------------------------------
 #define theme for plotting
@@ -15,6 +16,13 @@ science_theme <- theme(
   panel.grid.major = element_line(size = 0.5, color = "grey"),
   axis.line = element_line(size = 0.7, color = "black"),
   text = element_text(size = 14, family="Arial")
+)
+
+web_theme <- theme(
+  panel.grid.major = element_line(size = 0.5, color = "grey"),
+  axis.line = element_line(size = 0.7, color = "black"),
+  text = element_text(size = 14, family="Arial"),
+  panel.grid = element_line()
 )
 
 ### HELPER FUNCTIONS -----------------------------------------------------------
@@ -181,15 +189,15 @@ DissectSequence <- function(sequence, kl, list=FALSE){
 }
 
 GrepProfile <- function(kmer, infile){
-  # grep 250 bp sourrounding kmer strand specific profile and normalize for 
+  # grep 250 bp surrounding kmer strand specific profile and normalize for 
   # total cuts in 250 bp window
   #
   # Args:
   #   kmer: input kmer 
-  #   infile: input processed strandspecific kmer file
+  #   infile: input processed strand-specific kmer file
   #
   # Returns:
-  #   normalized profile (relative cut probability) and kmer occurence count
+  #   normalized profile (relative cut frequency) and kmer occurence count
   
   #decode  ambivalent fasta code char into kmer list
   kmer.list <- DecodeKmer(kmer)  
@@ -199,15 +207,15 @@ GrepProfile <- function(kmer, infile){
   
   for(km in kmer.list){  #for all entries in the splitted up kmer list
     match <- grep(km, readLines(infile), value=TRUE)  #system grep of kmer flat files
-    split <- strsplit(match, "\t")[[1]]	#split on "\t" and unlist, as flat files are a tab seperated
+    split <- strsplit(match, "\t")[[1]]	#split on "\t" and unlist, as flat files are a tab separated
     count <- count + as.numeric(split[2])	#get second column as the count
     split <- split[-c(1,2)] #remove kmer and count from split
     split <- as.numeric(split) #convert to numeric
     profile <- profile + split[c(26:(length(split)-25))]	#get 250 bp surrounding kmer from 300 bp profile
   }
   
-  #normalize to all recorded cuts in the 250 surrounding region 
-  #--> relative cut probability
+  #normalise to all recorded cuts in the 250 surrounding region 
+  #--> relative cut frequency
   profile <- (profile / sum(profile))
   
   #make list for reporting
@@ -224,23 +232,23 @@ CalcSFR <- function(profile,
   # Calculate Shoulder to Footprint Ratio of a footprint profile
   #
   # Args:
-  #   profile: input profile (should be smoothed)
-  #   us.mid: middle point of upstream shoulder
-  #   ds.mid: middle point of downstream shoulder
-  #   range.us: range of upstream shoulder
-  #   range.ds: range of downstream shoulder
+  #   profile: input cut profile (should be smoothed)
+  #   us.mid: center bp position  of the upstream shoulde, as estimated from SobelBorders()
+  #   ds.mid: center bp position  of the downstream shoulder
+  #   range.us: range in bp of the upstream shoulder
+  #   range.ds: range in bp of the downstream shoulder
   #
   # Returns:
   #   SFR
   
-  #window <- 6
+  #get range to extend from the shoulder positions
   ext.us <- range.us/2
   ext.ds <- range.ds/2
   
-  #get the estimated shoulders 
+  #set the estimated shoulders 
   shoulder <- profile[ c( c((us.mid-ext.us):(us.mid+ext.us)), c((ds.mid-ext.ds):(ds.mid+ext.ds)))]
-  shoulder.cuts <- sum(shoulder)	#get all cuts in the shoulders
-  footprint <- profile[c((us.mid+ext.us+1):(ds.mid-ext.ds-1))]	#get all cuts in the footprint
+  shoulder.cuts <- sum(shoulder)	#get all cuts within the shoulders
+  footprint <- profile[c((us.mid+ext.us+1):(ds.mid-ext.ds-1))]	#get all cuts within the footprint
   footprint.cuts <- sum(footprint)
   
   #Calculate the SFRatio
@@ -402,7 +410,7 @@ PruneProfile <- function(profile, desired.length){
 }
 
 PlotSingle <- function(profile, 
-                       kl=6, 
+                       kl=7, 
                        plot.shoulders=FALSE, 
                        shoulders=FALSE, 
                        ylim=c(0,0.01), 
@@ -469,7 +477,7 @@ PlotSingle <- function(profile,
       geom_vline(xintercept = c(
         (us.border-(us.range/2)), (ds.border+(ds.range/2))
       ), colour="red", linetype = "longdash", size=1) + 
-      labs(x="Relative position [bp]", y="Relative cut probability") + 
+      labs(x="Relative position [bp]", y="Relative cut frequency") + 
       coord_cartesian(ylim=ylim, xlim=xlim) + 
       theme_bw() + science_theme + 
       theme(panel.grid = element_blank(), text = element_text(size=20))
@@ -478,7 +486,7 @@ PlotSingle <- function(profile,
     
     p <- ggplot(df, aes(x=x, y=y)) + geom_line(size=1, color=color) + 
         geom_vline(xintercept = c((0),(kl-1)), linetype = "dashed", size=1) + 
-        labs(x="Relative position [bp]", y="Relative cut probability") + 
+        labs(x="Relative position [bp]", y="Relative cut frequency") + 
         coord_cartesian(ylim=ylim, xlim=xlim) + 
         theme_bw() + science_theme + 
         theme(panel.grid = element_blank(), text = element_text(size=20))
@@ -523,16 +531,18 @@ PlotOverlap <- function(profile1,
   # Returns:
   #   Overlapping profile plot
   
-  #check if kmer have equal length
+  # check if kmers are equal
   if(kmer1 == kmer2){
     warning("kmers are similiar, no overlap plot is created!")
     return("NA")
   }
+  
   #check if kmer have equal length
   if(nchar(kmer1) != nchar(kmer2)){
     warning("kmers do not have equal length!")
     return("NA")
   }
+  
   #check if ymode is set properly
   if((ymode != "merged") & (ymode != "separate")){
     warning("Select ymode (\"merged\" or \"separate\"")
@@ -581,7 +591,7 @@ PlotOverlap <- function(profile1,
   #make dataframe for annotation
   anno.df <- data.frame(
     Source = c(kmer1, kmer2),
-    x=rep((xlim[2]-(xlim[2]-xlim[1])/7), 2), 
+    x=rep((xlim[2]-(xlim[2]-xlim[1])/6), 2), 
     y=rep((ylim[2]-(ylim[2]-ylim[1])/12), 2),
     label=c(paste0(kmer1, " #", count1), paste0(kmer2," #", count2))
   )
@@ -591,11 +601,11 @@ PlotOverlap <- function(profile1,
   if(ymode == "merged"){
     
     #adjust annotation dataframe y values for nonoverlapping labels
-    anno.df$y <- c((ylim[2]-(ylim[2]-ylim[1])/12), (ylim[2]-(ylim[2]-ylim[1])/8))
+    anno.df$y <- c((ylim[2]-(ylim[2]-ylim[1])/12), (ylim[2]-(ylim[2]-ylim[1])/5))
     
     p <- ggplot( df, aes(x=x, y=y, colour=Source)) + geom_line(size=1) + 
       geom_vline(xintercept = c((0),(kl-1)), linetype = "dashed", size=1) + 
-      labs(x="Relative position [bp]", y="Relative cut probability") + 
+      labs(x="Relative position [bp]", y="Relative cut frequency") + 
       coord_cartesian(ylim=ylim, xlim=xlim) + 
       scale_colour_manual(values=rev(brewer.pal(3,"Set1")[c(1,2)])) +
       #add annotation
@@ -603,9 +613,9 @@ PlotOverlap <- function(profile1,
       theme_bw() + science_theme + 
       theme(
         legend.position = "none",
-        panel.grid = element_blank(), 
-        axis.title.y = element_text(size=16),
-        axis.title.x = element_text(size=16)
+        panel.grid = element_blank()
+        # axis.title.y = element_text(size=16),
+        # axis.title.x = element_text(size=16)
       )
       
   #mode two separate y-axis above each other  
@@ -616,7 +626,7 @@ PlotOverlap <- function(profile1,
       geom_line(size=1) + 
       scale_color_manual(values=rev(brewer.pal(3,"Set1")[c(1,2)])) +
       facet_grid(Source ~ .) +
-      labs(x="Relative position [bp]", y="Relative cut probability") +
+      labs(x="Relative position [bp]", y="Relative cut frequency") +
       geom_vline(xintercept = c((0),(kl-1)), linetype = "dashed", size=1) + 
       #add annotation
       geom_text(data=anno.df, aes(x=x, y=y, label=label)) +
@@ -625,8 +635,8 @@ PlotOverlap <- function(profile1,
       theme(
         legend.position = "none",
         panel.grid.major.x = element_blank(), 
-        axis.title.y = element_text(size=16),
-        axis.title.x = element_text(size=16),
+#         axis.title.y = element_text(size=16),
+#         axis.title.x = element_text(size=16),
         panel.border = element_blank(),
         panel.margin = unit("1.15", "lines"),
         strip.text.y = element_blank(),  #remove strips from facetting
@@ -685,7 +695,7 @@ QueryJaspar <- function(sequence,
   #
   # Args:
   #   sequence: input sequence
-  #   threshold:percentage relative score thresh over which to report matches (default=0.8)
+  #   threshold: percentage relative score thresh over which to report matches (default=0.8)
   #   pwm.data: a stored pwm. RData object as retrieved and save from JASPAR2014 R package
   #
   # Returns:
@@ -740,7 +750,8 @@ QueryJaspar <- function(sequence,
 # WRAPPER FUNCTIONS -----------------------------------------------------------
 GetFootprint <- function(kmer, 
                          tissue, 
-                         data.dir, 
+                         data.dir,
+                         pnorm.tag,
                          frag.type, 
                          smooth=TRUE, 
                          smooth.bandwidth=5){
@@ -754,6 +765,11 @@ GetFootprint <- function(kmer,
   #   smooth: flag if to smooth the profile (TRUE or FALSE)
   #   smooth.bandwidth: bandwidth to use for normal kernel smoothing 
   #   (default 5 which is fixed for most worklfows)
+  #   pnorm.tag: identifier which background was used for normalisation
+  #     mm9 --> mouse erythroid DNase digest;
+  #     h60 --> human erythroid DNase digest;
+  #     mm9_atac --> mouse erythroid ATAC digest;
+  #     atac --> human erythroid ATAC digest;
   #
   # Returns:
   #   merged, pruned (smoothed) profile and count of the kmer occurence
@@ -762,8 +778,8 @@ GetFootprint <- function(kmer,
   kl=nchar(kmer)
   
   #select flat strand specific files as inputs
-  infile.plus=file.path(data.dir, tissue,"counts", paste0("kmers_", kl, "_count_", tissue, "_pnorm_JH60_plus.txt"))
-  infile.minus=file.path(data.dir, tissue,"counts", paste0("kmers_", kl, "_count_", tissue, "_pnorm_JH60_minus.txt"))
+  infile.plus=file.path(data.dir, tissue,"counts", paste0("kmers_", kl, "_count_", tissue, "_pnorm_", pnorm.tag ,"_plus.txt"))
+  infile.minus=file.path(data.dir, tissue,"counts", paste0("kmers_", kl, "_count_", tissue, "_pnorm_", pnorm.tag ,"_minus.txt"))
   
   #grep strand specific profiles & counts
   l.plus <- GrepProfile(kmer, infile.plus)
@@ -793,9 +809,10 @@ GetFootprint <- function(kmer,
 
 GetFootprintStrand <- function(kmer, 
                                tissue="", 
-                               data.dir="", 
+                               data.dir="",
+                               pnorm.tag="",
                                frag.type, 
-                               smooth, 
+                               smooth=TRUE, 
                                smooth.bandwidth=5, 
                                background.flag=FALSE){
   # Wrapper to retrieve stradnspecific (smoothed) profiles of kmer from tissue or background
@@ -804,6 +821,11 @@ GetFootprintStrand <- function(kmer,
   #   kmer: input kmer 
   #   tissue: input tissue to query the profile from
   #   data.dir: repository storing processed kmer files per tissue
+  #   pnorm.tag: identifier which background was used for normalisation
+  #     mm9 --> mouse erythroid DNase digest;
+  #     h60 --> human erythroid DNase digest;
+  #     mm9_atac --> mouse erythroid ATAC digest;
+  #     atac --> human erythroid ATAC digest;
   #   frag.type: fragmentation type ("DNase" or "ATAC")
   #   smooth: flag if to smooth the profile (TRUE or FALSE)
   #   smooth.bandwidth: bandwidth to use for normal kernel smoothing 
@@ -819,8 +841,8 @@ GetFootprintStrand <- function(kmer,
   #select flat strand specific files as inputs (depending on background flag)
   if(!background.flag){
     
-    infile.plus=file.path(data.dir, tissue,"counts", paste0("kmers_", kl, "_count_", tissue, "_pnorm_JH60_plus.txt"))
-    infile.minus=file.path(data.dir, tissue,"counts", paste0("kmers_", kl, "_count_", tissue, "_pnorm_JH60_minus.txt"))
+    infile.plus=file.path(data.dir, tissue,"counts", paste0("kmers_", kl, "_count_", tissue, "_pnorm_", pnorm.tag ,"_plus.txt"))
+    infile.minus=file.path(data.dir, tissue,"counts", paste0("kmers_", kl, "_count_", tissue, "_pnorm_", pnorm.tag ,"_minus.txt"))
     
   }else if(background.flag){
     
@@ -851,10 +873,11 @@ GetFootprintStrand <- function(kmer,
 
 GetSFR <- function(kmer, 
                    tissue, 
-                   data.dir="", 
+                   data.dir,
+                   pnorm.tag,
                    vocab.flag=FALSE, 
                    vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"), 
-                   frag.type=""){
+                   frag.type){
   # Wrapper function to get the SFR ratio
   # If indicated and available, use the present vocabulary file to directly grep the SFR
   # Else get the average profile, estimate the borders and calculate the SFR
@@ -865,6 +888,11 @@ GetSFR <- function(kmer,
   #   kmer: k-mer to query
   #   tissue: input tissue to query the profile from
   #   data.dir: repository storing processed kmer files per tissue
+  #   pnorm.tag: identifier which background was used for normalisation
+  #     mm9 --> mouse erythroid DNase digest;
+  #     h60 --> human erythroid DNase digest;
+  #     mm9_atac --> mouse erythroid ATAC digest;
+  #     atac --> human erythroid ATAC digest;
   #   vocab.flag: indicating if a preprocessed vocabulary file is present and to be used [TRUE/FALSE]
   #   vocab.file= path to preprocessed vocabulary file
   #   frag.type: fragmentation type ("DNase" or "ATAC")
@@ -891,7 +919,7 @@ GetSFR <- function(kmer,
     #grep kmer line from vocabulary table
     kmer.match <- grep(paste0("^",kmer,"\\s+"), readLines(vocab.file), value=TRUE, perl=TRUE)  #system grep of kmer vocab file
     
-    split <- strsplit(kmer.match, "\t")[[1]]	#split on "\t" and unlist, as flat files are tab seperated
+    split <- strsplit(kmer.match, "\t")[[1]]	#split on "\t" and unlist, as flat files are tab separated
     sfr <- as.numeric(split[2])
     
     return(sfr)
@@ -900,56 +928,66 @@ GetSFR <- function(kmer,
     
     #no vocabfile present --> run retrieving, border estimation and SFR calculation
     
-    fp <- GetFootprint(kmer=kmer, tissue=tissue, data.dir=data.dir, frag.type=frag.type, 
+    fp <- GetFootprint(kmer=kmer, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, 
                        smooth=TRUE) #get smoothed profile and count
     
     sh <- SobelBorders(profile=fp$profile, kl=nchar(kmer)) #estimate optimal shoulder midpoints and ranges
     
     #calculate SFR
-    sfr <- CalcSFR(
-      profile=fp$profile, 
-      us.mid=sh$us, ds.mid=sh$ds,
-      range.us=sh$range.us, range.ds=sh$range.ds
-    )
-    
+    if(sh$flag == TRUE){
+      sfr <- CalcSFR(
+        profile=fp$profile, 
+        us.mid=sh$us, ds.mid=sh$ds,
+        range.us=sh$range.us, range.ds=sh$range.ds
+      )
+    }else{
+      print("Shoulders could not be estimated properly will return SFR 1.0")
+      sfr <- 1.0
+    }
     return(sfr)
     
-  } 
+  }
+}
   
-    }
+      
 
 GetCount <- function(kmer, 
                    tissue, 
-                   data.dir="", 
-                   frag.type=""){
+                   data.dir,
+                   pnorm.tag,
+                   frag.type){
   # Wrapper function to get the count of the k-mer in DHS in the tissue of interest
   #
   # Args:
   #   kmer: k-mer to query
   #   tissue: input tissue to query the profile from
-  #   data.dir: repository storing processed kmer files per tissue
+  #   data.dir: repository storing processed kmer files per tissue,
+  #   pnorm.tag: identifier which background was used for normalisation
+  #     mm9 --> mouse erythroid DNase digest;
+  #     h60 --> human erythroid DNase digest;
+  #     mm9_atac --> mouse erythroid ATAC digest;
+  #     atac --> human erythroid ATAC digest;
   #   frag.type: fragmentation type ("DNase" or "ATAC")
   #
   # Returns:
   #   Count
 
-    fp <- GetFootprint(kmer=kmer, tissue=tissue, data.dir=data.dir, frag.type=frag.type, 
+    fp <- GetFootprint(kmer=kmer, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, 
                        smooth=FALSE)
     return(fp$count)
   
 }
 
-
-
 QueryLongSequence <- function(sequence, 
                               kl, 
                               tissue, 
-                              data.dir="", 
+                              data.dir,
+                              pnorm.tag,
                               vocab.flag=FALSE, 
                               vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"), 
-                              frag.type="", 
+                              frag.type, 
                               plots=FALSE, 
-                              smooth, 
+                              smooth=TRUE, 
                               plot.shoulders=TRUE, 
                               ylim=c(0,0.01), 
                               xlim=c(-125,125)){
@@ -961,6 +999,11 @@ QueryLongSequence <- function(sequence,
   #   kl: length of k-mers to qsplit sequence into
   #   tissue: input tissue to query the profile from
   #   data.dir: repository storing processed kmer files per tissue
+  #   pnorm.tag: identifier which background was used for normalisation
+  #     mm9 --> mouse erythroid DNase digest;
+  #     h60 --> human erythroid DNase digest;
+  #     mm9_atac --> mouse erythroid ATAC digest;
+  #     atac --> human erythroid ATAC digest;
   #   vocab.flag: indicating if a preprocessed vocabulary file is present and to be used [TRUE/FALSE]
   #   vocab.file= path to preprocessed vocabulary file
   #   frag.type: fragmentation type ("DNase" or "ATAC")
@@ -971,7 +1014,7 @@ QueryLongSequence <- function(sequence,
   #   xlim: xlim to fix for plot (default c(-125, 125)) 
   #
   # Returns:
-  #   data frame listing the splittet kmers with the respective SFR ($df)
+  #   data frame listing the splitted kmers with the respective SFR ($df)
   #   if specified list of plots one per splitted k-mer ($plots)
   
   #capture if sequence is to short
@@ -985,7 +1028,7 @@ QueryLongSequence <- function(sequence,
   
   #2 get SFR per k-mer 
   dl.sfr <- lapply(dl, function(x){
-    x <- GetSFR(kmer=x, tissue=tissue, data.dir=data.dir, vocab.flag = vocab.flag, vocab.file = vocab.file, frag.type = frag.type)
+    x <- GetSFR(kmer=x, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, vocab.flag = vocab.flag, vocab.file = vocab.file, frag.type = frag.type)
   })
   
   #3 compose data frame for output
@@ -994,7 +1037,7 @@ QueryLongSequence <- function(sequence,
   #4 get plots if specified
   if(plots){
     dl.plots <- lapply(dl, function(x){
-      x <- PlotSingleKmer(kmer=x, tissue=tissue, data.dir=data.dir, frag.type=frag.type, 
+      x <- PlotSingleKmer(kmer=x, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, 
                           smooth=smooth, plot.shoulders=plot.shoulders, ylim=ylim, xlim=xlim)
     })
   }
@@ -1016,10 +1059,11 @@ CompareSequences <- function(sequence1,
                              kl, 
                              damage.mode="exhaustive", 
                              tissue, 
-                             data.dir="", 
+                             data.dir,
+                             pnorm.tag,
                              vocab.flag=FALSE, 
                              vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"), 
-                             frag.type="", 
+                             frag.type, 
                              plots="highest", 
                              smooth=TRUE, 
                              ylim=c(0,0.01), 
@@ -1038,10 +1082,15 @@ CompareSequences <- function(sequence1,
   #   (local: get highest pair, exhaustive: sum up over entire sequence)
   #   tissue: input tissue to query the profile from
   #   data.dir: repository storing processed kmer files per tissue
+  #   pnorm.tag: identifier which background was used for normalisation
+  #     mm9 --> mouse erythroid DNase digest;
+  #     h60 --> human erythroid DNase digest;
+  #     mm9_atac --> mouse erythroid ATAC digest;
+  #     atac --> human erythroid ATAC digest;
   #   vocab.flag: indicating if a preprocessed vocabulary file is present and to be used [TRUE/FALSE]
   #   vocab.file: path to preprocessed vocabulary file
   #   frag.type: fragmentation type ("DNase" or "ATAC")
-  #   plots: indicate if to retrie overlap plots as well 
+  #   plots: indicate if and what overlay plots to retrieve 
   #     with values FALSE for no plots to retrieve, "highest" for only retrieving one plot of 
   #     the highest scoring kmer pair, "all" for retrieving a list of all pairwise overlay plots
   #
@@ -1075,10 +1124,10 @@ CompareSequences <- function(sequence1,
   
   #2 get SFRs for each k-mer 
   dl1.sfr <- lapply(dl1, function(x){
-    x <- GetSFR(kmer=x, tissue=tissue, data.dir=data.dir, vocab.flag = vocab.flag, vocab.file = vocab.file, frag.type = frag.type)
+    x <- GetSFR(kmer=x, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, vocab.flag = vocab.flag, vocab.file = vocab.file, frag.type = frag.type)
   })
   dl2.sfr <- lapply(dl2, function(x){
-    x <- GetSFR(kmer=x, tissue=tissue, data.dir=data.dir, vocab.flag = vocab.flag, vocab.file = vocab.file, frag.type = frag.type)
+    x <- GetSFR(kmer=x, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, vocab.flag = vocab.flag, vocab.file = vocab.file, frag.type = frag.type)
   })
   
   #3 compose data frame
@@ -1153,7 +1202,8 @@ CompareSequences <- function(sequence1,
         kmer2=x[2],
         tissue1=tissue, 
         tissue2=tissue, 
-        data.dir=data.dir, 
+        data.dir=data.dir,
+        pnorm.tag,
         frag.type=frag.type, 
         smooth=smooth,
         ylim=ylim, 
@@ -1172,7 +1222,8 @@ CompareSequences <- function(sequence1,
       kmer2=as.character(dl.df[highest.damage.id, ]$kmer.var),
       tissue1=tissue, 
       tissue2=tissue, 
-      data.dir=data.dir, 
+      data.dir=data.dir,
+      pnorm.tag,
       frag.type=frag.type, 
       smooth=smooth, 
       ylim=ylim, 
@@ -1197,10 +1248,11 @@ RefVarBatch <- function(ref.var.df,
                         kl, 
                         damage.mode="exhaustive", 
                         tissue, 
-                        data.dir, 
-                        vocab.flag, 
+                        data.dir,
+                        pnorm.tag,
+                        vocab.flag=FALSE, 
                         vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"), 
-                        frag.type=""){
+                        frag.type){
   # Wrapper function to analyse multiple Ref-Var-Sequence pairs
   # split each sequence into k-mers of length kl, get their SFRs form vocab file 
   # or calculate new and calculate the damage associated with each kmer pair and 
@@ -1214,6 +1266,11 @@ RefVarBatch <- function(ref.var.df,
   #   (local: get highest pair, exhaustive: sum up over entire sequence)
   #   tissue: input tissue to query the profile from
   #   data.dir: repository storing processed kmer files per tissue
+  #   pnorm.tag: identifier which background was used for normalisation
+  #     mm9 --> mouse erythroid DNase digest;
+  #     h60 --> human erythroid DNase digest;
+  #     mm9_atac --> mouse erythroid ATAC digest;
+  #     atac --> human erythroid ATAC digest;
   #   vocab.flag: indicating if a preprocessed vocabulary file is present and to be used [TRUE/FALSE]
   #   vocab.file= path to preprocessed vocabulary file
   #   frag.type: fragmentation type ("DNase" or "ATAC")
@@ -1231,9 +1288,17 @@ RefVarBatch <- function(ref.var.df,
   #1 perform compare sequence for every row
   temp.list <- apply(ref.var.df, 1, function(x){
 
-    comp <- CompareSequences(sequence1=as.character(x[2]), sequence2=as.character(x[3]), kl=kl, damage.mode=damage.mode, 
-                             tissue=tissue, data.dir=data.dir, vocab.flag=vocab.flag, 
-                             vocab.file=vocab.file, frag.type=frag.type, plots=FALSE)$summary
+    comp <- CompareSequences(sequence1=as.character(x[2]), 
+                             sequence2=as.character(x[3]), 
+                             kl=kl, 
+                             damage.mode=damage.mode, 
+                             tissue=tissue,
+                             data.dir=data.dir, 
+                             pnorm.tag=pnorm.tag, 
+                             vocab.flag=vocab.flag, 
+                             vocab.file=vocab.file, 
+                             frag.type=frag.type, 
+                             plots=FALSE)$summary
     return(comp)
     
   })
@@ -1308,10 +1373,12 @@ QueryJasparBatch <- function(df,
   
 }
 
-#PLOT FUNCTION WRAPPER
+
+# PLOT FUNCTION WRAPPER -----------------------------------------
 PlotSingleKmer <- function(kmer, 
                            tissue, 
-                           data.dir, 
+                           data.dir,
+                           pnorm.tag=pnorm.tag,
                            frag.type, 
                            smooth=TRUE, 
                            smooth.bandwidth=5, 
@@ -1325,6 +1392,11 @@ PlotSingleKmer <- function(kmer,
   #   kmer: input kmer 
   #   tissue: input tissue to query the profile from
   #   data.dir: repository storing processed kmer files per tissue
+  #   pnorm.tag: identifier which background was used for normalisation
+  #     mm9 --> mouse erythroid DNase digest;
+  #     h60 --> human erythroid DNase digest;
+  #     mm9_atac --> mouse erythroid ATAC digest;
+  #     atac --> human erythroid ATAC digest;
   #   frag.type: fragmentation type ("DNase" or "ATAC")
   #   smooth: flag if to smooth the profile (TRUE or FALSE)  
   #   plot.shoulders: flag if to plot the shoulder regions
@@ -1336,7 +1408,7 @@ PlotSingleKmer <- function(kmer,
   #   Plot of profile
   
   #1 Get smoothed or unsmoothed profile and shoulders
-  fp <- GetFootprint(kmer=kmer, tissue=tissue, data.dir=data.dir, frag.type=frag.type, smooth=smooth, smooth.bandwidth=smooth.bandwidth)
+  fp <- GetFootprint(kmer=kmer, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, smooth=smooth, smooth.bandwidth=smooth.bandwidth)
   
   if(plot.shoulders){
     sh <- SobelBorders(fp$profile, kl=nchar(kmer))
@@ -1351,9 +1423,11 @@ PlotOverlapKmers <- function(kmer1,
                              kmer2, 
                              tissue1, 
                              tissue2, 
-                             data.dir, 
+                             data.dir,
+                             pnorm.tag,
                              frag.type, 
-                             smooth=TRUE, 
+                             smooth=TRUE,
+                             ymode="separate",
                              ylim=c(0,0.01), 
                              xlim=c(-125,125),
                              plot.shoulders=FALSE){
@@ -1365,8 +1439,14 @@ PlotOverlapKmers <- function(kmer1,
   #   tissue1: input tissue1 to query the profile from
   #   tissue2: input tissue2 to query the profile from
   #   data.dir: repository storing processed kmer files per tissue
+  #   pnorm.tag: identifier which background was used for normalisation
+  #     mm9 --> mouse erythroid DNase digest;
+  #     h60 --> human erythroid DNase digest;
+  #     mm9_atac --> mouse erythroid ATAC digest;
+  #     atac --> human erythroid ATAC digest;
   #   frag.type: fragmentation type ("DNase" or "ATAC")
-  #   smooth: flag if to smooth the profile (TRUE or FALSE)  
+  #   smooth: flag if to smooth the profile (TRUE or FALSE)
+  #   ymode: mode how to plot the overlapping profiles ("merged" or as "separate" profiles above each other)
   #   ylim: ylim to fix for plot (default c(0, 0.01))
   #   xlim: xlim to fix for plot (default c(-125, 125)) 
   #
@@ -1380,8 +1460,8 @@ PlotOverlapKmers <- function(kmer1,
   }
   
   #1 Get smoothed profiles  
-  fp1 <- GetFootprint(kmer=kmer1, tissue=tissue1, data.dir=data.dir, frag.type=frag.type, smooth=smooth)
-  fp2 <- GetFootprint(kmer=kmer2, tissue=tissue2, data.dir=data.dir, frag.type=frag.type, smooth=smooth)
+  fp1 <- GetFootprint(kmer=kmer1, tissue=tissue1, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, smooth=smooth)
+  fp2 <- GetFootprint(kmer=kmer2, tissue=tissue2, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, smooth=smooth)
 
   #1.2 (if plot.shoulders == TRUE estimate the shoudler positions and sizes)
   if(plot.shoulders){
@@ -1390,11 +1470,26 @@ PlotOverlapKmers <- function(kmer1,
   }
   
   #2 Make plot
-  p <- PlotOverlap(profile1 = fp1$profile, profile2 = fp2$profile, 
-                   kmer1 = kmer1, kmer2 = kmer2, 
-                   count1 = fp1$count, count2 = fp2$count, 
-                   ylim=ylim, xlim=xlim, plot.shoulders=plot.shoulders, 
-                   shoulders1=shoulders1, shoulders2=shoulders2)  
+  if(kmer1 != kmer2){
+    
+    p <- PlotOverlap(profile1 = fp1$profile, profile2 = fp2$profile, 
+                     kmer1 = kmer1, kmer2 = kmer2, ymode=ymode,
+                     count1 = fp1$count, count2 = fp2$count, 
+                     ylim=ylim, xlim=xlim, plot.shoulders=plot.shoulders, 
+                     shoulders1=shoulders1, shoulders2=shoulders2)
+  
+  }else if(tissue1 != tissue2){
+  
+    p <- PlotOverlap(profile1 = fp1$profile, profile2 = fp2$profile, 
+                     kmer1 = paste0(kmer1, "_A"), kmer2 = paste0(kmer2, "_B"), ymode=ymode,
+                     count1 = fp1$count, count2 = fp2$count, 
+                     ylim=ylim, xlim=xlim, plot.shoulders=plot.shoulders, 
+                     shoulders1=shoulders1, shoulders2=shoulders2)
+  
+  }else{
+    warning("Either kmers or tissues have to be unique! Reporting NA")
+    return(NA_real_)
+  }
   
   return(p)
   
@@ -1402,7 +1497,8 @@ PlotOverlapKmers <- function(kmer1,
 
 PlotSingleStrands <- function(kmer, 
                               tissue, 
-                              data.dir, 
+                              data.dir,
+                              pnorm.tag,
                               frag.type, 
                               smooth=TRUE, 
                               smooth.bandwidth=5, 
@@ -1415,6 +1511,11 @@ PlotSingleStrands <- function(kmer,
   #   kmer: input kmer 
   #   tissue: input tissue to query the profile from
   #   data.dir: repository storing processed kmer files per tissue
+  #   pnorm.tag: identifier which background was used for normalisation
+  #     mm9 --> mouse erythroid DNase digest;
+  #     h60 --> human erythroid DNase digest;
+  #     mm9_atac --> mouse erythroid ATAC digest;
+  #     atac --> human erythroid ATAC digest;
   #   frag.type: fragmentation type ("DNase" or "ATAC")
   #   smooth: flag if to smooth the profile (TRUE or FALSE)  
   #   plot.shoulders: flag if to plot the shoulder regions
@@ -1427,11 +1528,11 @@ PlotSingleStrands <- function(kmer,
   #1 Get smoothed profile and shoulders
   if(smooth){
     
-    fp <- GetFootprintStrand(kmer=kmer, tissue=tissue, data.dir=data.dir, frag.type=frag.type, smooth=smooth, smooth.bandwidth=smooth.bandwidth, background.flag=background.flag)
+    fp <- GetFootprintStrand(kmer=kmer, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, smooth=smooth, smooth.bandwidth=smooth.bandwidth, background.flag=background.flag)
     
   }else if(!smooth){
     
-    fp <- GetFootprintStrand(kmer=kmer, tissue=tissue, data.dir=data.dir, frag.type=frag.type, smooth=smooth, smooth.bandwidth=smooth.bandwidth, background.flag=background.flag)
+    fp <- GetFootprintStrand(kmer=kmer, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, smooth=smooth, smooth.bandwidth=smooth.bandwidth, background.flag=background.flag)
     
   }
   
@@ -1523,9 +1624,10 @@ InSilicoMutation <- function( sequence,
                               damage.mode="exhaustive",
                               tissue=tissue,
                               data.dir=data.dir,
+                              pnorm.tag,
                               vocab.flag=TRUE,
                               vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"),
-                              frag.type=frag.type,
+                              frag.type,
                               progress.bar=FALSE){
 # Wrapper for max/abs damage insilico mutation
 # Take a sequence, split into dataframe of kmerlength matching window and 
@@ -1544,6 +1646,11 @@ InSilicoMutation <- function( sequence,
 #   damage.mode: mode for calculating the total damage 
 #   tissue: input tissue to query the profile from
 #   data.dir: repository storing processed kmer files per tissue
+#   pnorm.tag: identifier which background was used for normalisation
+#     mm9 --> mouse erythroid DNase digest;
+#     h60 --> human erythroid DNase digest;
+#     mm9_atac --> mouse erythroid ATAC digest;
+#     atac --> human erythroid ATAC digest;
 #   vocab.flag: indicating if a preprocessed vocabulary file is present and to be used [TRUE/FALSE]
 #   vocab.file: path to preprocessed vocabulary file
 #   frag.type: fragmentation type ("DNase" or "ATAC")
@@ -1562,7 +1669,7 @@ print(paste0("Processing ",nrow(df)," sequence windows:"))
 #inslico mutation for set mode with progress bar
 if(progress.bar){
   
-  require(pbapply)
+  library(pbapply)
   
   df$damage <- pbapply(df, 1, function(x) CompareSequences(
     sequence1=x[5], 
@@ -1571,6 +1678,7 @@ if(progress.bar){
     damage.mode=damage.mode,
     tissue=tissue, 
     data.dir=data.dir,
+    pnorm.tag=pnorm.tag,
     vocab.flag=vocab.flag,
     vocab.file=vocab.file,
     frag.type=frag.type,
@@ -1651,17 +1759,14 @@ return(df)
 }
 
 RainbowPlot <- function(df, ylim=c(-2,2)){
-  # Wrapper for max/abs damage insilico mutation
-  # Take a sequence, split into dataframe of kmerlength matching window and 
-  # compare reference an possible mutation sequences
-  # report according to report mode ("all", "max", "maxabs")
+  # Make a rainbow plot from data frame as output from InSilicoMutation. Must have been run with report="all"
   #
   # Args:
   #   df: Dataframe from InSilicoMutation (report="all")
   #   ylim: y-limits for plot
   #
   # Returns:
-  #   Seven columns dataframe c(chr, position, ref.base, var.base, ref.sequence, var.sequence, damage).  
+  #   ggplot2 plot object of the rainbowplot  
   
   
   #check data frame
@@ -1690,193 +1795,351 @@ RainbowPlot <- function(df, ylim=c(-2,2)){
   
 }
 
-MakeRainbowTrackHub <- function(  input.df = "",
-                                  id.tag = "SasQ_RP",
-                                  store.tracks = paste0("~/", id.tag, "_tracks"),
-                                  store.hub = paste0("~/", id.tag,"_track_hub"),
-                                  genome.build = "hg19",
-                                  path.chr.sizes = "",
-                                  short.label = "SasQ In silico mutation Rainbow plot",
-                                  long.label = "",
-                                  set.email = "none",
-                                  bedgraph.to.bigwig.path = "",
-                                  make.softlinks = FALSE){
-                                # Input is a data frame in the same format as the output data frame of the InSilicoMutation function
-                                # 7 columns:  chr pos ref.base var.base ref.seq var.seq damage
-                                #
-                                # Args:
-                                #   input.df: input 7 column data frame
-                                #   id.tag: id tag to name the hub directory and bw tracks
-                                #   store.tracks: directory to store the bigwig tracks
-                                #   store.hub: were to store the hub & visualization folder
-                                #   genome.build: select genome build ("hg19", "hg18", "mm9", ...)
-                                #   path.chr.sizes: full.path to chrsizes file amtching to the selected genome
-                                #   short.label: shortLabel for track hub
-                                #   long.label: longLabel for track hub (default = short.label)
-                                #   set.email: email to appaer in trackHub
-                                #   bedgraph.to.bigwig.path: full path to UCSC bedGraphtoBigWig convertion tool
-                                #   make.softlinks:  [TRUE/FALSE] set flag if to directly make softlinks in hub folder 
-                                #     (e.g. set TRUE if running directly on cluster (deva .. etc.) so that the final softlinks paths are already correct
-                                #     default = FALSE if data files will be copied to a different direction afterwards (e.g. when mounted and ran locally)
-                                #     if set to FALSE: 
-                                #     After creation copy data hub to desired location and create softlinks in the hub folder to the tracks in the track folder
-                                #     e.g. "ln -s store.tracks/*.bw store.hub"
-                                #
-                                # Returns:
-                                #   Writes bigWig tracks into desired dirctory and creates a trackHub structure to migrate to public domain and import to UCSC.
-                                
-                                # === Sanity Checks === #
+MakeRainbowTrackHub <- function(input.df,
+                                id.tag = "SasQ_RP",
+                                store.tracks = paste0("~/", id.tag, "_tracks"),
+                                store.hub = paste0("~/", id.tag,"_track_hub"),
+                                genome.build = "hg19",
+                                path.chr.sizes,
+                                short.label = "SasQ In silico mutation Rainbow plot",
+                                long.label = "",
+                                set.email = "none",
+                                bedgraph.to.bigwig.path,
+                                make.softlinks = FALSE){
+                              # Input is a data frame in the same format as the output data frame of the InSilicoMutation function
+                              # 7 columns:  chr pos ref.base var.base ref.seq var.seq damage
+                              #
+                              # Args:
+                              #   input.df: input 7 column data frame
+                              #   id.tag: id tag to name the hub directory and bw tracks
+                              #   store.tracks: directory to store the bigwig tracks
+                              #   store.hub: were to store the hub & visualization folder
+                              #   genome.build: select genome build ("hg19", "hg18", "mm9", ...)
+                              #   path.chr.sizes: full.path to chrsizes file amtching to the selected genome
+                              #   short.label: shortLabel for track hub
+                              #   long.label: longLabel for track hub (default = short.label)
+                              #   set.email: email to appaer in trackHub
+                              #   bedgraph.to.bigwig.path: full path to UCSC bedGraphtoBigWig convertion tool
+                              #   make.softlinks:  [TRUE/FALSE] set flag if to directly make softlinks in hub folder 
+                              #     (e.g. set TRUE if running directly on cluster so that the final softlinks paths are already correct
+                              #     default = FALSE if data files will be copied to a different direction afterwards (e.g. when mounted and ran locally)
+                              #     if set to FALSE: 
+                              #     After creation copy data hub to desired location and create softlinks in the hub folder to the tracks in the track folder
+                              #     e.g. "ln -s store.tracks/*.bw store.hub"
+                              #
+                              # Returns:
+                              #   Writes bigWig tracks into desired dirctory and creates a trackHub structure to migrate to public domain and import to UCSC.
                               
-                                #check if input.df has desired format
-                                if(ncol(input.df != 7)){
-                                  warnings("input.df does not meet the required format!\n
-                                           Has to be a 7 column data frame with:\n
-                                           chr\tpos\tref.base\tvar.base\tref.seq\tvar.seq\tdamage\n
-                                           Please Check ou input! \n Aborting ...")
-                                  return
-                                }
-                                
-                                #check if convertion too is accessible and executable
-                                if(!file.exists(bedgraph.to.bigwig.path)){
-                                  warnings(paste0("The specified bedgraph.to.bigwig.path: ", 
-                                                  bedgraph.to.bigwig.path, " does not link to a readable and executable file!\n Aborting ..."))
-                                  return
-                                }
-                                
-                                #check if chrom sizes is a file and readable
-                                if(!file.exists(path.chr.sizes)){
-                                  warnings(paste0("The specified file: ", 
-                                                  path.chr.sizes, " does not exist or is not reable!\n Aborting ..."))
-                                  return
-                                }
-                                
-                                #if not set explicitly set long.lable as short.lable
-                                if(long.label == ""){
-                                  long.label <- short.label
-                                }
-                                
-                                # === create dirs === #
+                              # === Sanity Checks === #
+                            
+                              #check if input.df has desired format
+                              if(ncol(input.df != 7)){
+                                warnings("input.df does not meet the required format!\n
+                                         Has to be a 7 column data frame with:\n
+                                         chr\tpos\tref.base\tvar.base\tref.seq\tvar.seq\tdamage\n
+                                         Please Check ou input! \n Aborting ...")
+                                return
+                              }
                               
-                                system(paste0("mkdir -p ", store.hub, " ", store.tracks))
-                                
-                                # === make tracks === #
-                                  
-                                #separate into 1 track per base and only keep chr pos damage
-                                a.track <- subset(input.df, var.base == "A")[, c(1, 2, 2, 7)]
-                                c.track <- subset(input.df, var.base == "C")[, c(1, 2, 2, 7)]
-                                g.track <- subset(input.df, var.base == "G")[, c(1, 2, 2, 7)]
-                                t.track <- subset(input.df, var.base == "T")[, c(1, 2, 2, 7)]
-                                #format to match bedGraph format
-                                a.track[, 2] <- a.track[, 2] - 1
-                                c.track[, 2] <- c.track[, 2] - 1
-                                g.track[, 2] <- g.track[, 2] - 1
-                                t.track[, 2] <- t.track[, 2] - 1
-                                #write bdg files
-                                write.table(a.track, file=file.path(store.tracks, "track_A_sasq_insilico_mutation_RP.bdg"), quote=F, sep="\t", col.names=F, row.names=F)
-                                write.table(c.track, file=file.path(store.tracks, "track_C_sasq_insilico_mutation_RP.bdg"), quote=F, sep="\t", col.names=F, row.names=F)
-                                write.table(g.track, file=file.path(store.tracks, "track_G_sasq_insilico_mutation_RP.bdg"), quote=F, sep="\t", col.names=F, row.names=F)
-                                write.table(t.track, file=file.path(store.tracks, "track_T_sasq_insilico_mutation_RP.bdg"), quote=F, sep="\t", col.names=F, row.names=F)
-                                #convert to bw files
-                                system(paste0(bedgraph.to.bigwig.path, " ",file.path(store.tracks, "track_A_sasq_insilico_mutation_RP.bdg"), " ", path.chr.sizes, " ",  file.path(store.tracks, "track_A_sasq_insilico_mutation_RP.bw")))
-                                system(paste0(bedgraph.to.bigwig.path, " ",file.path(store.tracks, "track_C_sasq_insilico_mutation_RP.bdg"), " ", path.chr.sizes, " ",  file.path(store.tracks, "track_C_sasq_insilico_mutation_RP.bw")))
-                                system(paste0(bedgraph.to.bigwig.path, " ",file.path(store.tracks, "track_G_sasq_insilico_mutation_RP.bdg"), " ", path.chr.sizes, " ",  file.path(store.tracks, "track_G_sasq_insilico_mutation_RP.bw")))
-                                system(paste0(bedgraph.to.bigwig.path, " ",file.path(store.tracks, "track_T_sasq_insilico_mutation_RP.bdg"), " ", path.chr.sizes, " ",  file.path(store.tracks, "track_T_sasq_insilico_mutation_RP.bw")))
-                                #remove bedgraph files
-                                system(paste0("rm ", file.path(store.tracks, "track_A_sasq_insilico_mutation_RP.bdg")))
-                                system(paste0("rm ", file.path(store.tracks, "track_C_sasq_insilico_mutation_RP.bdg")))
-                                system(paste0("rm ", file.path(store.tracks, "track_G_sasq_insilico_mutation_RP.bdg")))
-                                system(paste0("rm ", file.path(store.tracks, "track_T_sasq_insilico_mutation_RP.bdg")))
-                                # make softlinks to tracks in hub folder
-                                if(make.softlinks == TRUE){
-                                  system(paste0("ln -s ", store.tracks, "/*.bw" , " ", store.hub))
-                                }
-                                
-                                # === populate HUB dir with config files === #
-                                
-                                #genomes.txt
-                                fileConn <- file(paste0(store.hub, "/genomes.txt"))
-                                writeLines(c(
-                                  paste0("genome ", genome.build), 
-                                  "trackDb tracks.txt"
-                                ),
-                                con = fileConn
-                                )
-                                close(fileConn)
-                                
-                                #hub.txt
-                                fileConn <- file(paste0(store.hub, "/hub.txt"))
-                                writeLines(c(
-                                  paste0("hub ",  id.tag),
-                                  paste0("shortLabel ", short.label),
-                                  paste0("longLabel ", long.label),
-                                  "genomesFile genomes.txt",
-                                  paste0("email ", set.email)
-                                ),
-                                con = fileConn
-                                )
-                                close(fileConn)
-                                
-                                # set up tracks.txt trackDB
-                                fileConn <- file(paste0(store.hub, "/tracks.txt"))
-                                writeLines(c(
-                                  "track Damage",
-                                  "container multiWig",
-                                  "shortLabel Damage",
-                                  "longLabel Damage per variant A=green, T=blue C=orange G=red",
-                                  "type bigWig",
-                                  "visibility full",
-                                  "aggregate solidOverlay",
-                                  "showSubtrackColorOnUi on",
-                                  "windowingFunction maximum",
-                                  "configurable on",
-                                  "#autoScale on",
-                                  "#alwaysZero on",
-                                  "dragAndDrop subtracks",
-                                  "graphTypeDefault points",
-                                  "maxHeightPixels 400:100:20",
-                                  "viewLimits 0:4",
-                                  "yLineOnOff on",
-                                  "",
-                                  "track variantA",
-                                  "parent Damage",
-                                  "bigDataUrl track_A_sasq_insilico_mutation_RP.bw",
-                                  "shortLabel A",
-                                  "longLabel A",
-                                  "type bigWig",
-                                  "color 77,175,74",
-                                  "",
-                                  "track variantT",
-                                  "parent Damage",
-                                  "bigDataUrl track_T_sasq_insilico_mutation_RP.bw",
-                                  "shortLabel T",
-                                  "longLabel T",
-                                  "type bigWig",
-                                  "color 228,26,28",
-                                  "",
-                                  "track variantC",
-                                  "parent Damage",
-                                  "bigDataUrl track_C_sasq_insilico_mutation_RP.bw",
-                                  "shortLabel C",
-                                  "longLabel C",
-                                  "type bigWig",
-                                  "color 55,126,184",
-                                  "",
-                                  "track variantG",
-                                  "parent Damage",
-                                  "bigDataUrl track_G_sasq_insilico_mutation_RP.bw",
-                                  "shortLabel G",
-                                  "longLabel G",
-                                  "type bigWig",
-                                  "color 152,78,163"
-                                ),
-                                con = fileConn
-                                )
-                                close(fileConn)
-                                
-                                # === set reading and executing access and finish === #
-                                system(paste0("chmod -R 755 ", store.hub, " ", store.tracks))
-                                
-                                # === return === #
-                                return(store.hub)
+                              #check if convertion too is accessible and executable
+                              if(!file.exists(bedgraph.to.bigwig.path)){
+                                warnings(paste0("The specified bedgraph.to.bigwig.path: ", 
+                                                bedgraph.to.bigwig.path, " does not link to a readable and executable file!\n Aborting ..."))
+                                return
+                              }
                               
+                              #check if chrom sizes is a file and readable
+                              if(!file.exists(path.chr.sizes)){
+                                warnings(paste0("The specified file: ", 
+                                                path.chr.sizes, " does not exist or is not reable!\n Aborting ..."))
+                                return
+                              }
+                              
+                              #if not set explicitly set long.lable as short.lable
+                              if(long.label == ""){
+                                long.label <- short.label
+                              }
+                              
+                              # === create dirs === #
+                            
+                              system(paste0("mkdir -p ", store.hub, " ", store.tracks))
+                              
+                              # === make tracks === #
+                                
+                              #separate into 1 track per base and only keep chr pos damage
+                              a.track <- subset(input.df, var.base == "A")[, c(1, 2, 2, 7)]
+                              c.track <- subset(input.df, var.base == "C")[, c(1, 2, 2, 7)]
+                              g.track <- subset(input.df, var.base == "G")[, c(1, 2, 2, 7)]
+                              t.track <- subset(input.df, var.base == "T")[, c(1, 2, 2, 7)]
+                              #format to match bedGraph format
+                              a.track[, 2] <- a.track[, 2] - 1
+                              c.track[, 2] <- c.track[, 2] - 1
+                              g.track[, 2] <- g.track[, 2] - 1
+                              t.track[, 2] <- t.track[, 2] - 1
+                              #write bdg files
+                              write.table(a.track, file=file.path(store.tracks, "track_A_sasq_insilico_mutation_RP.bdg"), quote=F, sep="\t", col.names=F, row.names=F)
+                              write.table(c.track, file=file.path(store.tracks, "track_C_sasq_insilico_mutation_RP.bdg"), quote=F, sep="\t", col.names=F, row.names=F)
+                              write.table(g.track, file=file.path(store.tracks, "track_G_sasq_insilico_mutation_RP.bdg"), quote=F, sep="\t", col.names=F, row.names=F)
+                              write.table(t.track, file=file.path(store.tracks, "track_T_sasq_insilico_mutation_RP.bdg"), quote=F, sep="\t", col.names=F, row.names=F)
+                              #convert to bw files
+                              system(paste0(bedgraph.to.bigwig.path, " ",file.path(store.tracks, "track_A_sasq_insilico_mutation_RP.bdg"), " ", path.chr.sizes, " ",  file.path(store.tracks, "track_A_sasq_insilico_mutation_RP.bw")))
+                              system(paste0(bedgraph.to.bigwig.path, " ",file.path(store.tracks, "track_C_sasq_insilico_mutation_RP.bdg"), " ", path.chr.sizes, " ",  file.path(store.tracks, "track_C_sasq_insilico_mutation_RP.bw")))
+                              system(paste0(bedgraph.to.bigwig.path, " ",file.path(store.tracks, "track_G_sasq_insilico_mutation_RP.bdg"), " ", path.chr.sizes, " ",  file.path(store.tracks, "track_G_sasq_insilico_mutation_RP.bw")))
+                              system(paste0(bedgraph.to.bigwig.path, " ",file.path(store.tracks, "track_T_sasq_insilico_mutation_RP.bdg"), " ", path.chr.sizes, " ",  file.path(store.tracks, "track_T_sasq_insilico_mutation_RP.bw")))
+                              #remove bedgraph files
+                              system(paste0("rm ", file.path(store.tracks, "track_A_sasq_insilico_mutation_RP.bdg")))
+                              system(paste0("rm ", file.path(store.tracks, "track_C_sasq_insilico_mutation_RP.bdg")))
+                              system(paste0("rm ", file.path(store.tracks, "track_G_sasq_insilico_mutation_RP.bdg")))
+                              system(paste0("rm ", file.path(store.tracks, "track_T_sasq_insilico_mutation_RP.bdg")))
+                              # make softlinks to tracks in hub folder
+                              if(make.softlinks == TRUE){
+                                system(paste0("ln -s ", store.tracks, "/*.bw" , " ", store.hub))
+                              }
+                              
+                              # === populate HUB dir with config files === #
+                              
+                              #genomes.txt
+                              fileConn <- file(paste0(store.hub, "/genomes.txt"))
+                              writeLines(c(
+                                paste0("genome ", genome.build), 
+                                "trackDb tracks.txt"
+                              ),
+                              con = fileConn
+                              )
+                              close(fileConn)
+                              
+                              #hub.txt
+                              fileConn <- file(paste0(store.hub, "/hub.txt"))
+                              writeLines(c(
+                                paste0("hub ",  id.tag),
+                                paste0("shortLabel ", short.label),
+                                paste0("longLabel ", long.label),
+                                "genomesFile genomes.txt",
+                                paste0("email ", set.email)
+                              ),
+                              con = fileConn
+                              )
+                              close(fileConn)
+                              
+                              # set up tracks.txt trackDB
+                              fileConn <- file(paste0(store.hub, "/tracks.txt"))
+                              writeLines(c(
+                                "track Damage",
+                                "container multiWig",
+                                "shortLabel Damage",
+                                "longLabel Damage per variant A=green, T=blue C=orange G=red",
+                                "type bigWig",
+                                "visibility full",
+                                "aggregate solidOverlay",
+                                "showSubtrackColorOnUi on",
+                                "windowingFunction maximum",
+                                "configurable on",
+                                "#autoScale on",
+                                "#alwaysZero on",
+                                "dragAndDrop subtracks",
+                                "graphTypeDefault points",
+                                "maxHeightPixels 400:100:20",
+                                "viewLimits 0:4",
+                                "yLineOnOff on",
+                                "",
+                                "track variantA",
+                                "parent Damage",
+                                "bigDataUrl track_A_sasq_insilico_mutation_RP.bw",
+                                "shortLabel A",
+                                "longLabel A",
+                                "type bigWig",
+                                "color 77,175,74",
+                                "",
+                                "track variantT",
+                                "parent Damage",
+                                "bigDataUrl track_T_sasq_insilico_mutation_RP.bw",
+                                "shortLabel T",
+                                "longLabel T",
+                                "type bigWig",
+                                "color 228,26,28",
+                                "",
+                                "track variantC",
+                                "parent Damage",
+                                "bigDataUrl track_C_sasq_insilico_mutation_RP.bw",
+                                "shortLabel C",
+                                "longLabel C",
+                                "type bigWig",
+                                "color 55,126,184",
+                                "",
+                                "track variantG",
+                                "parent Damage",
+                                "bigDataUrl track_G_sasq_insilico_mutation_RP.bw",
+                                "shortLabel G",
+                                "longLabel G",
+                                "type bigWig",
+                                "color 152,78,163"
+                              ),
+                              con = fileConn
+                              )
+                              close(fileConn)
+                              
+                              # === set reading and executing access and finish === #
+                              system(paste0("chmod -R 755 ", store.hub, " ", store.tracks))
+                              
+                              # === return === #
+                              return(store.hub)
+                            
+}
+
+
+### For Web-Tool only ----------------------------------------------------------------
+TryErrorLog <- function(x, log.file, id="noid", message="Error occurred ..."){
+  # Wrapper function for errorlog check
+  #test a try() output: if it is a try error: print indicated Error message to logfile and exit Rscript
+  
+  if(is(x, "try-error")){
+    sink(log.file)
+    print(message)
+    print(paste0("Error in Run ID: ", id))
+    print(x[1])
+    sink()
+    
+    stop(message)
+  }
+}
+
+PlotOverlapHS <- function(profile1, 
+                        profile2, 
+                        kmer,
+                        label1,
+                        label2,
+                        count1 = "NA",
+                        count2 = "NA",
+                        ylim = c(0,0.01), 
+                        xlim = c(-125,125)){
+  # Plot two heavy smoothed average profiles overlapping given two input profiles
+  #
+  # Args:
+  #   profile1: input profile1
+  #   profile2: input profile2
+  #   kmer: input k-mer
+  #   label1: open chromatin or backround label
+  #   label2: open chromatin or backround label
+  #   count1: count of k-mer1 occurence 
+  #   count2: count of k-mer2 occurence 
+  #   ylim: ylim to fix for plot (default c(0, 0.01))
+  #   xlim: xlim to fix for plot (default c(-125, 125))
+  #   plot.shoulders: flag TRUE/FALSE if to plot the estimated shoulders with the profiles
+  #     note that it is only plotted if the separate profile option was selected to keep the plots tidy
+  #   shoulders1: list object of estiamte shoulder postion and ranges for profile 1
+  #   shoulders2: list object of estiamte shoulder postion and ranges for profile 2
+  #
+  # Returns:
+  #   Overlapping profile plot (HS)
+  
+  #get kmer length
+  kl=nchar(kmer)
+  
+  #get window size of profile arround kmer
+  window.size <- length(profile1) - kl
+  
+  #make dataframe for ggplotting
+  df <-data.frame(
+    x=rep(c(-(window.size/2):((window.size/2)+kl-1)), 2),
+    y=c(profile1, profile2),
+    Source=c(
+      rep(label1, length(profile1)), 
+      rep(label2, length(profile2))
+    )
+  )
+  
+  #sort source for colors
+  df$Source <- factor(df$Source, levels=c(label1, label2))
+  
+  #make dataframe for annotation
+  anno.df <- data.frame(
+    Source = c(label1, label2),
+    x=rep((xlim[2]-(xlim[2]-xlim[1])/8), 2), 
+    y=rep((ylim[2]-(ylim[2]-ylim[1])/12), 2),
+    label=c(paste0(label1, " #", count1), paste0(label2," #", count2))
+  )
+  
+  #MAKE THE PLOT
+  #mode one merged probfiles on same y-axis
+    
+  #adjust annotation dataframe y values for nonoverlapping labels
+  anno.df$y <- c((ylim[2]-(ylim[2]-ylim[1])/12), (ylim[2]-(ylim[2]-ylim[1])/5))
+  
+  p <- ggplot( df, aes(x=x, y=y, colour=Source)) + geom_line(size=1) + 
+    geom_vline(xintercept = c((0),(kl-1)), linetype = "dashed", size=1) + 
+    labs(x="Relative position [bp]", y="Relative cut frequency") + 
+    coord_cartesian(ylim=ylim, xlim=xlim) + 
+    scale_colour_manual(values=rev(brewer.pal(3,"Set1")[c(1,2)])) +
+    #add annotation
+    geom_text(data=anno.df, aes(x=x, y=y, label=label)) +
+    theme_bw() + science_theme + 
+    theme(
+      legend.position = "none",
+      panel.grid = element_blank()
+      # axis.title.y = element_text(size=16),
+      # axis.title.x = element_text(size=16)
+    )
+    
+  return(p)
+  
+}
+
+QueryJasparBatchWeb <- function(df,
+                             pos.damage.threshold,
+                             neg.damage.threshold, 
+                             match.threshold=0.8, 
+                             pwm.data){
+  # Take a data frame from RefVar Query Batch as input and query it against the 
+  # set of Jaspar2014 PWMs using a selected match.threshold 
+  # Select an absolute sasq damage above which to query jaspar
+  #
+  # Args:
+  #   df: input dataframe from RefVarBatch query
+  #   pos.damage.threshold: negative damage threshold above which a RefVar pair is queried  
+  #   neg.damage.threshold: negative damage threshold above which a RefVar pair is queried
+  #   match.threshold: percentage relative score thresh over which to report matches (default=0.8)
+  #   pwm.data: a stored pwm. RData object as retrieved and save from JASPAR2014 R package
+  #
+  # Returns:
+  #   Dataframe with additional column for jaspar query results
+  
+  #check input dataframe
+  if(ncol(df) != 9){
+    warning("Input dataframe df does not have 9 columns! Please make sure RefVarBatch has run properly:\n
+            Format: id sequence.ref  sequence.var kmer.ref kmer.var  SFR.ref  SFR.var total.damage")
+    return("NA")
+  }
+  
+  # go throug data frame and query jaspar
+  jsp <- apply(df, 1, function(x){
+    
+    #only query if total damage is above pos.threshold or below neg.threshold
+    if((as.numeric(x[8]) <= neg.damage.threshold) | (as.numeric(x[8]) >= pos.damage.threshold)){ 
+      
+      if(as.numeric(x[8]) >= 0){ # if total.damage is positive --> quer reference sequence
+        
+        j <- QueryJaspar(sequence=x[2], threshold=match.threshold, pwm.data=pwm.data)
+        
+      }else if(as.numeric(x[8]) < 0){  # if total.damage is negative query variant sequence
+        
+        j <- QueryJaspar(sequence=x[3], threshold=match.threshold, pwm.data=pwm.data)
+        
+      }
+      
+    }else{  #dont query
+      
+      j <- "."
+      
+    }
+    
+    return(j) #return
+    
+  })
+  
+  #add new column
+  df$jaspar <- jsp
+  
+  #return data frame
+  return(df)
+  
 }

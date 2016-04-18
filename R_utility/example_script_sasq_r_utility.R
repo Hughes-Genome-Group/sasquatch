@@ -1,10 +1,9 @@
-library(ggplot2)
-
 source("/home/ron/fusessh/Sasquatch_offline/Sasquatch/R_utility/functions_sasq_r_utility.R")
 
-### === Set Some Parameters ===============================================================
+### === Set Some Initial Parameters ===============================================================
 
 data.dir <- "/home/ron/fusessh/database_assembly/idx_correct_assembly/human/DNase/"
+pnorm.tag <- "JH60" #identifier for the propensity source used
 
 # only for background plots
 background.dir <- "/home/ron/fusessh/database_assembly/idx_correct_assembly/background/"
@@ -14,12 +13,14 @@ background.tissue <- "hg18_human_JH60"
 out.dir <- "/home/ron/Daten/WIMM/Sasquatch_working/"
 
 # select tissue (e.g. "list.files(data.dir)")
-tissue <- "human_erythroid_hg18"
+tissue <- "WIMM_primary_erythroid_Fibach_Fade8"
 
 # select fragmentation type
 frag.type <- "DNase"
 
+
 ### ===== TEST R BASIC FUNCTIONS ==================================================================
+
 
 # single k-mers analysis  ---------------------------------------------------------------------
 
@@ -27,8 +28,8 @@ frag.type <- "DNase"
 kmer <- "CGCATGC"
 
 # get the footprint 
-fp <- GetFootprint(kmer=kmer, tissue=tissue, data.dir=data.dir, frag.type=frag.type, smooth=TRUE)
-#retruns list object with $profile and $count
+fp <- GetFootprint(kmer=kmer, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, smooth=TRUE)
+#returns list object with $profile and $count
 
 
 # estimate the shoulders from the profile (use smoothed profile or smooth within call!)
@@ -60,8 +61,8 @@ plot(p)
 kmer1 <- "WGATAA" #note FASTA ambiguous code is supported
 kmer2 <- "WGATTA"
 
-fp1 <- GetFootprint(kmer=kmer1, tissue=tissue, data.dir=data.dir, frag.type=frag.type, smooth=T)
-fp2 <- GetFootprint(kmer=kmer2, tissue=tissue, data.dir=data.dir, frag.type=frag.type, smooth=T)
+fp1 <- GetFootprint(kmer=kmer1, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, smooth=T)
+fp2 <- GetFootprint(kmer=kmer2, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, smooth=T)
 
 # make an overlap plot
 p <- PlotOverlap(
@@ -95,12 +96,13 @@ dl <- DissectSequence(seq, kl=7, list=FALSE)
 # Wrapper to get SFR from k-mer and tissues --> returns single SFR value --------------------------
 sfr <- GetSFR(kmer="CACGTG", 
               tissue="human_erythroid_hg18", 
-              data.dir=data.dir, 
+              data.dir=data.dir,
+              pnorm.tag=pnorm.tag,
               vocab.flag=TRUE, 
               frag.type="DNase")
 
 # Wrapper for single plot
-p <- PlotSingleKmer(kmer=kmer, tissue=tissue, data.dir=data.dir, frag.type=frag.type, 
+p <- PlotSingleKmer(kmer=kmer, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, 
                     smooth=TRUE, plot.shoulders=FALSE, ylim=c(0,0.01), xlim=c(-70,70),
                     color="red")
 p
@@ -114,7 +116,7 @@ ggsave(p, filename=file.path(out.dir,
 p <- PlotOverlapKmers(
   kmer1="CACGTG", kmer2="CACGTT", 
   tissue1=tissue, tissue2=tissue, 
-  data.dir=data.dir, frag.type="DNase", 
+  data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type="DNase", 
   smooth=TRUE, plot.shoulders = TRUE,
   ylim=c(0,0.01), xlim=c(-75,75)
   )
@@ -124,10 +126,11 @@ p
 dl <- QueryLongSequence(sequence=seq, 
                         kl=7, 
                         tissue=tissue, 
-                        data.dir=data.dir, 
+                        data.dir=data.dir,
+                        pnorm.tag=pnorm.tag,
                         vocab.flag=TRUE, 
                         frag.type=frag.type, 
-                        plots=TRUE, 
+                        plots=FALSE, 
                         smooth=TRUE, 
                         plot.shoulders=TRUE, 
                         ylim=c(0,0.01), 
@@ -146,12 +149,12 @@ bcomp <- RefVarBatch(ref.var.df=tdf,
                      kl=7, 
                      damage.mode="exhaustive", 
                      tissue=tissue, 
-                     data.dir=data.dir, 
+                     data.dir=data.dir,
+                     pnorm.tag=pnorm.tag,
                      vocab.flag=TRUE, 
                      frag.type=frag.type)
 
 # Meet old JASPAR -----------------------------------------------------------------------------------
-
 #load Rdata object storing the jaspar 2014 pwms (all versions)
 library(Biostrings)
 library(TFBSTools)
@@ -159,7 +162,7 @@ library(TFBSTools)
 load("/home/ron/fusessh/database_assembly/jaspar/jaspar2014.human.9606.all.versions")
 
 # Single JASPAR query
-QueryJaspar(sequence="AGATAATAG", threshold=0.8, pwm.data=pwm.in)
+QueryJaspar(sequence="AGATAATAG", threshold=0.8, pwm.data=human.pwm)
 
 # Wrapper for batch quary a batch Ref Var Dataframe
 jbcomp <- QueryJasparBatch(df=bcomp, damage.threshold=0.3, match.threshold=0.8, pwm.data=human.pwm)
@@ -171,17 +174,18 @@ comp <- CompareSequences(
   sequence2="CAGTTTTATGAGG", 
   kl=7,
   data.dir=data.dir,
+  pnorm.tag = pnorm.tag,
   damage.mode="exhaustive",
-  tissue="DNase_He_refined_LNCaP_50U_50_100bp_L_D", 
+  tissue=tissue, 
   vocab.flag=FALSE,
   frag.type="DNase", 
   plots="highest"
   )
 
 # Wrapper to get strand specific footprint profiles for tissue or background -------------------------
-sfp <- GetFootprintStrand(kmer="WGATAA", tissue=tissue, data.dir=data.dir, frag.type=frag.type, smooth=TRUE, smooth.bandwidth=5, background.flag=FALSE)
+sfp <- GetFootprintStrand(kmer="WGATAA", tissue=tissue, data.dir=data.dir, pnorm.tag = pnorm.tag, frag.type=frag.type, smooth=TRUE, smooth.bandwidth=5, background.flag=FALSE)
 
-bfp <- GetFootprintStrand(kmer="WGATAA", tissue=background.tissue, data.dir=background.dir, frag.type=frag.type, smooth=TRUE, smooth.bandwidth=5, background.flag=TRUE)
+bfp <- GetFootprintStrand(kmer="WGATAA", tissue=background.tissue, data.dir=background.dir, pnorm.tag = pnorm.tag, frag.type=frag.type, smooth=TRUE, smooth.bandwidth=5, background.flag=TRUE)
 
 # plot single strands
 splots <- PlotSingleStrands(kmer="WGATAA", tissue = background.tissue, data.dir = background.dir, frag.type = frag.type,
@@ -205,6 +209,7 @@ df.insilico <- InSilicoMutation(sequence="GTGCCCGCATGTGCTTATTTCTGCAAAAATAAACCATG
                                 damage.mode="exhaustive",
                                 tissue=tissue,
                                 data.dir=data.dir,
+                                pnorm.tag = pnorm.tag,
                                 vocab.flag=TRUE,
                                 frag.type=frag.type,
                                 progress.bar=TRUE
@@ -241,6 +246,7 @@ df.insilico <- InSilicoMutation(sequence=seq,
                          damage.mode="exhaustive",
                          tissue="human_erythroid_hg18",
                          data.dir=data.dir,
+                         pnorm.tag = pnorm.tag,
                          vocab.flag=TRUE,
                          frag.type=frag.type,
                          progress.bar = TRUE
@@ -260,7 +266,8 @@ d$damage <- apply(d, 1, function(x) CompareSequences(sequence1=x[5],
                                                      kl=7, 
                                                      damage.mode="exhaustive", 
                                                      tissue=tissue, 
-                                                     data.dir=data.dir, 
+                                                     data.dir=data.dir,
+                                                     pnorm.tag = pnorm.tag,
                                                      vocab.flag=TRUE, 
                                                      frag.type=frag.type, 
                                                      plots=FALSE

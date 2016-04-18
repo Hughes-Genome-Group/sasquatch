@@ -5,7 +5,7 @@ PIPE_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing
 SCRIPT_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/scripts	
 
 #TAG
-IDTAG="hg18_human_JH60"
+IDTAG="hg18_human_h_ery_1"
 #OUTPUT
 OUTPUT_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/${IDTAG}
 

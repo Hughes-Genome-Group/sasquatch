@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-IDTAG="hg18_human_JH60"
+IDTAG="hg18_human_h_ery_1"
 
 PIPE_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/tissue_v2/background
 SCRIPT_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/scripts

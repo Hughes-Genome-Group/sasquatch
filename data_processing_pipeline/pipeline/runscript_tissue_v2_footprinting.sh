@@ -4,7 +4,7 @@
 #$ -q batchq
 #$ -M rschwess
 #$ -m eas
-#$ -e /t1-data1/WTSA_Dev/rschwess/clustereo
+#$ -j y
 #$ -o /t1-data1/WTSA_Dev/rschwess/clustereo
 
 mkdir -p ${OUTPUT_DIR}/footprints	#make footprint directory
