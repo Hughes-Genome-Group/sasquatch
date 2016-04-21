@@ -14,13 +14,18 @@ library(methods)
 #define theme for plotting
 science_theme <- theme(
   panel.grid.major = element_line(size = 0.5, color = "grey"),
-  axis.line = element_line(size = 0.7, color = "black"),
-  text = element_text(size = 14, family="Arial")
+  text = element_text(size = 14, family="Arial"),
+  axis.line = element_line(color="black", size = 0.7),
+  axis.line.x = element_line(color="black", size = 0.7),
+  axis.line.y = element_line(color="black", size = 0.7),
+  plot.margin = unit(c(0.7,0.7,0.7,0.7), "lines")
 )
 
 web_theme <- theme(
   panel.grid.major = element_line(size = 0.5, color = "grey"),
-  axis.line = element_line(size = 0.7, color = "black"),
+  axis.line = element_line(color="black", size = 0.7),
+  axis.line.x = element_line(color="black", size = 0.7),
+  axis.line.y = element_line(color="black", size = 0.7),
   text = element_text(size = 14, family="Arial"),
   panel.grid = element_line()
 )
@@ -132,6 +137,73 @@ DecodeKmer <- function(kmer){
   
 }
 
+GetPossibleMutations <- function(sequence, kl=7, chr=".", position=1){
+  # Take a Sequence input and split into kmers of length kl*2-1 with reference and variance.
+  # Take the parsed position as index for the first base to mutate (kl'th sequence to fill window)
+  # (e.g. for kl 7 always take the 13 surrounding bases)
+  #
+  # Args:
+  #   sequence: input sequence
+  #   kl: k-mer lengh to split the sequence into k-mers
+  #   chr: chromosome
+  #   position: Start base position where to predict the damage
+  #
+  # Returns:
+  #   Six columns dataframe c(chr, position, ref.base, var.base, ref.sequence, var.sequence).
+  
+  #check if sequence is long enough
+  if(nchar(sequence) < (kl*2-1)){
+    warning("Sequence is to short! Has to be a minimum of: kl*2-1 !")
+    return(NA_real_)
+  }
+  
+  window.size <- kl*2-1
+  
+  #make moving window sequence split
+  seq.list <- c()
+  for(i in c(1:(nchar(sequence)-window.size+1))){
+    
+    seq.list <- c(seq.list, substr(sequence, i, i+window.size-1))
+    
+  }
+  
+  #get ref base per sequqnce window
+  ref.list <- substr(seq.list, kl, kl)
+  
+  bases <- c("A", "C", "G", "T")
+  
+  #make dataframe
+  df <- data.frame(
+    
+    chr = rep(chr, length(seq.list)*3),
+    
+    pos = as.numeric(unlist( lapply( c(position:(length(seq.list)+position-1)), function(x) rep(x, 3) ))),
+    
+    ref.base = unlist( lapply( ref.list, function(x) rep(x, 3) )) 
+    
+  )
+  
+  #add all possible substitutions
+  temp <- c()
+  for(j in c(position:(length(seq.list)+position-1))){
+    
+    temp <- c(temp, bases[!(bases %in% c(as.character(df[df$pos == j, ]$ref.base[1])))])
+    
+  }
+  df$var.base <- temp
+  
+  #add ref sequence windows
+  df$ref.seq <- unlist( lapply( seq.list, function(x) rep(x, 3) ))
+  
+  #add mutated sequence windows
+  df$var.seq <- df$ref.seq 
+  substr(df$var.seq, kl, kl) <- df$var.base
+  
+  #return data frame
+  return(df)
+  
+}
+
 Sobeln <- function(profile){
   # Calculate 1st derivative approximation of profile by 1D sobel filtering
   #
@@ -150,6 +222,39 @@ Sobeln <- function(profile){
   return(b)
 }
 
+PreLoadKmerProfiles <- function(kl, data.dir, tissue, pnorm.tag){
+  # Helper Function to preload a kmer profile table for faster kmer processing
+  #
+  # Args:
+  #   kl: kmer length of interest
+  #   data.dir: data directory containig the tissue data
+  #   tissue: tissue tag of interest
+  #   pnorm.tag: tag specifying the propensity source used for normalisation
+  #
+  # Returns:
+  #   List of two tables ..$plus ..$minus
+  plus.in <- read.table(paste0(data.dir, "/", tissue, "/counts/", "kmers_", kl,"_count_", tissue, "_pnorm_", pnorm.tag, "_plus.txt"), header=FALSE, colClasses=c("character", rep("numeric", 300 + kl + 1)) )
+  minus.in <- read.table(paste0(data.dir, "/", tissue, "/counts/", "kmers_", kl,"_count_", tissue, "_pnorm_", pnorm.tag, "_minus.txt"), header=FALSE, colClasses=c("character", rep("numeric", 300 + kl + 1)) )
+  
+  return(list(plus=plus.in, minus=minus.in))
+  
+}
+
+PreLoadVocab <- function(data.dir, tissue){
+  # Helper Function to preload a tissues vocabulary table for faster kmer processing
+  #
+  # Args:
+  #   data.dir: data directory containig the tissue data
+  #   tissue: tissue tag of interest
+  #
+  # Returns:
+  #   kmer table (2 columns (kmer SFR))
+  
+  vocab <- read.table(paste0(data.dir, "/", tissue, "/vocabulary_", tissue, ".txt"), header=FALSE, colClasses=c("character", "numeric"))
+  
+  return(vocab)
+  
+}
 
 ### BASIC FUNCTIONS -----------------------------------------------------------
 DissectSequence <- function(sequence, kl, list=FALSE){
@@ -188,16 +293,28 @@ DissectSequence <- function(sequence, kl, list=FALSE){
     }
 }
 
-GrepProfile <- function(kmer, infile){
+GrepProfile <- function(kmer, infile, preload=FALSE, preload.profiles.strand){
   # grep 250 bp surrounding kmer strand specific profile and normalize for 
   # total cuts in 250 bp window
   #
   # Args:
   #   kmer: input kmer 
   #   infile: input processed strand-specific kmer file
+  #   preload: FALSE/TRUE specify if to use preloaded data for speeding up
+  #   preload.profiles.strand: either plus or minus kmer profiles preloaded (only required if preload=TRUE and vocab.flag=FALSE)
   #
   # Returns:
-  #   normalized profile (relative cut frequency) and kmer occurence count
+  #   normalised profile (relative cut frequency) and kmer occurence count
+  
+  #if preload specified check if data are preloaed
+  if(preload == TRUE){
+    
+    if(dim(preload.profiles.strand)[2] <= 250){
+      warning("No preloaded kmer profiles appear not meat the required formar please adjust or change the flags!")
+      return(NA_real_)
+    
+    }
+  }
   
   #decode  ambivalent fasta code char into kmer list
   kmer.list <- DecodeKmer(kmer)  
@@ -206,12 +323,25 @@ GrepProfile <- function(kmer, infile){
   profile <- rep(0,(250+kl)) #initialise empty profile
   
   for(km in kmer.list){  #for all entries in the splitted up kmer list
-    match <- grep(km, readLines(infile), value=TRUE)  #system grep of kmer flat files
-    split <- strsplit(match, "\t")[[1]]	#split on "\t" and unlist, as flat files are a tab separated
-    count <- count + as.numeric(split[2])	#get second column as the count
-    split <- split[-c(1,2)] #remove kmer and count from split
-    split <- as.numeric(split) #convert to numeric
-    profile <- profile + split[c(26:(length(split)-25))]	#get 250 bp surrounding kmer from 300 bp profile
+    
+    if(preload == TRUE){
+      
+      count <- count + subset(preload.profiles.strand, preload.profiles.strand[, 1] == km)[, 2]
+      profile.t <- subset(preload.profiles.strand, preload.profiles.strand[, 1] == km)[, -c(1,2)]
+      profile <- profile + profile.t[, c(26:(length(profile.t)-25))]
+      #get 250 bp surrounding kmer from 300 bp profile
+        
+    }else{
+  
+      match <- grep(km, readLines(infile), value=TRUE)  #system grep of kmer flat files
+      split <- strsplit(match, "\t")[[1]]	#split on "\t" and unlist, as flat files are a tab separated
+      count <- count + as.numeric(split[2])	#get second column as the count
+      split <- split[-c(1,2)] #remove kmer and count from split
+      split <- as.numeric(split) #convert to numeric
+      profile <- profile + split[c(26:(length(split)-25))]	#get 250 bp surrounding kmer from 300 bp profile
+    
+    }
+    
   }
   
   #normalise to all recorded cuts in the 250 surrounding region 
@@ -746,7 +876,6 @@ QueryJaspar <- function(sequence,
   
 }
 
-
 # WRAPPER FUNCTIONS -----------------------------------------------------------
 GetFootprint <- function(kmer, 
                          tissue, 
@@ -754,7 +883,9 @@ GetFootprint <- function(kmer,
                          pnorm.tag,
                          frag.type, 
                          smooth=TRUE, 
-                         smooth.bandwidth=5){
+                         smooth.bandwidth=5,
+                         preload=FALSE,
+                         preload.profiles=""){
   # Wrapper to retrieve merged, pruned, smoothed profile of kmer
   #
   # Args:
@@ -766,10 +897,12 @@ GetFootprint <- function(kmer,
   #   smooth.bandwidth: bandwidth to use for normal kernel smoothing 
   #   (default 5 which is fixed for most worklfows)
   #   pnorm.tag: identifier which background was used for normalisation
-  #     mm9 --> mouse erythroid DNase digest;
-  #     h60 --> human erythroid DNase digest;
-  #     mm9_atac --> mouse erythroid ATAC digest;
-  #     atac --> human erythroid ATAC digest;
+  #     m_ery_1 --> mouse erythroid DNase digest;
+  #     h_ery_1 --> human erythroid DNase digest;
+  #     m_ery_1_atac --> mouse erythroid ATAC digest;
+  #     h_ery_1_atac --> human erythroid ATAC digest;
+  #   preload: FALSE/TRUE specify if to use preloaded data for speeding up
+  #   preload.profiles: list of plus and minus kmer profiles preloaded (only required if preload=TRUE and vocab.flag=FALSE)
   #
   # Returns:
   #   merged, pruned (smoothed) profile and count of the kmer occurence
@@ -777,13 +910,35 @@ GetFootprint <- function(kmer,
   #get kmer length
   kl=nchar(kmer)
   
-  #select flat strand specific files as inputs
-  infile.plus=file.path(data.dir, tissue,"counts", paste0("kmers_", kl, "_count_", tissue, "_pnorm_", pnorm.tag ,"_plus.txt"))
-  infile.minus=file.path(data.dir, tissue,"counts", paste0("kmers_", kl, "_count_", tissue, "_pnorm_", pnorm.tag ,"_minus.txt"))
+  if(preload == TRUE){
+
+      if(length(preload.profiles) != 2){
+        warning("No preloaded kmer profiles have been provided but preload was set to TRUE and vocab flag to FALSE or plots are required!\n
+                Please run PreLoadKmerProfiles() or change the flags!")
+        return(NA_real_)
+      }else if(dim(preload.profiles$plus)[2] <= 250){
+        warning("No preloaded kmer profiles appear not meat the required formar please adjust or change the flags!")
+        return(NA_real_)
+      }else if(dim(preload.profiles$minus)[2] <= 250){
+        warning("No preloaded kmer profiles appear not meat the required formar please adjust or change the flags!")
+        return(NA_real_)
+      }
+    
+    #grep profiles from preloaded kmer profiles files
+    l.plus <- GrepProfile(kmer, preload = TRUE, preload.profiles.strand = preload.profiles$plus)
+    l.minus <- GrepProfile(kmer, preload = TRUE, preload.profiles.strand = preload.profiles$minus)
+    
+  }else{  #define input files and grep profiles from them
   
-  #grep strand specific profiles & counts
-  l.plus <- GrepProfile(kmer, infile.plus)
-  l.minus <- GrepProfile(kmer, infile.minus)
+    #select flat strand specific files as inputs
+    infile.plus=file.path(data.dir, tissue,"counts", paste0("kmers_", kl, "_count_", tissue, "_pnorm_", pnorm.tag ,"_plus.txt"))
+    infile.minus=file.path(data.dir, tissue,"counts", paste0("kmers_", kl, "_count_", tissue, "_pnorm_", pnorm.tag ,"_minus.txt"))
+    
+    #grep strand specific profiles & counts
+    l.plus <- GrepProfile(kmer, infile.plus)
+    l.minus <- GrepProfile(kmer, infile.minus)
+  
+  }
   
   #merge profiles accoring to selected fragmentation type
   if(frag.type == "ATAC"){
@@ -822,10 +977,10 @@ GetFootprintStrand <- function(kmer,
   #   tissue: input tissue to query the profile from
   #   data.dir: repository storing processed kmer files per tissue
   #   pnorm.tag: identifier which background was used for normalisation
-  #     mm9 --> mouse erythroid DNase digest;
-  #     h60 --> human erythroid DNase digest;
-  #     mm9_atac --> mouse erythroid ATAC digest;
-  #     atac --> human erythroid ATAC digest;
+  #     m_ery_1 --> mouse erythroid DNase digest;
+  #     h_ery_1 --> human erythroid DNase digest;
+  #     m_ery_1_atac --> mouse erythroid ATAC digest;
+  #     h_ery_1_atac --> human erythroid ATAC digest;
   #   frag.type: fragmentation type ("DNase" or "ATAC")
   #   smooth: flag if to smooth the profile (TRUE or FALSE)
   #   smooth.bandwidth: bandwidth to use for normal kernel smoothing 
@@ -877,7 +1032,11 @@ GetSFR <- function(kmer,
                    pnorm.tag,
                    vocab.flag=FALSE, 
                    vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"), 
-                   frag.type){
+                   frag.type,
+                   preload=FALSE,
+                   preload.vocab,
+                   preload.profiles
+                   ){
   # Wrapper function to get the SFR ratio
   # If indicated and available, use the present vocabulary file to directly grep the SFR
   # Else get the average profile, estimate the borders and calculate the SFR
@@ -889,19 +1048,30 @@ GetSFR <- function(kmer,
   #   tissue: input tissue to query the profile from
   #   data.dir: repository storing processed kmer files per tissue
   #   pnorm.tag: identifier which background was used for normalisation
-  #     mm9 --> mouse erythroid DNase digest;
-  #     h60 --> human erythroid DNase digest;
-  #     mm9_atac --> mouse erythroid ATAC digest;
-  #     atac --> human erythroid ATAC digest;
+  #     m_ery_1 --> mouse erythroid DNase digest;
+  #     h_ery_1 --> human erythroid DNase digest;
+  #     m_ery_1_atac --> mouse erythroid ATAC digest;
+  #     h_ery_1_atac --> human erythroid ATAC digest;
   #   vocab.flag: indicating if a preprocessed vocabulary file is present and to be used [TRUE/FALSE]
   #   vocab.file= path to preprocessed vocabulary file
   #   frag.type: fragmentation type ("DNase" or "ATAC")
-  #
+  #   preload: FALSE/TRUE specify if to use preloaded data for speeding up
+  #   preload.profiles: list of plus and minus kmer profiles preloaded (only required if preload=TRUE and vocab.flag=FALSE)
+  #   preload.vocab: 2 column table kmer, SFR preloaded from vocabulary file
   # Returns:
   #   SFR
-  
+
   #check if vocabulary flag selected and if so a file is present
   if(vocab.flag){
+
+    #check if preload flag set and if so check if preloaded data are in required format
+    if(preload == TRUE){
+      if(dim(preload.vocab)[2] != 2){
+        warning("No preloaded vocabulary file has been provided but preload was set to TRUE and vocab file to TRUE!\n
+                Please run PreLoadVocab() or change the flags!")
+        return(NA_real_)
+      }
+    }
     
     #check if kmer is has ambivalent characters (Only )
     if(grepl("[^(A,C,G,T)]", kmer, perl=T)){
@@ -916,41 +1086,78 @@ GetSFR <- function(kmer,
       return(NA_real_)
     }
     
-    #grep kmer line from vocabulary table
-    kmer.match <- grep(paste0("^",kmer,"\\s+"), readLines(vocab.file), value=TRUE, perl=TRUE)  #system grep of kmer vocab file
+    if(preload == TRUE){
     
-    split <- strsplit(kmer.match, "\t")[[1]]	#split on "\t" and unlist, as flat files are tab separated
-    sfr <- as.numeric(split[2])
+      #get kmer line from preloaded data OR
+      sfr <- subset(preload.vocab, preload.vocab[, 1] == kmer)[, 2]
+      
+    }else{
+      
+      #grep kmer line from vocabulary table
+      kmer.match <- grep(paste0("^",kmer,"\\s+"), readLines(vocab.file), value=TRUE, perl=TRUE)  #system grep of kmer vocab file
+      
+      split <- strsplit(kmer.match, "\t")[[1]]	#split on "\t" and unlist, as flat files are tab separated
+      sfr <- as.numeric(split[2])
+      
+    }
     
     return(sfr)
     
-  }else{
     
-    #no vocabfile present --> run retrieving, border estimation and SFR calculation
+  }else{  #no vocabfile present --> run retrieving, border estimation and SFR calculation
     
-    fp <- GetFootprint(kmer=kmer, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, 
-                       smooth=TRUE) #get smoothed profile and count
+    #if preload specified check if data are preloaed
+    if(preload == TRUE){
+      if(length(preload.profiles) != 2){
+        warning("No preloaded kmer profiles have been provided but preload was set to TRUE and vocab flag to FALSE!\n
+                Please run PreLoadKmerProfiles() or change the flags!")
+        return(NA_real_)
+      }else if(dim(preload.profiles$plus)[2] <= 250){
+        warning("No preloaded kmer profiles appear not meat the required formar please adjust or change the flags!")
+        return(NA_real_)
+      }else if(dim(preload.profiles$minus)[2] <= 250){
+        warning("No preloaded kmer profiles appear not meat the required formar please adjust or change the flags!")
+        return(NA_real_)
+      }
+    }
     
+    # get the footprintprofile according to preload type
+    if(preload == TRUE){
+      
+      #get profiles from preloaded data
+      fp <- GetFootprint(kmer=kmer, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, 
+                         smooth=TRUE, preload=TRUE, preload.profiles=preload.profiles) #get smoothed profile and count
+      
+    }else{
+
+      fp <- GetFootprint(kmer=kmer, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, 
+                       smooth=TRUE, preload=FALSE) #get smoothed profile and count
+    }
+    
+    #proceed with shoulder estimation
     sh <- SobelBorders(profile=fp$profile, kl=nchar(kmer)) #estimate optimal shoulder midpoints and ranges
     
     #calculate SFR
     if(sh$flag == TRUE){
+      
       sfr <- CalcSFR(
         profile=fp$profile, 
         us.mid=sh$us, ds.mid=sh$ds,
         range.us=sh$range.us, range.ds=sh$range.ds
       )
+      
     }else{
+      
       print("Shoulders could not be estimated properly will return SFR 1.0")
       sfr <- 1.0
+    
     }
+    
     return(sfr)
     
   }
 }
   
-      
-
 GetCount <- function(kmer, 
                    tissue, 
                    data.dir,
@@ -963,10 +1170,10 @@ GetCount <- function(kmer,
   #   tissue: input tissue to query the profile from
   #   data.dir: repository storing processed kmer files per tissue,
   #   pnorm.tag: identifier which background was used for normalisation
-  #     mm9 --> mouse erythroid DNase digest;
-  #     h60 --> human erythroid DNase digest;
-  #     mm9_atac --> mouse erythroid ATAC digest;
-  #     atac --> human erythroid ATAC digest;
+  #     m_ery_1 --> mouse erythroid DNase digest;
+  #     h_ery_1 --> human erythroid DNase digest;
+  #     m_ery_1_atac --> mouse erythroid ATAC digest;
+  #     h_ery_1_atac --> human erythroid ATAC digest;
   #   frag.type: fragmentation type ("DNase" or "ATAC")
   #
   # Returns:
@@ -990,7 +1197,10 @@ QueryLongSequence <- function(sequence,
                               smooth=TRUE, 
                               plot.shoulders=TRUE, 
                               ylim=c(0,0.01), 
-                              xlim=c(-125,125)){
+                              xlim=c(-125,125),
+                              preload=FALSE,
+                              preload.vocab="",
+                              preload.profiles=""){
   # Wrapper function to get split longer sequence into kmer of length kl and return kmer, SFR 
   # plots if specified
   #
@@ -1000,10 +1210,10 @@ QueryLongSequence <- function(sequence,
   #   tissue: input tissue to query the profile from
   #   data.dir: repository storing processed kmer files per tissue
   #   pnorm.tag: identifier which background was used for normalisation
-  #     mm9 --> mouse erythroid DNase digest;
-  #     h60 --> human erythroid DNase digest;
-  #     mm9_atac --> mouse erythroid ATAC digest;
-  #     atac --> human erythroid ATAC digest;
+  #     m_ery_1 --> mouse erythroid DNase digest;
+  #     h_ery_1 --> human erythroid DNase digest;
+  #     m_ery_1_atac --> mouse erythroid ATAC digest;
+  #     h_ery_1_atac --> human erythroid ATAC digest;
   #   vocab.flag: indicating if a preprocessed vocabulary file is present and to be used [TRUE/FALSE]
   #   vocab.file= path to preprocessed vocabulary file
   #   frag.type: fragmentation type ("DNase" or "ATAC")
@@ -1011,7 +1221,10 @@ QueryLongSequence <- function(sequence,
   #   smooth: flag if to smooth the profile (TRUE or FALSE)  
   #   plot.shoulders: flag if to plot the shoulder regions
   #   ylim: ylim to fix for plot (default c(0, 0.01))
-  #   xlim: xlim to fix for plot (default c(-125, 125)) 
+  #   xlim: xlim to fix for plot (default c(-125, 125))
+  #   preload: FALSE/TRUE specify if to use preloaded data for speeding up
+  #   preload.profiles: list of plus and minus kmer profiles preloaded (only required if preload=TRUE and vocab.flag=FALSE)
+  #   preload.vocab: 2 column table kmer, SFR preloaded from vocabulary file
   #
   # Returns:
   #   data frame listing the splitted kmers with the respective SFR ($df)
@@ -1028,7 +1241,7 @@ QueryLongSequence <- function(sequence,
   
   #2 get SFR per k-mer 
   dl.sfr <- lapply(dl, function(x){
-    x <- GetSFR(kmer=x, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, vocab.flag = vocab.flag, vocab.file = vocab.file, frag.type = frag.type)
+    x <- GetSFR(kmer=x, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, vocab.flag = vocab.flag, vocab.file = vocab.file, frag.type = frag.type, preload=preload, preload.vocab=preload.vocab, preload.profiles=preload.profiles)
   })
   
   #3 compose data frame for output
@@ -1038,7 +1251,7 @@ QueryLongSequence <- function(sequence,
   if(plots){
     dl.plots <- lapply(dl, function(x){
       x <- PlotSingleKmer(kmer=x, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, 
-                          smooth=smooth, plot.shoulders=plot.shoulders, ylim=ylim, xlim=xlim)
+                          smooth=smooth, plot.shoulders=plot.shoulders, ylim=ylim, xlim=xlim, preload=preload, preload.profiles=preload.profiles)
     })
   }
   
@@ -1068,7 +1281,10 @@ CompareSequences <- function(sequence1,
                              smooth=TRUE, 
                              ylim=c(0,0.01), 
                              xlim=c(-125,125),
-                             plot.shoulders=FALSE){
+                             plot.shoulders=FALSE,
+                             preload=FALSE,
+                             preload.vocab="",
+                             preload.profiles=""){
   # Wrapper function to analyse multiple Ref-Var-Sequence pairs
   # split each sequence into k-mers of lenfth kl, get their SFRs form vocab file 
   # or calculate new and calculate the damage associated with each kmer pair and 
@@ -1083,16 +1299,19 @@ CompareSequences <- function(sequence1,
   #   tissue: input tissue to query the profile from
   #   data.dir: repository storing processed kmer files per tissue
   #   pnorm.tag: identifier which background was used for normalisation
-  #     mm9 --> mouse erythroid DNase digest;
-  #     h60 --> human erythroid DNase digest;
-  #     mm9_atac --> mouse erythroid ATAC digest;
-  #     atac --> human erythroid ATAC digest;
+  #     m_ery_1 --> mouse erythroid DNase digest;
+  #     h_ery_1 --> human erythroid DNase digest;
+  #     m_ery_1_atac --> mouse erythroid ATAC digest;
+  #     h_ery_1_atac --> human erythroid ATAC digest;
   #   vocab.flag: indicating if a preprocessed vocabulary file is present and to be used [TRUE/FALSE]
   #   vocab.file: path to preprocessed vocabulary file
   #   frag.type: fragmentation type ("DNase" or "ATAC")
   #   plots: indicate if and what overlay plots to retrieve 
   #     with values FALSE for no plots to retrieve, "highest" for only retrieving one plot of 
   #     the highest scoring kmer pair, "all" for retrieving a list of all pairwise overlay plots
+  #   preload: FALSE/TRUE specify if to use preloaded data for speeding up
+  #   preload.profiles: list of plus and minus kmer profiles preloaded (only required if preload=TRUE and vocab.flag=FALSE)
+  #   preload.vocab: 2 column table kmer, SFR preloaded from vocabulary file
   #
   # Returns:
   #   Dataframe listing Ref and Var sequence with highest scoring kmer pair and 
@@ -1117,17 +1336,16 @@ CompareSequences <- function(sequence1,
     return("NA")
   }
   
-  
   #1 split sequences into two lists
   dl1 <- DissectSequence(sequence1, kl, list=TRUE)
   dl2 <- DissectSequence(sequence2, kl, list=TRUE)
   
   #2 get SFRs for each k-mer 
   dl1.sfr <- lapply(dl1, function(x){
-    x <- GetSFR(kmer=x, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, vocab.flag = vocab.flag, vocab.file = vocab.file, frag.type = frag.type)
+    x <- GetSFR(kmer=x, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, vocab.flag = vocab.flag, vocab.file = vocab.file, frag.type = frag.type, preload=preload, preload.vocab=preload.vocab, preload.profiles=preload.profiles)
   })
   dl2.sfr <- lapply(dl2, function(x){
-    x <- GetSFR(kmer=x, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, vocab.flag = vocab.flag, vocab.file = vocab.file, frag.type = frag.type)
+    x <- GetSFR(kmer=x, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, vocab.flag = vocab.flag, vocab.file = vocab.file, frag.type = frag.type, preload=preload, preload.vocab=preload.vocab, preload.profiles=preload.profiles)
   })
   
   #3 compose data frame
@@ -1208,7 +1426,9 @@ CompareSequences <- function(sequence1,
         smooth=smooth,
         ylim=ylim, 
         xlim=xlim,
-        plot.shoulders=FALSE
+        plot.shoulders=plot.shoulders,
+        preload=preload, 
+        preload.profiles=preload.profiles
         )
         
       return(pp)
@@ -1228,7 +1448,9 @@ CompareSequences <- function(sequence1,
       smooth=smooth, 
       ylim=ylim, 
       xlim=xlim,
-      plot.shoulders=plot.shoulders
+      plot.shoulders=plot.shoulders,
+      preload=preload, 
+      preload.profiles=preload.profiles
       )
     
   }else if(!plots){
@@ -1252,7 +1474,10 @@ RefVarBatch <- function(ref.var.df,
                         pnorm.tag,
                         vocab.flag=FALSE, 
                         vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"), 
-                        frag.type){
+                        frag.type,
+                        preload=FALSE,
+                        preload.profiles="",
+                        preload.vocab=""){
   # Wrapper function to analyse multiple Ref-Var-Sequence pairs
   # split each sequence into k-mers of length kl, get their SFRs form vocab file 
   # or calculate new and calculate the damage associated with each kmer pair and 
@@ -1267,13 +1492,16 @@ RefVarBatch <- function(ref.var.df,
   #   tissue: input tissue to query the profile from
   #   data.dir: repository storing processed kmer files per tissue
   #   pnorm.tag: identifier which background was used for normalisation
-  #     mm9 --> mouse erythroid DNase digest;
-  #     h60 --> human erythroid DNase digest;
-  #     mm9_atac --> mouse erythroid ATAC digest;
-  #     atac --> human erythroid ATAC digest;
+  #     m_ery_1 --> mouse erythroid DNase digest;
+  #     h_ery_1 --> human erythroid DNase digest;
+  #     m_ery_1_atac --> mouse erythroid ATAC digest;
+  #     h_ery_1_atac --> human erythroid ATAC digest;
   #   vocab.flag: indicating if a preprocessed vocabulary file is present and to be used [TRUE/FALSE]
   #   vocab.file= path to preprocessed vocabulary file
   #   frag.type: fragmentation type ("DNase" or "ATAC")
+  #   preload: FALSE/TRUE specify if to use preloaded data for speeding up
+  #   preload.profiles: list of plus and minus kmer profiles preloaded (only required if preload=TRUE and vocab.flag=FALSE)
+  #   preload.vocab: 2 column table kmer, SFR preloaded from vocabulary file
   #
   # Returns:
   #   Dataframe listing Ref and Var sequence with highest scoring kmer pair and 
@@ -1298,7 +1526,11 @@ RefVarBatch <- function(ref.var.df,
                              vocab.flag=vocab.flag, 
                              vocab.file=vocab.file, 
                              frag.type=frag.type, 
-                             plots=FALSE)$summary
+                             plots=FALSE,
+                             preload=preload, 
+                             preload.vocab=preload.vocab, 
+                             preload.profiles=preload.profiles
+                             )$summary
     return(comp)
     
   })
@@ -1373,6 +1605,161 @@ QueryJasparBatch <- function(df,
   
 }
 
+InSilicoMutation <- function( sequence,
+                              kl=7,
+                              chr=".",
+                              position=1,
+                              report="all",
+                              damage.mode="exhaustive",
+                              tissue=tissue,
+                              data.dir=data.dir,
+                              pnorm.tag,
+                              vocab.flag=TRUE,
+                              vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"),
+                              frag.type,
+                              progress.bar=FALSE,
+                              preload=FALSE,
+                              preload.vocab="",
+                              preload.profiles=""){
+  # Wrapper for max/abs damage insilico mutation
+  # Take a sequence, split into dataframe of kmerlength matching window and 
+  # compare reference an possible mutation sequences
+  # report according to report mode ("all", "max", "maxabs")
+  #
+  # Args:
+  #   sequence: input sequence
+  #   kl: k-mer lengh to split the sequence into k-mers
+  #   chr: chromosome
+  #   position: Start base position where to predict the base substitution
+  #   report: which mutations to report; 
+  #     "all" = report all 3 possible substitutions per position
+  #     "max" = only report substitution with highest positive damage
+  #     "maxabs" = only report substitution with highest absolute damage
+  #   damage.mode: mode for calculating the total damage 
+  #   tissue: input tissue to query the profile from
+  #   data.dir: repository storing processed kmer files per tissue
+  #   pnorm.tag: identifier which background was used for normalisation
+  #     m_ery_1 --> mouse erythroid DNase digest;
+  #     h_ery_1 --> human erythroid DNase digest;
+  #     m_ery_1_atac --> mouse erythroid ATAC digest;
+  #     h_ery_1_atac --> human erythroid ATAC digest;
+  #   vocab.flag: indicating if a preprocessed vocabulary file is present and to be used [TRUE/FALSE]
+  #   vocab.file: path to preprocessed vocabulary file
+  #   frag.type: fragmentation type ("DNase" or "ATAC")
+  #   progress.bar: flag if to use the pbapply packge for showing a progress bar
+  #   preload: FALSE/TRUE specify if to use preloaded data for speeding up
+  #   preload.profiles: list of plus and minus kmer profiles preloaded (only required if preload=TRUE and vocab.flag=FALSE)
+  #   preload.vocab: 2 column table kmer, SFR preloaded from vocabulary file
+  #
+  # Returns:
+  #   Seven columns dataframe c(chr, position, ref.base, var.base, ref.sequence, var.sequence, damage).  
+  
+  
+  
+  # make split sequence dataframe for query
+  df <- GetPossibleMutations(sequence=sequence, kl=7, chr=chr, position=position)
+  
+  print(paste0("Processing ", nrow(df)," sequence windows:"))
+  
+  #inslico mutation for set mode with progress bar
+  if(progress.bar){
+    
+    library(pbapply)
+    
+    df$damage <- pbapply(df, 1, function(x) CompareSequences(
+      sequence1=x[5], 
+      sequence2=x[6], 
+      kl=kl, 
+      damage.mode=damage.mode,
+      tissue=tissue, 
+      data.dir=data.dir,
+      pnorm.tag=pnorm.tag,
+      vocab.flag=vocab.flag,
+      vocab.file=vocab.file,
+      frag.type=frag.type,
+      plots=FALSE,
+      preload=preload, 
+      preload.vocab=preload.vocab, 
+      preload.profiles=preload.profiles
+    )$summary$total.damage
+    )
+    
+  }else{  #without progress bar
+    
+    df$damage <- apply(df, 1, function(x) CompareSequences(
+      sequence1=x[5], 
+      sequence2=x[6], 
+      kl=kl, 
+      damage.mode=damage.mode,
+      tissue=tissue, 
+      data.dir=data.dir,
+      vocab.flag=vocab.flag,
+      vocab.file=vocab.file,
+      frag.type=frag.type,
+      plots=FALSE,
+      preload=preload, 
+      preload.vocab=preload.vocab, 
+      preload.profiles=preload.profiles
+    )$summary$total.damage
+    )
+    
+  }
+  
+  #filter dataframe according to report mode
+  if(report == "all"){
+    
+    return(df)
+    
+  }else if(report == "max"){
+    
+    dftemp <- df[0,]
+    
+    #select max of 3 matching rows
+    for(i in df$pos[seq(from=3, to=nrow(df), by=3)]){
+      
+      temp <- df[df$pos %in% i, ]
+      
+      temp <- temp[which(temp$damage == max(temp$damage)), ]
+      
+      if(dim(temp)[1] > 1){  #sample randomly if equal damages
+        temp <- temp[sample(c(1:dim(temp)[1]),1), ]
+      }
+      dftemp <- rbind(dftemp, temp)
+    }
+    
+    return(dftemp)
+    
+  }else if(report == "maxabs"){
+    
+    dftemp <- df[0,]
+    
+    #select max of absolute of 3 matching rows
+    for(i in df$pos[seq(from=3, to=nrow(df), by=3)]){
+      
+      temp <- df[df$pos %in% i, ]
+      
+      temp <- temp[which(temp$damage == max(abs(temp$damage))), ]
+      
+      if(dim(temp)[1] > 1){  #sample randomly if equal damages
+        temp <- temp[sample(c(1:dim(temp)[1]),1), ]
+      }
+      
+      dftemp <- rbind(dftemp, temp)
+      
+    }
+    
+    return(dftemp)
+    
+  }else{
+    
+    warning("Select a mode for reporting! Will report default (all possible substitutions)!")
+    return(df)
+    
+  }
+  
+}
+
+
 
 # PLOT FUNCTION WRAPPER -----------------------------------------
 PlotSingleKmer <- function(kmer, 
@@ -1385,7 +1772,9 @@ PlotSingleKmer <- function(kmer,
                            plot.shoulders=FALSE, 
                            ylim=c(0,0.01), 
                            xlim=c(-125,125), 
-                           color="black"){
+                           color="black",
+                           preload=FALSE,
+                           preload.profiles=""){
   #Wrapper to produce a plot from kmer and tissue input only
   #
   # Args:
@@ -1393,22 +1782,24 @@ PlotSingleKmer <- function(kmer,
   #   tissue: input tissue to query the profile from
   #   data.dir: repository storing processed kmer files per tissue
   #   pnorm.tag: identifier which background was used for normalisation
-  #     mm9 --> mouse erythroid DNase digest;
-  #     h60 --> human erythroid DNase digest;
-  #     mm9_atac --> mouse erythroid ATAC digest;
-  #     atac --> human erythroid ATAC digest;
+  #     m_ery_1 --> mouse erythroid DNase digest;
+  #     h_ery_1 --> human erythroid DNase digest;
+  #     m_ery_1_atac --> mouse erythroid ATAC digest;
+  #     h_ery_1_atac --> human erythroid ATAC digest;
   #   frag.type: fragmentation type ("DNase" or "ATAC")
   #   smooth: flag if to smooth the profile (TRUE or FALSE)  
   #   plot.shoulders: flag if to plot the shoulder regions
   #   ylim: ylim to fix for plot (default c(0, 0.01))
   #   xlim: xlim to fix for plot (default c(-125, 125)) 
   #   color: color for profile to plot
+  #   preload: FALSE/TRUE specify if to use preloaded data for speeding up
+  #   preload.profiles: list of plus and minus kmer profiles preloaded (only required if preload=TRUE and vocab.flag=FALSE)
   #
   # Returns:
   #   Plot of profile
   
   #1 Get smoothed or unsmoothed profile and shoulders
-  fp <- GetFootprint(kmer=kmer, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, smooth=smooth, smooth.bandwidth=smooth.bandwidth)
+  fp <- GetFootprint(kmer=kmer, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, smooth=smooth, smooth.bandwidth=smooth.bandwidth, preload=preload, preload.profiles=preload.profiles)
   
   if(plot.shoulders){
     sh <- SobelBorders(fp$profile, kl=nchar(kmer))
@@ -1430,7 +1821,9 @@ PlotOverlapKmers <- function(kmer1,
                              ymode="separate",
                              ylim=c(0,0.01), 
                              xlim=c(-125,125),
-                             plot.shoulders=FALSE){
+                             plot.shoulders=FALSE,
+                             preload=FALSE,
+                             preload.profiles=""){
   #Wrapper to produce an overly plot from two kmers and tissues input only
   #
   # Args:
@@ -1440,15 +1833,17 @@ PlotOverlapKmers <- function(kmer1,
   #   tissue2: input tissue2 to query the profile from
   #   data.dir: repository storing processed kmer files per tissue
   #   pnorm.tag: identifier which background was used for normalisation
-  #     mm9 --> mouse erythroid DNase digest;
-  #     h60 --> human erythroid DNase digest;
-  #     mm9_atac --> mouse erythroid ATAC digest;
-  #     atac --> human erythroid ATAC digest;
+  #     m_ery_1 --> mouse erythroid DNase digest;
+  #     h_ery_1 --> human erythroid DNase digest;
+  #     m_ery_1_atac --> mouse erythroid ATAC digest;
+  #     h_ery_1_atac --> human erythroid ATAC digest;
   #   frag.type: fragmentation type ("DNase" or "ATAC")
   #   smooth: flag if to smooth the profile (TRUE or FALSE)
   #   ymode: mode how to plot the overlapping profiles ("merged" or as "separate" profiles above each other)
   #   ylim: ylim to fix for plot (default c(0, 0.01))
-  #   xlim: xlim to fix for plot (default c(-125, 125)) 
+  #   xlim: xlim to fix for plot (default c(-125, 125))  
+  #   preload: FALSE/TRUE specify if to use preloaded data for speeding up
+  #   preload.profiles: list of plus and minus kmer profiles preloaded (only required if preload=TRUE and vocab.flag=FALSE)
   #
   # Returns:
   #   Overlay plot of profiles
@@ -1460,8 +1855,8 @@ PlotOverlapKmers <- function(kmer1,
   }
   
   #1 Get smoothed profiles  
-  fp1 <- GetFootprint(kmer=kmer1, tissue=tissue1, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, smooth=smooth)
-  fp2 <- GetFootprint(kmer=kmer2, tissue=tissue2, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, smooth=smooth)
+  fp1 <- GetFootprint(kmer=kmer1, tissue=tissue1, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, smooth=smooth, preload=preload, preload.profiles=preload.profiles)
+  fp2 <- GetFootprint(kmer=kmer2, tissue=tissue2, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, smooth=smooth, preload=preload, preload.profiles=preload.profiles)
 
   #1.2 (if plot.shoulders == TRUE estimate the shoudler positions and sizes)
   if(plot.shoulders){
@@ -1512,10 +1907,10 @@ PlotSingleStrands <- function(kmer,
   #   tissue: input tissue to query the profile from
   #   data.dir: repository storing processed kmer files per tissue
   #   pnorm.tag: identifier which background was used for normalisation
-  #     mm9 --> mouse erythroid DNase digest;
-  #     h60 --> human erythroid DNase digest;
-  #     mm9_atac --> mouse erythroid ATAC digest;
-  #     atac --> human erythroid ATAC digest;
+  #     m_ery_1 --> mouse erythroid DNase digest;
+  #     h_ery_1 --> human erythroid DNase digest;
+  #     m_ery_1_atac --> mouse erythroid ATAC digest;
+  #     h_ery_1_atac --> human erythroid ATAC digest;
   #   frag.type: fragmentation type ("DNase" or "ATAC")
   #   smooth: flag if to smooth the profile (TRUE or FALSE)  
   #   plot.shoulders: flag if to plot the shoulder regions
@@ -1546,218 +1941,6 @@ PlotSingleStrands <- function(kmer,
   
 }
 
-GetPossibleMutations <- function(sequence, 
-                                 kl=7, 
-                                 chr=".", 
-                                 position=1){
-  # Take a Sequence input and split into kmers of length kl*2-1 with reference and variance.
-  # Take the parsed position as index for the first base to mutate (kl'th sequence to fill window)
-  # (e.g. for kl 7 always take the 13 surrounding bases)
-  #
-  # Args:
-  #   sequence: input sequence
-  #   kl: k-mer lengh to split the sequence into k-mers
-  #   chr: chromosome
-  #   position: Start base position where to predict the damage
-  #
-  # Returns:
-  #   Six columns dataframe c(chr, position, ref.base, var.base, ref.sequence, var.sequence).
-
-  #check if sequence is long enough
-  if(nchar(sequence) < (kl*2-1)){
-    warning("Sequence is to short! Has to be a minimum of: kl*2-1 !")
-    return(NA_real_)
-  }
-
-  window.size <- kl*2-1
-  
-  #make moving window sequence split
-  seq.list <- c()
-  for(i in c(1:(nchar(sequence)-window.size+1))){
-    
-    seq.list <- c(seq.list, substr(sequence, i, i+window.size-1))
-  
-  }
-  
-  #get ref base per sequqnce window
-  ref.list <- substr(seq.list, kl, kl)
-  
-  bases <- c("A", "C", "G", "T")
-  
-  #make dataframe
-  df <- data.frame(
-    
-    chr = rep(chr, length(seq.list)*3),
-    
-    pos = as.numeric(unlist( lapply( c(position:(length(seq.list)+position-1)), function(x) rep(x, 3) ))),
-    
-    ref.base = unlist( lapply( ref.list, function(x) rep(x, 3) )) 
-    
-  )
-  
-  #add all possible substitutions
-  temp <- c()
-  for(j in c(position:(length(seq.list)+position-1))){
-    
-   temp <- c(temp, bases[!(bases %in% c(as.character(df[df$pos == j, ]$ref.base[1])))])
-   
-  }
-  df$var.base <- temp
-  
-  #add ref sequence windows
-  df$ref.seq <- unlist( lapply( seq.list, function(x) rep(x, 3) ))
-  
-  #add mutated sequence windows
-  df$var.seq <- df$ref.seq 
-  substr(df$var.seq, kl, kl) <- df$var.base
-  
-  #return data frame
-  return(df)
-  
-}
-
-InSilicoMutation <- function( sequence,
-                              kl=7,
-                              chr=".",
-                              position=1,
-                              report="all",
-                              damage.mode="exhaustive",
-                              tissue=tissue,
-                              data.dir=data.dir,
-                              pnorm.tag,
-                              vocab.flag=TRUE,
-                              vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"),
-                              frag.type,
-                              progress.bar=FALSE){
-# Wrapper for max/abs damage insilico mutation
-# Take a sequence, split into dataframe of kmerlength matching window and 
-# compare reference an possible mutation sequences
-# report according to report mode ("all", "max", "maxabs")
-#
-# Args:
-#   sequence: input sequence
-#   kl: k-mer lengh to split the sequence into k-mers
-#   chr: chromosome
-#   position: Start base position where to predict the base substitution
-#   report: which mutations to report; 
-#     "all" = report all 3 possible substitutions per position
-#     "max" = only report substitution with highest positive damage
-#     "maxabs" = only report substitution with highest absolute damage
-#   damage.mode: mode for calculating the total damage 
-#   tissue: input tissue to query the profile from
-#   data.dir: repository storing processed kmer files per tissue
-#   pnorm.tag: identifier which background was used for normalisation
-#     mm9 --> mouse erythroid DNase digest;
-#     h60 --> human erythroid DNase digest;
-#     mm9_atac --> mouse erythroid ATAC digest;
-#     atac --> human erythroid ATAC digest;
-#   vocab.flag: indicating if a preprocessed vocabulary file is present and to be used [TRUE/FALSE]
-#   vocab.file: path to preprocessed vocabulary file
-#   frag.type: fragmentation type ("DNase" or "ATAC")
-#   progress.bar: flag if to use the pbapply packge for showing a progress bar
-#
-# Returns:
-#   Seven columns dataframe c(chr, position, ref.base, var.base, ref.sequence, var.sequence, damage).  
-
- 
-
-# make split sequence dataframe for query
-df <- GetPossibleMutations(sequence=sequence, kl=7, chr=chr, position=position)
-
-print(paste0("Processing ",nrow(df)," sequence windows:"))
-
-#inslico mutation for set mode with progress bar
-if(progress.bar){
-  
-  library(pbapply)
-  
-  df$damage <- pbapply(df, 1, function(x) CompareSequences(
-    sequence1=x[5], 
-    sequence2=x[6], 
-    kl=kl, 
-    damage.mode=damage.mode,
-    tissue=tissue, 
-    data.dir=data.dir,
-    pnorm.tag=pnorm.tag,
-    vocab.flag=vocab.flag,
-    vocab.file=vocab.file,
-    frag.type=frag.type,
-    plots=FALSE
-  )$summary$total.damage
-  )
-  
-}else{  #without progress bar
-  
-  df$damage <- apply(df, 1, function(x) CompareSequences(
-    sequence1=x[5], 
-    sequence2=x[6], 
-    kl=kl, 
-    damage.mode=damage.mode,
-    tissue=tissue, 
-    data.dir=data.dir,
-    vocab.flag=vocab.flag,
-    vocab.file=vocab.file,
-    frag.type=frag.type,
-    plots=FALSE
-  )$summary$total.damage
-  )
-  
-}
-
-#filter dataframe according to report mode
-if(report == "all"){
-
-  return(df)
-
-}else if(report == "max"){
-
-  dftemp <- df[0,]
-
-#select max of 3 matching rows
-for(i in df$pos[seq(from=3, to=nrow(df), by=3)]){
-
-  temp <- df[df$pos %in% i, ]
-  
-  temp <- temp[which(temp$damage == max(temp$damage)), ]
-
-    if(dim(temp)[1] > 1){  #sample randomly if equal damages
-    temp <- temp[sample(c(1:dim(temp)[1]),1), ]
-  }
-    dftemp <- rbind(dftemp, temp)
-  }
-
-  return(dftemp)
-
-}else if(report == "maxabs"){
-
-  dftemp <- df[0,]
-
-  #select max of absolute of 3 matching rows
-  for(i in df$pos[seq(from=3, to=nrow(df), by=3)]){
-  
-  temp <- df[df$pos %in% i, ]
-  
-  temp <- temp[which(temp$damage == max(abs(temp$damage))), ]
-  
-  if(dim(temp)[1] > 1){  #sample randomly if equal damages
-   temp <- temp[sample(c(1:dim(temp)[1]),1), ]
-  }
-  
-  dftemp <- rbind(dftemp, temp)
-  
-  }
-  
-  return(dftemp)
-  
-}else{
-
-warning("Select a mode for reporting! Will report default (all possible substitutions)!")
-return(df)
-
-}
-
-}
-
 RainbowPlot <- function(df, ylim=c(-2,2)){
   # Make a rainbow plot from data frame as output from InSilicoMutation. Must have been run with report="all"
   #
@@ -1779,10 +1962,10 @@ RainbowPlot <- function(df, ylim=c(-2,2)){
   
   #make plot
   p <- ggplot(df, aes(x=pos, y=damage, col=var.base)) + 
-  geom_hline(yintercept=0) +
+  geom_hline(yintercept=0, ) +
   geom_segment(aes(x=pos, xend=pos, y=0, yend=damage), col="Grey") + 
-  geom_point(size=2) + 
-  coord_cartesian(xlim=c(df$pos[1], tail(df$pos, 1)), ylim=ylim) + 
+  geom_point(size=1.5) + 
+  coord_cartesian(xlim=c(df$pos[1], tail(df$pos, 1)), ylim=ylim, expand=FALSE) + 
   labs(x=df$chr[1], y="Sum of Damage") +
   scale_color_manual(values=brewer.pal(6, "Set1")[c(3,2,4,1)], name="Variant") + 
   theme_bw() + science_theme +
@@ -1814,7 +1997,7 @@ MakeRainbowTrackHub <- function(input.df,
                               #   id.tag: id tag to name the hub directory and bw tracks
                               #   store.tracks: directory to store the bigwig tracks
                               #   store.hub: were to store the hub & visualization folder
-                              #   genome.build: select genome build ("hg19", "hg18", "mm9", ...)
+                              #   genome.build: select genome build ("hg19", "hg18", "m_ery_1", ...)
                               #   path.chr.sizes: full.path to chrsizes file amtching to the selected genome
                               #   short.label: shortLabel for track hub
                               #   long.label: longLabel for track hub (default = short.label)

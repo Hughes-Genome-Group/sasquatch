@@ -10,7 +10,7 @@ COMMON_FUNCTIONS=${SCRIPT_DIR}/common_functions.R
 OUTPUT_DIR=/t1-data1/WTSA_Dev/rschwess/dnase_motif_tissue/idx_duke_testout/merge_strands/ENCODE_H1_hESC_duke_merged/smoothed
 
 #Specify the directory where the background files (naked dnaseI fibroblast cutting) are located,
-BACKGROUND_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH60/counts
+BACKGROUND_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_h_ery_1/counts
 
 #Specify the location of the tissue specific data (for example human erythroid is located here):
 DATA_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/human_ploidy_correct
@@ -23,7 +23,7 @@ TAG="ENCODE_H1_hESC_duke_merged"
 #select a background/normalization type (choose accordingly normalized kmer count files) there will pnorm dnase and pnorm atac files
 #we have to check how much the different backgrounds differ to tell how much different norm types we need to have but at least one for atac and one for dnase will be needed (currently only dnase available)
 # currently available "laza" (human fibroblast) "JH40" (human erythroid 40% mapped)
-NORM_TYPE="JH60"	
+NORM_TYPE="h_ery_1"	
 
 ###INPUT###
 #enter a k-mer of interest
@@ -42,8 +42,8 @@ infile_plus=${DATA_DIR}/${TAG}/counts/kmers_${kl}_count_${TAG}_pnorm_${NORM_TYPE
 infile_minus=${DATA_DIR}/${TAG}/counts/kmers_${kl}_count_${TAG}_pnorm_${NORM_TYPE}_minus.txt
 
 #defining full paths to naked background count files
-infile_naked_plus=${BACKGROUND_DIR}/kmer_${kl}_hg18_human_JH60_plus_merged
-infile_naked_minus=${BACKGROUND_DIR}/kmer_${kl}_hg18_human_JH60_minus_merged
+infile_naked_plus=${BACKGROUND_DIR}/kmer_${kl}_hg18_human_h_ery_1_plus_merged
+infile_naked_minus=${BACKGROUND_DIR}/kmer_${kl}_hg18_human_h_ery_1_minus_merged
 
 #get the plus (sense) strand profile for the kmer from the tissue specific dnase footprint counts
 profile_plus_out=`Rscript ${SCRIPT_DIR}/retrieve_profile.R ${kmer} ${infile_plus} ${COMMON_FUNCTIONS}`

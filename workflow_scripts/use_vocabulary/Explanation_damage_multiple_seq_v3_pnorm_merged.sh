@@ -21,7 +21,7 @@ OUTPUT_DIR=/t1-data1/WTSA_Dev/rschwess/dnase_motif_tissue/validate_snps/haemoglo
 #select a background/normalization type (choose accordingly normalized kmer count files) there will pnorm dnase and pnorm atac files
 #we have to check how much the different backgrounds differ to tell how much different norm types we need to have but at least one for atac and one for dnase will be needed (currently only dnase available)
 # currently available "laza" (human fibroblast) "JH40" (human erythroid 40% mapped)
-NORM_TYPE="JH60"
+NORM_TYPE="h_ery_1"
 
 ORGANISM="human"
 

@@ -44,7 +44,7 @@ kmer.list <- args[8]
 # organism <- "human"
 # tissue <- "ENCODE_Duke_Cerebellum_OC_merged"
 # output.file <- "/home/ron/fusessh/sandbox/vocab_sandbox"
-# pnorm.tag <- "h_ery_1"
+# pnorm.tag <- "JH60"
 # frag.type <- "DNase"
 # data.dir <- "/home/ron/fusessh/database_assembly/idx_correct_assembly/human/DNase/"
 

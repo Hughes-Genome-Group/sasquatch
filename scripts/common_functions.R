@@ -1225,8 +1225,8 @@ get.footprint <- function(kmer,tissue, data.dir, length, frag.type, smooth){
 
   kl=nchar(kmer)
   
-  infile.plus=file.path(data.dir,tissue,"counts",paste0("kmers_",kl,"_count_",tissue,"_pnorm_JH60_plus.txt"))
-  infile.minus=file.path(data.dir,tissue,"counts",paste0("kmers_",kl,"_count_",tissue,"_pnorm_JH60_minus.txt"))
+  infile.plus=file.path(data.dir,tissue,"counts",paste0("kmers_",kl,"_count_",tissue,"_pnorm_h_ery_1_plus.txt"))
+  infile.minus=file.path(data.dir,tissue,"counts",paste0("kmers_",kl,"_count_",tissue,"_pnorm_h_ery_1_minus.txt"))
   
   #grep profiles & counts
   l.plus <- grep.profile(kmer, infile.plus)

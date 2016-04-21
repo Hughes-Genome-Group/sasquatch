@@ -79,20 +79,22 @@ PLOIDY_REGIONS_mm9=/t1-data1/WTSA_Dev/rschwess/database_assembly/region_exclude/
 # ===================================================================================================== #
 
 #human DNase
-PROPENSITY_PLUS_human_dnase=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_h_ery_1/pnorm/hg18_human_JH60_propensities_plus_merged
-PROPENSITY_MINUS_human_dnase=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_h_ery_1/pnorm/hg18_human_JH60_propensities_minus_merged
+PROPENSITY_PLUS_human_dnase=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_h_ery_1/pnorm/hg18_h_ery_1_propensities_plus_merged
+PROPENSITY_MINUS_human_dnase=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_h_ery_1/pnorm/hg18_h_ery_1_propensities_minus_merged
 
 #human ATAC
-PROPENSITY_PLUS_human_atac==/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH_atac/pnorm/cut_kmer_6_hg18_human_h60_atac_plus_merged_propensities
-PROPENSITY_MINUS_human_atac=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH_atac/pnorm/cut_kmer_6_hg18_human_h60_atac_minus_merged_propensities
+PROPENSITY_PLUS_human_atac==/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_h_ery_1_atac/pnorm/cut_kmer_6_hg18_h_ery_1_atac_plus_merged_propensities
+PROPENSITY_MINUS_human_atac=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_h_ery_1_atac/pnorm/cut_kmer_6_hg18_h_ery_1_atac_minus_merged_propensities
 
 #mouse DNase
-PROPENSITY_PLUS_mouse_dnase=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid/pnorm/cut_kmer_6_mm9_plus_merged_propensities
-PROPENSITY_MINUS_mouse_dnase=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid/pnorm/cut_kmer_6_mm9_mouse_erythroid_minus_merged_propensities
+PROPENSITY_PLUS_mouse_dnase=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_m_ery_1/pnorm/cut_kmer_6_mm9_m_ery_1_plus_merged_propensities
+PROPENSITY_MINUS_mouse_dnase=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_m_ery_1/pnorm/cut_kmer_6_mm9_m_ery_1_minus_merged_propensities
 
 #mouse ATAC
-PROPENSITY_PLUS_mouse_atac=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid_atac/pnorm/cut_kmer_6_atac_mm9_mouse_erythroid_atac_plus_merged_propensities
-PROPENSITY_MINUS_mouse_atac=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid_atac/pnorm/ccut_kmer_6_atac_mm9_mouse_erythroid_atac_minus_merged_propensities
+PROPENSITY_PLUS_mouse_atac=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_m_ery_1_atac/pnorm/cut_kmer_6_atac_mm9_m_ery_1_atac_plus_merged_propensities
+PROPENSITY_MINUS_mouse_atac=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_m_ery_1_atac/pnorm/cut_kmer_6_atac_m_ery_1_atac_minus_merged_propensities
+
+
 
 # ============================================================================================================== #
 # Select reference genome, mapability (ploidy) regions to remove from the footprint signal and                   #

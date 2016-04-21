@@ -2,11 +2,11 @@
 
 #$ -cwd
 #$ -q batchq
-#$ -M rschwess
+#$ -M ron.schwessinger@ndcls.ox.ac.uk
 #$ -m eas
-#$ -e /t1-data1/WTSA_Dev/rschwess/clustereo
+#$ -j y
 #$ -o /t1-data1/WTSA_Dev/rschwess/clustereo
-#$ -N bb_enc_panc_is_rep3
+#$ -N bb_cd20plus_duke_rep1
 
 #qsub /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/runscript_tissue_v2_backbone_public.sh
 
@@ -28,7 +28,7 @@ ORGANISM="human"
 BUILD='hg19'
 
 #IDtag to produce output directory and name the files
-IDTAG="ENCODE_Duke_PancreaticIslets_rep3"
+IDTAG="ENCODE_Duke_CD20plus_RO01794_rep1"
 
 #specify if DNaseI or ATAC data ("DNase" or "ATAC")
 DATA_TYPE="DNase"
@@ -47,8 +47,8 @@ SEQ_TYPE="singleend"
 
 DWN_SOURCE="duke"
 
-BAM_NAME="wgEncodeOpenChromDnasePanisletsAlnRep3.bam"
-PEAK_NAME="wgEncodeOpenChromDnasePanisletsPk"
+BAM_NAME="wgEncodeOpenChromDnaseCd20ro01794AlnRep1.bam"
+PEAK_NAME="wgEncodeOpenChromDnaseCd20ro01794Pk"
 PEAK_FILE=${PEAK_NAME}.narrowPeak
 
 #select DOWNLOAD PATH accroding to DWN_SOURCE
@@ -60,7 +60,7 @@ case "${DWN_SOURCE}" in
 	;;
 	UW)
 		#UW golden path
-		DOWNLOAD_PATH='hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeUwDnase/'	
+		DOWNLOAD_PATH='hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeUwDnase/'
 	;;
 	UW_DGF)
 		#UW DGF golden path
@@ -106,20 +106,20 @@ PLOIDY_REGIONS_mm9=/t1-data1/WTSA_Dev/rschwess/database_assembly/region_exclude/
 # ===================================================================================================== #
 
 #human DNase
-PROPENSITY_PLUS_human_dnase=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH60/pnorm/hg18_human_JH60_propensities_plus_merged
-PROPENSITY_MINUS_human_dnase=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH60/pnorm/hg18_human_JH60_propensities_minus_merged
+PROPENSITY_PLUS_human_dnase=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_h_ery_1/pnorm/hg18_h_ery_1_propensities_plus_merged
+PROPENSITY_MINUS_human_dnase=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_h_ery_1/pnorm/hg18_h_ery_1_propensities_minus_merged
 
 #human ATAC
-PROPENSITY_PLUS_human_atac==/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH_atac/pnorm/cut_kmer_6_hg18_plus_merged_propensities
-PROPENSITY_MINUS_human_atac=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH_atac/pnorm/cut_kmer_6_hg18_minus_merged_propensities
+PROPENSITY_PLUS_human_atac==/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_h_ery_1_atac/pnorm/cut_kmer_6_hg18_h_ery_1_atac_plus_merged_propensities
+PROPENSITY_MINUS_human_atac=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_h_ery_1_atac/pnorm/cut_kmer_6_hg18_h_ery_1_atac_minus_merged_propensities
 
 #mouse DNase
-PROPENSITY_PLUS_mouse_dnase=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid/pnorm/cut_kmer_6_mm9_plus_merged_propensities
-PROPENSITY_MINUS_mouse_dnase=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid/pnorm/cut_kmer_6_mm9_minus_merged_propensities
+PROPENSITY_PLUS_mouse_dnase=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_m_ery_1/pnorm/cut_kmer_6_mm9_m_ery_1_plus_merged_propensities
+PROPENSITY_MINUS_mouse_dnase=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_m_ery_1/pnorm/cut_kmer_6_mm9_m_ery_1_minus_merged_propensities
 
 #mouse ATAC
-PROPENSITY_PLUS_mouse_atac=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid_atac/pnorm/cut_kmer_6_atac_mm9_plus_merged_propensities
-PROPENSITY_MINUS_mouse_atac=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid_atac/pnorm/cut_kmer_6_atac_mm9_minus_merged_propensities
+PROPENSITY_PLUS_mouse_atac=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_m_ery_1_atac/pnorm/cut_kmer_6_atac_mm9_m_ery_1_atac_plus_merged_propensities
+PROPENSITY_MINUS_mouse_atac=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_m_ery_1_atac/pnorm/cut_kmer_6_atac_m_ery_1_atac_minus_merged_propensities
 
 
 # ============================================================================================================== #
@@ -150,7 +150,7 @@ case "${ORGANISM}" in
 		case "${DATA_TYPE}" in
 	
 			DNase)
-				pnormsource="JH60"
+				pnormsource="h_ery_1"
 				PROPENSITY_PLUS=${PROPENSITY_PLUS_human_dnase}
 				PROPENSITY_MINUS=${PROPENSITY_MINUS_human_dnase}			
 			;;
@@ -215,6 +215,12 @@ rsync -a -P rsync://${DOWNLOAD_PATH}/${BAM_NAME}.bai ${OUTPUT_DIR}
 
 rsync -a -P rsync://${DOWNLOAD_PATH}/${PEAK_FILE}.gz ${OUTPUT_DIR}
 
+#wget -nv "http://${DOWNLOAD_PATH}/${BAM_NAME}"
+
+#wget -nv "http://${DOWNLOAD_PATH}/${BAM_NAME}.bai"
+
+#wget -nv "http://${DOWNLOAD_PATH}/${PEAK_FILE}.gz"
+
 gzip -d ${OUTPUT_DIR}/${PEAK_FILE}.gz
 
 ### --------------------------------------
@@ -226,9 +232,9 @@ module add bedtools
 
 bedtools intersect -v -a ${REGIONS_FILE} -b ${PLOIDY_REGIONS} >${REGIONS_FILE_PLOIDY_FILTERED}
 
-#### -----------------
-#### Submit Footprints
-#### -----------------
+##### -----------------
+##### Submit Footprints
+##### -----------------
 
 fpid=`qsub -N fp_${IDTAG} -v OUTPUT_DIR=${OUTPUT_DIR},DATA_TYPE=${DATA_TYPE},BAM_FILE=${BAM_FILE},SCRIPT_DIR=${SCRIPT_DIR},BIGWIG_CHRSIZES=${BIGWIG_CHRSIZES},SEQ_TYPE=${SEQ_TYPE},IDTAG=${IDTAG} ${PIPE_DIR}/runscript_tissue_v2_footprinting.sh | perl -ne '$_=~/\s+(\d+)\s+/; print $1;'`
 
@@ -237,7 +243,7 @@ echo "Footprinting Job $fpid submitted"
 ### ------------------------
 ### submit count k-mers pnorm
 ### ------------------------
-#make counts directory
+# make counts directory
 COUNTS=${OUTPUT_DIR}/counts
 mkdir -p ${COUNTS}
 
@@ -254,7 +260,7 @@ echo "K-mer counting P-norm Job $countpnormid submitted"
 
 echo "Total reads: `samtools view ${BAM_FILE} | wc -l`" >${OUTPUT_DIR}/read_stats.txt
 echo "Number of Peaks:: `wc -l ${REGIONS_FILE_PLOIDY_FILTERED}`" >>${OUTPUT_DIR}/read_stats.txt 
-echo "Reads in Peaks:: `bedtools intersect -abam -wa -a ${BAM_FILE} -b ${REGIONS_FILE_PLOIDY_FILTERED} | wc -l`" >>${OUTPUT_DIR}/read_stats.txt 
+echo "Reads in Peaks:: `bedtools intersect -wa -a ${BAM_FILE} -b ${REGIONS_FILE_PLOIDY_FILTERED} | wc -l`" >>${OUTPUT_DIR}/read_stats.txt 
 
 ### --------------------------------------------------------------------------------------------
 ### Submit cleaner .sh for removing temporary stored bam and footprint files after jobs finished

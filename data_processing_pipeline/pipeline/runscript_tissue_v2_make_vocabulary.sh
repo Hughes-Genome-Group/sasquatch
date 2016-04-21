@@ -7,7 +7,7 @@
 #$ -j y
 #$ -e /t1-data1/WTSA_Dev/rschwess/clustereo
 #$ -o /t1-data1/WTSA_Dev/rschwess/clustereo
-#$ -N voc_imr90_duke
+#$ -N voc_12878_uw_enc
 
 #qsub /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/runscript_tissue_v2_make_vocabulary.sh
 
@@ -22,7 +22,7 @@ ORGANISM="human"
 FRAG_TYPE="DNase"
 
 #Tissue ID
-TISSUE="ENCODE_Duke_IMR90_merged"
+TISSUE="ENCODE_UW_GM12878_merged"
 
 #define DATA directory
 DATA_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/${ORGANISM}/${FRAG_TYPE}/

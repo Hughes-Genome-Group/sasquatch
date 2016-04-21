@@ -1,13 +1,15 @@
 source("/home/ron/fusessh/Sasquatch_offline/Sasquatch/R_utility/functions_sasq_r_utility.R")
+source("/home/ron/fusessh/Sasquatch_DEV/functions_sasq_r_utility.R")
+
 
 ### === Set Some Initial Parameters ===============================================================
 
 data.dir <- "/home/ron/fusessh/database_assembly/idx_correct_assembly/human/DNase/"
-pnorm.tag <- "JH60" #identifier for the propensity source used
+pnorm.tag <- "h_ery_1" #identifier for the propensity source used
 
 # only for background plots
 background.dir <- "/home/ron/fusessh/database_assembly/idx_correct_assembly/background/"
-background.tissue <- "hg18_human_JH60"
+background.tissue <- "hg18_human_h_ery_1"
 
 # output directory for tables and plots  
 out.dir <- "/home/ron/Daten/WIMM/Sasquatch_working/"
@@ -95,10 +97,10 @@ dl <- DissectSequence(seq, kl=7, list=FALSE)
 
 # Wrapper to get SFR from k-mer and tissues --> returns single SFR value --------------------------
 sfr <- GetSFR(kmer="CACGTG", 
-              tissue="human_erythroid_hg18", 
+              tissue=tissue, 
               data.dir=data.dir,
               pnorm.tag=pnorm.tag,
-              vocab.flag=TRUE, 
+              vocab.flag=F, 
               frag.type="DNase")
 
 # Wrapper for single plot
@@ -273,3 +275,101 @@ d$damage <- apply(d, 1, function(x) CompareSequences(sequence1=x[5],
                                                      plots=FALSE
                                                      )$summary$total.damage
                   )
+
+# Preload data for faster processing --------------------------------------------------------------------------------
+
+# Preload vocab file
+data.dir <- "/home/ron/fusessh/database_assembly/idx_correct_assembly/human/DNase/"
+pnorm.tag <- "h_ery_1" #identifier for the propensity source used
+
+# output directory for tables and plots  
+out.dir <- "/home/ron/Daten/WIMM/Sasquatch_working/"
+
+# select tissue (e.g. "list.files(data.dir)")
+tissue <- "WIMM_primary_erythroid_Fibach_Fade8"
+
+# select fragmentation type
+frag.type <- "DNase"
+
+vocab <- PreLoadVocab(data.dir, tissue)
+profiles <- PreLoadKmerProfiles(7, data.dir, tissue, pnorm.tag)
+
+# Apply functions with preload vocabulary file
+# 1) Get Footprint
+fp <- GetFootprint("CACGTGG", tissue, data.dir, pnorm.tag, frag.type, smooth=T, preload=T, preload.profiles = profiles)
+
+# 2) GetSFR
+sfr.v <- GetSFR(kmer="CGCATGC", tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, vocab.flag=T, frag.type="DNase", preload=T, preload.vocab=vocab, preload.profiles=profiles)
+sfr.p <- GetSFR(kmer="CGCATGC", tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, vocab.flag=F, frag.type="DNase", preload=T, preload.vocab=vocab, preload.profiles=profiles)
+sfr.v
+sfr.p
+
+# 3) Dissect lOnger Sequence
+ds1 <- QueryLongSequence("CCGCGCTTATGTACC", 7, tissue, data.dir, pnorm.tag, vocab.flag = F, frag.type = "DNase", preload=F)
+ds2 <- QueryLongSequence("CCGCGCTTATGTACC", 7, tissue, data.dir, pnorm.tag, vocab.flag = F, frag.type = "DNase", preload=T, preload.vocab = vocab, preload.profiles = profiles)
+ds1
+ds2
+
+#compare time
+system.time(QueryLongSequence("CCGCGCTTATGTACC", 7, tissue, data.dir, pnorm.tag, vocab.flag = F, frag.type = "DNase", preload=F))
+system.time(QueryLongSequence("CCGCGCTTATGTACC", 7, tissue, data.dir, pnorm.tag, vocab.flag = F, frag.type = "DNase", preload=T, preload.vocab = vocab, preload.profiles = profiles))
+
+system.time(QueryLongSequence("CCGCGCTTATGTACC", 7, tissue, data.dir, pnorm.tag, vocab.flag = T, frag.type = "DNase", preload=F))
+system.time(QueryLongSequence("CCGCGCTTATGTACC", 7, tissue, data.dir, pnorm.tag, vocab.flag = T, frag.type = "DNase", preload=T, preload.vocab = vocab, preload.profiles = profiles))
+
+# 4) Compare Sequences
+comp <- CompareSequences(
+  sequence1="CAGTTTCATGAGG", 
+  sequence2="CAGTTTTATGAGG", 
+  kl=7,
+  data.dir=data.dir,
+  pnorm.tag = pnorm.tag,
+  damage.mode="exhaustive",
+  tissue=tissue, 
+  vocab.flag=T,
+  frag.type="DNase", 
+  plots="highest",
+  preload=T,
+  preload.vocab=vocab,
+  preload.profiles=profiles
+)
+
+# 5) RefVarBatch
+tdf <- data.frame(
+  id=c("1", "2", "3"), 
+  ref=c("ATAGATAATCGCT", "ATAGATAATCGCT", "ATATATTCTCGCT"),
+  var=c("ATAGATCATCGCT", "ATAGATTATCGCT", "ATAGATGATCGCT")
+)
+
+bcomp <- RefVarBatch(ref.var.df=tdf, 
+                     kl=7, 
+                     damage.mode="exhaustive", 
+                     tissue=tissue, 
+                     data.dir=data.dir,
+                     pnorm.tag=pnorm.tag,
+                     vocab.flag=TRUE, 
+                     frag.type=frag.type,
+                     preload=TRUE,
+                     preload.vocab = vocab,
+                     preload.profiles = profiles)
+
+# 6) In Silico Mutation
+df.insilico <- InSilicoMutation(sequence="GTGCCCGCATGTGCTTATTTCTGCAAAAATAAACCATGGCAGG", 
+                                kl=7, 
+                                chr="chr1",
+                                position=13330000,
+                                report="all",
+                                damage.mode="exhaustive",
+                                tissue=tissue,
+                                data.dir=data.dir,
+                                pnorm.tag = pnorm.tag,
+                                vocab.flag=TRUE,
+                                frag.type=frag.type,
+                                progress.bar=TRUE,
+                                preload=TRUE,
+                                preload.vocab = vocab,
+                                preload.profiles = profiles
+)
+head(df.insilico)
+
+

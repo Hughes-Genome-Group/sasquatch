@@ -2,11 +2,11 @@
 
 #$ -cwd
 #$ -q batchq
-#$ -M rschwess
+#$ -M ron.schwessinger@ndcls.ox.ac.uk
 #$ -m eas
 #$ -j y
 #$ -o /t1-data1/WTSA_Dev/rschwess/clustereo
-#$ -N bb_uw_monocy_r2
+#$ -N bb_ag04449_rep2
 
 #qsub /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/runscript_tissue_v2_backbone_public.sh
 
@@ -28,7 +28,7 @@ ORGANISM="human"
 BUILD='hg19'
 
 #IDtag to produce output directory and name the files
-IDTAG="ENCODE_UW_Monocytes_CD14plus_RO1746_rep2"
+IDTAG="ENCODE_UW_AG04449_rep2"
 
 #specify if DNaseI or ATAC data ("DNase" or "ATAC")
 DATA_TYPE="DNase"
@@ -47,8 +47,8 @@ SEQ_TYPE="singleend"
 
 DWN_SOURCE="UW"
 
-BAM_NAME="wgEncodeUwDnaseMonocd14ro1746AlnRep2.bam"
-PEAK_NAME="wgEncodeUwDnaseMonocd14ro1746PkRep2"
+BAM_NAME="wgEncodeUwDnaseAg04449AlnRep2.bam"
+PEAK_NAME="wgEncodeUwDnaseAg04449PkRep2"
 PEAK_FILE=${PEAK_NAME}.narrowPeak
 
 #select DOWNLOAD PATH accroding to DWN_SOURCE
@@ -106,20 +106,20 @@ PLOIDY_REGIONS_mm9=/t1-data1/WTSA_Dev/rschwess/database_assembly/region_exclude/
 # ===================================================================================================== #
 
 #human DNase
-PROPENSITY_PLUS_human_dnase=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_h_ery_1/pnorm/hg18_human_JH60_propensities_plus_merged
-PROPENSITY_MINUS_human_dnase=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_h_ery_1/pnorm/hg18_human_JH60_propensities_minus_merged
+PROPENSITY_PLUS_human_dnase=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_h_ery_1/pnorm/hg18_h_ery_1_propensities_plus_merged
+PROPENSITY_MINUS_human_dnase=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_h_ery_1/pnorm/hg18_h_ery_1_propensities_minus_merged
 
 #human ATAC
-PROPENSITY_PLUS_human_atac==/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH_atac/pnorm/cut_kmer_6_hg18_human_h60_atac_plus_merged_propensities
-PROPENSITY_MINUS_human_atac=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH_atac/pnorm/cut_kmer_6_hg18_human_h60_atac_minus_merged_propensities
+PROPENSITY_PLUS_human_atac==/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_h_ery_1_atac/pnorm/cut_kmer_6_hg18_h_ery_1_atac_plus_merged_propensities
+PROPENSITY_MINUS_human_atac=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_h_ery_1_atac/pnorm/cut_kmer_6_hg18_h_ery_1_atac_minus_merged_propensities
 
 #mouse DNase
-PROPENSITY_PLUS_mouse_dnase=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid/pnorm/cut_kmer_6_mm9_plus_merged_propensities
-PROPENSITY_MINUS_mouse_dnase=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid/pnorm/cut_kmer_6_mm9_mouse_erythroid_minus_merged_propensities
+PROPENSITY_PLUS_mouse_dnase=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_m_ery_1/pnorm/cut_kmer_6_mm9_m_ery_1_plus_merged_propensities
+PROPENSITY_MINUS_mouse_dnase=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_m_ery_1/pnorm/cut_kmer_6_mm9_m_ery_1_minus_merged_propensities
 
 #mouse ATAC
-PROPENSITY_PLUS_mouse_atac=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid_atac/pnorm/cut_kmer_6_atac_mm9_mouse_erythroid_atac_plus_merged_propensities
-PROPENSITY_MINUS_mouse_atac=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_mouse_erythroid_atac/pnorm/ccut_kmer_6_atac_mm9_mouse_erythroid_atac_minus_merged_propensities
+PROPENSITY_PLUS_mouse_atac=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_m_ery_1_atac/pnorm/cut_kmer_6_atac_mm9_m_ery_1_atac_plus_merged_propensities
+PROPENSITY_MINUS_mouse_atac=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/mm9_m_ery_1_atac/pnorm/cut_kmer_6_atac_m_ery_1_atac_minus_merged_propensities
 
 
 # ============================================================================================================== #

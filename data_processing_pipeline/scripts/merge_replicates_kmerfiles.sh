@@ -14,11 +14,11 @@ cd ${datadir}/${merged}/counts
 for i in 5 6 7
 do
 
-perl /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/scripts/merge_replicates_kmerfiles.pl ${datadir}/${rep1}/counts/kmers_${i}_count_${rep1}_pnorm_h_ery_1_plus.txt ${datadir}/${rep2}/counts/kmers_${i}_count_${rep2}_pnorm_JH60_plus.txt >kmers_${i}_count_${merged}_pnorm_JH60_plus.txt
+perl /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/scripts/merge_replicates_kmerfiles.pl ${datadir}/${rep1}/counts/kmers_${i}_count_${rep1}_pnorm_h_ery_1_plus.txt ${datadir}/${rep2}/counts/kmers_${i}_count_${rep2}_pnorm_h_ery_1_plus.txt >kmers_${i}_count_${merged}_pnorm_JH60_plus.txt
 
 echo "... $i plus done"
 
-perl /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/scripts/merge_replicates_kmerfiles.pl ${datadir}/${rep1}/counts/kmers_${i}_count_${rep1}_pnorm_h_ery_1_minus.txt ${datadir}/${rep2}/counts/kmers_${i}_count_${rep2}_pnorm_JH60_minus.txt >kmers_${i}_count_${merged}_pnorm_JH60_minus.txt
+perl /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/scripts/merge_replicates_kmerfiles.pl ${datadir}/${rep1}/counts/kmers_${i}_count_${rep1}_pnorm_h_ery_1_minus.txt ${datadir}/${rep2}/counts/kmers_${i}_count_${rep2}_pnorm_h_ery_1_minus.txt >kmers_${i}_count_${merged}_pnorm_JH60_minus.txt
 
 echo "... $i minus done"
 
@@ -48,11 +48,11 @@ cd ${datadir}/${merged}/counts
 for i in 5 6 7
 do
 
-perl /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/scripts/merge_replicates_kmerfiles.pl ${datadir}/${rep1}/counts/kmers_${i}_count_${rep1}_pnorm_h_ery_1_plus.txt ${datadir}/${rep2}/counts/kmers_${i}_count_${rep2}_pnorm_JH60_plus.txt  ${datadir}/${rep3}/counts/kmers_${i}_count_${rep3}_pnorm_JH60_plus.txt >kmers_${i}_count_${merged}_pnorm_JH60_plus.txt
+perl /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/scripts/merge_replicates_kmerfiles.pl ${datadir}/${rep1}/counts/kmers_${i}_count_${rep1}_pnorm_h_ery_1_plus.txt ${datadir}/${rep2}/counts/kmers_${i}_count_${rep2}_pnorm_h_ery_1_plus.txt  ${datadir}/${rep3}/counts/kmers_${i}_count_${rep3}_pnorm_JH60_plus.txt >kmers_${i}_count_${merged}_pnorm_JH60_plus.txt
 
 echo "... $i plus done"
 
-perl /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/scripts/merge_replicates_kmerfiles.pl ${datadir}/${rep1}/counts/kmers_${i}_count_${rep1}_pnorm_h_ery_1_minus.txt ${datadir}/${rep2}/counts/kmers_${i}_count_${rep2}_pnorm_JH60_minus.txt ${datadir}/${rep3}/counts/kmers_${i}_count_${rep3}_pnorm_JH60_minus.txt >kmers_${i}_count_${merged}_pnorm_JH60_minus.txt
+perl /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/scripts/merge_replicates_kmerfiles.pl ${datadir}/${rep1}/counts/kmers_${i}_count_${rep1}_pnorm_h_ery_1_minus.txt ${datadir}/${rep2}/counts/kmers_${i}_count_${rep2}_pnorm_h_ery_1_minus.txt ${datadir}/${rep3}/counts/kmers_${i}_count_${rep3}_pnorm_JH60_minus.txt >kmers_${i}_count_${merged}_pnorm_JH60_minus.txt
 
 echo "... $i minus done"
 

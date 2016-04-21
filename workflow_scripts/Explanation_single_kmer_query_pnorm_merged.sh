@@ -17,8 +17,8 @@ FRAG_TYPE="DNase"
 #so that by setting a data directory and the correct tag you get access to the tissue specific count files later.
 TISSUE="ENCODE_CD34plus_mobilized"
 
-# currently available "laza" (human fibroblast) "JH60" (human erythroid 60% mapped)  "atac" for atac;  mm9 --> atac= atac_mm9
-NORM_TYPE="JH60"
+# currently available "laza" (human fibroblast) "h_ery_1" (human erythroid 60% mapped)  "atac" for atac;  mm9 --> atac= atac_mm9
+NORM_TYPE="h_ery_1"
 
 ###INPUT###
 #enter a k-mer of interest
@@ -43,10 +43,10 @@ case "${FRAG_TYPE}" in
 
 DNase)	
 #Specify the directory where the background files (naked dnaseI fibroblast cutting) are located,
-BACKGROUND_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_JH60/counts
+BACKGROUND_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_human_h_ery_1/counts
 #defining full paths to naked background count files
-infile_naked_plus=${BACKGROUND_DIR}/kmer_${kl}_hg18_human_JH60_plus_merged
-infile_naked_minus=${BACKGROUND_DIR}/kmer_${kl}_hg18_human_JH60_minus_merged
+infile_naked_plus=${BACKGROUND_DIR}/kmer_${kl}_hg18_human_h_ery_1_plus_merged
+infile_naked_minus=${BACKGROUND_DIR}/kmer_${kl}_hg18_human_h_ery_1_minus_merged
 #Select accordingly normalized input files
 infile_plus=${DATA_DIR}/${TISSUE}/counts/kmers_${kl}_count_${TISSUE}_pnorm_${NORM_TYPE}_plus.txt
 infile_minus=${DATA_DIR}/${TISSUE}/counts/kmers_${kl}_count_${TISSUE}_pnorm_${NORM_TYPE}_minus.txt
