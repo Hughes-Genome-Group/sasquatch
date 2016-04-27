@@ -1,5 +1,14 @@
 #!/bin/bash
 
+#############################################################################################
+##                                                                                          ##
+## Sasquatch, Sequence based predicting of DNase I footprinting potential.                  ##
+## Copyright (C) 2016 Genome Biology and Computational Biology Research Group, WIMM, Oxford ##
+##                                                                                          ##
+## Data preprocessing, background: backbone for submitting footprinting and profile calc    ##
+##                                                                                          ##
+##############################################################################################
+
 #SCRIPT DIRs
 PIPE_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/tissue_v2
 SCRIPT_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/scripts	
@@ -53,4 +62,5 @@ cd ${OUTPUT_DIR}
 fpid=`qsub -N fp_${IDTAG} -v OUTPUT_DIR=${OUTPUT_DIR},DATA_TYPE=${DATA_TYPE},BAM_FILE=${BAM_FILE},SCRIPT_DIR=${SCRIPT_DIR},BIGWIG_CHRSIZES=${BIGWIG_CHRSIZES},SEQ_TYPE=${SEQ_TYPE},IDTAG=${IDTAG} ${PIPE_DIR}/runscript_tissue_v2_footprinting.sh | perl -ne '$_=~/\s+(\d+)\s+/; print $1;'`
 
 echo "Footprinting Job $fpid submitted"
+
 

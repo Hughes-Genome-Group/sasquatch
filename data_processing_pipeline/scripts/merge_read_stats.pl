@@ -1,3 +1,12 @@
+##############################################################################################
+## Sasquatch, Sequence based predicting of DNase I footprinting potential.                  ##
+## Copyright (C) 2016 Genome Biology and Computational Biology Research Group, WIMM, Oxford ##
+##############################################################################################
+# Function: Data preprocessing; Merge read stats from multiple replicate runs
+# Usage: perl ./merge_read_stats.pl ./data1/read_stats.txt ./data2/read_stats.txt | tee ./data_merged/read_stats.txt
+# Author: Ron Schwessinger
+# Date: 27/04/2016
+
 #!/usr/bin/perl -w
 use strict;
 use warnings;

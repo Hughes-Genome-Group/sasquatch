@@ -1,5 +1,14 @@
 #!usr/bin/bash
 
+##############################################################################################
+##                                                                                          ##
+## Sasquatch, Sequence based predicting of DNase I footprinting potential.                  ##
+## Copyright (C) 2016 Genome Biology and Computational Biology Research Group, WIMM, Oxford ##
+##                                                                                          ##
+## Data preprocessing: deleate downloaded and intermediate files                            ##
+##                                                                                          ##
+##############################################################################################
+
 #$ -cwd
 #$ -q batchq
 #$ -M rschwess
@@ -15,5 +24,7 @@ rm -f ${OUTPUT_DIR}/*.bam
 rm -f ${OUTPUT_DIR}/*.bam.bai
 
 cd ${OUTPUT_DIR}
+
+# optional delete footprint files
 #rm -Rf ${OUTPUT_DIR}/footprints
 

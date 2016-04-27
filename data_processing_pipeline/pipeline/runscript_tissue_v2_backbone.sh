@@ -1,5 +1,14 @@
 #!/bin/bash
 
+##############################################################################################
+##                                                                                          ##
+## Sasquatch, Sequence based predicting of DNase I footprinting potential.                  ##
+## Copyright (C) 2016 Genome Biology and Computational Biology Research Group, WIMM, Oxford ##
+##                                                                                          ##
+## Data preprocessing: download and job submission backbone                                 ##
+##                                                                                          ##
+##############################################################################################
+
 #$ -cwd
 #$ -q batchq
 #$ -M rschwess

@@ -1,12 +1,21 @@
 #!usr/bin/bash
 
+##############################################################################################
+##                                                                                          ##
+## Sasquatch, Sequence based predicting of DNase I footprinting potential.                  ##
+## Copyright (C) 2016 Genome Biology and Computational Biology Research Group, WIMM, Oxford ##
+##                                                                                          ##
+## Data preprocessing: download and job submission backbone, public data                    ##
+##                                                                                          ##
+##############################################################################################
+
 #$ -cwd
 #$ -q batchq
 #$ -M ron.schwessinger@ndcls.ox.ac.uk
 #$ -m eas
 #$ -j y
 #$ -o /t1-data1/WTSA_Dev/rschwess/clustereo
-#$ -N bb_ag04449_rep2
+#$ -N bb_cll_rep3
 
 #qsub /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/runscript_tissue_v2_backbone_public.sh
 
@@ -28,7 +37,7 @@ ORGANISM="human"
 BUILD='hg19'
 
 #IDtag to produce output directory and name the files
-IDTAG="ENCODE_UW_AG04449_rep2"
+IDTAG="ENCODE_Duke_CLL_rep3"
 
 #specify if DNaseI or ATAC data ("DNase" or "ATAC")
 DATA_TYPE="DNase"
@@ -45,16 +54,16 @@ SEQ_TYPE="singleend"
 # Source: ENCODE  "duke" "UW" "UW_DGF" "UW_mouse"; chose download paths 	   #
 # ================================================================================ #
 
-DWN_SOURCE="UW"
+DWN_SOURCE="Duke"
 
-BAM_NAME="wgEncodeUwDnaseAg04449AlnRep2.bam"
-PEAK_NAME="wgEncodeUwDnaseAg04449PkRep2"
+BAM_NAME="wgEncodeOpenChromDnaseCllAlnRep3.bam"
+PEAK_NAME="wgEncodeOpenChromDnaseCllPk"
 PEAK_FILE=${PEAK_NAME}.narrowPeak
 
 #select DOWNLOAD PATH accroding to DWN_SOURCE
 case "${DWN_SOURCE}" in
 	
-	duke)
+	Duke)
 		#DUKe golden path
 		DOWNLOAD_PATH='hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeOpenChromDnase/'
 	;;

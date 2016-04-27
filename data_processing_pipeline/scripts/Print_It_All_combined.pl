@@ -1,3 +1,12 @@
+##############################################################################################
+## Sasquatch, Sequence based predicting of DNase I footprinting potential.                  ##
+## Copyright (C) 2016 Genome Biology and Computational Biology Research Group, WIMM, Oxford ##
+##############################################################################################
+# Function: Data preprocessing; Create Strandspecific DNase I footprint wig tracks from aligned bam file
+# Usage: samtools view ${BAM_FILE} | perl ${SCRIPT_DIR}/Print_It_All_combined.pl --build ${BIGWIG_CHRSIZES} --name ${IDTAG} --type ${SEQ_TYPE} -
+# Author: Ron Schwessinger, Jim Hughes
+# Date: 27/04/2016
+
 #!/usr/bin/perl -w
 use strict;
 use Getopt::Long;
@@ -11,7 +20,6 @@ use Getopt::Long;
 );
 
 open (OUTPUT1, ">$track_name\_Minus.wig");
-#
 open (OUTPUT2, ">$track_name\_Plus.wig");
 
 unless($window_size) {$window_size = 1;} #changed form 3 to zero to get rid of windowing

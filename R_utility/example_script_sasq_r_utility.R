@@ -1,6 +1,16 @@
-source("/home/ron/fusessh/Sasquatch_offline/Sasquatch/R_utility/functions_sasq_r_utility.R")
-source("/home/ron/fusessh/Sasquatch_DEV/functions_sasq_r_utility.R")
+##############################################################################################
+##                                                                                          ##
+## Sasquatch, Sequence based predicting of DNase I footprinting potential.                  ##
+## Copyright (C) 2016 Genome Biology and Computational Biology Research Group, WIMM, Oxford ##
+##                                                                                          ##
+##############################################################################################
 
+###############################
+## Example R-Script          ##
+## Author: Ron Schwessinger  ##
+###############################
+
+source("/home/ron/fusessh/Sasquatch_offline/Sasquatch/R_utility/functions_sasq_r_utility.R")
 
 ### === Set Some Initial Parameters ===============================================================
 

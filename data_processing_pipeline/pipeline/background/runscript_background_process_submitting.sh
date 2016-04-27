@@ -1,5 +1,13 @@
 #!/bin/bash
 
+##############################################################################################
+##                                                                                          ##
+## Sasquatch, Sequence based predicting of DNase I footprinting potential.                  ##
+## Copyright (C) 2016 Genome Biology and Computational Biology Research Group, WIMM, Oxford ##
+##                                                                                          ##
+## Data preprocessing, background generation: submit genome-wide footprinting               ##
+##                                                                                          ##
+##############################################################################################
 
 IDTAG="hg18_human_h_ery_1"
 
@@ -8,9 +16,11 @@ SCRIPT_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processi
 
 OUTPUT_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/${IDTAG}_minus_test
 
+# Generated Strand-specific footprint files
 FOOTPRINT_FILE_PLUS=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/${IDTAG}/footprints/${IDTAG}_ploidy_removed_Plus_merged.wig
 FOOTPRINT_FILE_MINUS=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/${IDTAG}/footprints/${IDTAG}_ploidy_removed_Minus_merged.wig
 
+# Wig border files indicating the first and last position with recorded DNase I cut sites (e.g. generate with ../scripts/get_footprint_wig_borders.pl )
 BORDER_FILE_PLUS=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/${IDTAG}/footprints/${IDTAG}_ploidy_removed_Plus_merged_wig_borders
 BORDER_FILE_MINUS=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/${IDTAG}/footprints/${IDTAG}_ploidy_removed_Minus_merged_wig_borders
 

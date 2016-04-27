@@ -1,3 +1,12 @@
+##############################################################################################
+## Sasquatch, Sequence based predicting of DNase I footprinting potential.                  ##
+## Copyright (C) 2016 Genome Biology and Computational Biology Research Group, WIMM, Oxford ##
+##############################################################################################
+# Function: Data preprocessing; Merge kmer profiles from naked chromosome profiles
+# Usage: perl ./merge_naked_chrs.pl chr1_profiles.txt chr2_profiles.txt >merged_profiles.txt
+# Author: Ron Schwessinger
+# Date: 27/04/2016
+
 #!/usr/bin/perl -w
 use strict;
 use warnings;

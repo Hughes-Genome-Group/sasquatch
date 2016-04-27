@@ -1,3 +1,12 @@
+##############################################################################################
+## Sasquatch, Sequence based predicting of DNase I footprinting potential.                  ##
+## Copyright (C) 2016 Genome Biology and Computational Biology Research Group, WIMM, Oxford ##
+##############################################################################################
+# Function: Data preprocessing; Create Strandspecific ATAC footprint wig tracks from aligned bam files (correcting for strand shift)
+# Usage: samtools view ${BAM_FILE} | perl ${SCRIPT_DIR}/Print_It_All_combined_atac.pl --build ${BIGWIG_CHRSIZES} --name ${IDTAG} --type ${SEQ_TYPE} -
+# Author: Ron Schwessinger, Jim Hughes
+# Date: 27/04/2016
+
 #!/usr/bin/perl -w
 use strict;
 use Getopt::Long;

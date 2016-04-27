@@ -1,12 +1,18 @@
+##############################################################################################
+## Sasquatch, Sequence based predicting of DNase I footprinting potential.                  ##
+## Copyright (C) 2016 Genome Biology and Computational Biology Research Group, WIMM, Oxford ##
+##############################################################################################
+# Function: Data preprocessing; piling up kmer based profiles, data plus strand  
+# Author: Ron Schwessinger
+# Date: 27/04/2016
+
 #!/usr/bin/perl -w
 use strict;
 use warnings;
-#count kmers occurence in DNase peaks duke like norm+
 use Bio::DB::Sam;
 
 #Variables
 my (@col,$line,$kmer,%kmers, @kmerstore, $temp, $start, $stop, %wighash,%kmersbarcode);
-
 
 ##INPUTs
 my $kmer_in=$ARGV[0]; #input of all possible kmers
