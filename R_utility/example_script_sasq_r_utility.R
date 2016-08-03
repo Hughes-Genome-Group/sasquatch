@@ -114,7 +114,7 @@ sfr <- GetSFR(kmer="CACGTG",
               frag.type="DNase")
 
 # Wrapper for single plot
-p <- PlotSingleKmer(kmer=kmer, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, 
+p <- PlotSingleKmer(kmer="TGATAA", tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, 
                     smooth=TRUE, plot.shoulders=FALSE, ylim=c(0,0.01), xlim=c(-70,70),
                     color="red")
 p
@@ -182,16 +182,16 @@ jbcomp <- QueryJasparBatch(df=bcomp, damage.threshold=0.3, match.threshold=0.8, 
 
 # Wrapper to compare two sequences -------------------------------------------------------------------
 comp <- CompareSequences(
-  sequence1="CAGTTTCATGAGG", 
-  sequence2="CAGTTTTATGAGG", 
+  sequence1="CAGTTTTATGAGG", 
+  sequence2="CAGTTTCATGAGG", 
   kl=7,
-  data.dir=data.dir,
+  data.dir = data.dir,
   pnorm.tag = pnorm.tag,
-  damage.mode="exhaustive",
-  tissue=tissue, 
-  vocab.flag=FALSE,
-  frag.type="DNase", 
-  plots="highest"
+  damage.mode = "exhaustive",
+  tissue = tissue, 
+  vocab.flag = TRUE,
+  frag.type = "DNase", 
+  plots = "highest"
   )
 
 # Wrapper to get strand specific footprint profiles for tissue or background -------------------------
@@ -231,11 +231,11 @@ head(df.insilico)
 # Note: progress.bar = TRUE will require the package "pbapply" which visualized the progress
 # install packagew with install.packages("pbapply") or set to FALSE
 
-# Make a rainbowplot from the processed in silico mutation data.frame
-rp <- RainbowPlot(df.insilico)
+# Make a InSilicoMutationplot from the processed in silico mutation data.frame
+rp <- InSilicoMutationPlot(df.insilico)
 rp
 
-# Full example for in silico mutation data frame and rainbowplot --------------
+# Full example for in silico mutation data frame and InSilicoMutationplot --------------
 library(ggplot2)
 library(RColorBrewer)
 library(BSgenome)
@@ -264,7 +264,7 @@ df.insilico <- InSilicoMutation(sequence=seq,
                          progress.bar = TRUE
                          )
 
-rp <- RainbowPlot(df.insilico, ylim=c(-4,4))
+rp <- InSilicoMutationPlot(df.insilico, ylim=c(-4,4))
 rp
 
 # Manual alternative --------------------------------------------------------------------------------
@@ -383,3 +383,6 @@ df.insilico <- InSilicoMutation(sequence="GTGCCCGCATGTGCTTATTTCTGCAAAAATAAACCATG
 head(df.insilico)
 
 
+
+p <- InSilicoMutationPlot(df.insilico)
+p

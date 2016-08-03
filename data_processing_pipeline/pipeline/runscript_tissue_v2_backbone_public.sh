@@ -1,4 +1,5 @@
-#!usr/bin/bash
+#!/bin/bash
+
 
 ##############################################################################################
 ##                                                                                          ##
@@ -15,9 +16,11 @@
 #$ -m eas
 #$ -j y
 #$ -o /t1-data1/WTSA_Dev/rschwess/clustereo
-#$ -N bb_cll_rep3
+#$ -N bb_uw_Hmec
 
-#qsub /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/runscript_tissue_v2_backbone_public.sh
+# qsub /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/runscript_tissue_v2_backbone_public.sh
+
+# nohup nice sh /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/runscript_tissue_v2_backbone_public.sh &
 
 #set -x
 
@@ -37,7 +40,7 @@ ORGANISM="human"
 BUILD='hg19'
 
 #IDtag to produce output directory and name the files
-IDTAG="ENCODE_Duke_CLL_rep3"
+IDTAG="ENCODE_UW_MCF7_rep2"
 
 #specify if DNaseI or ATAC data ("DNase" or "ATAC")
 DATA_TYPE="DNase"
@@ -51,48 +54,50 @@ SEQ_TYPE="singleend"
 
 # ================================================================================ #
 # PRESET SOME USEFULE FTP LINKS 						   #
-# Source: ENCODE  "duke" "UW" "UW_DGF" "UW_mouse"; chose download paths 	   #
+# Source: ENCODE  "Duke" "UW" "UW_DGF" "UW_mouse"; chose download paths 	   #
+# set names of bam and peak files of interest  					   #
 # ================================================================================ #
 
-DWN_SOURCE="Duke"
+DWN_SOURCE="UW"
+	 
+BAM_NAME="wgEncodeUwDnaseMcf7Est100nm1hAlnRep2.bam"
+PEAK_NAME="wgEncodeUwDnaseMcf7Est100nm1hPkRep2"
 
-BAM_NAME="wgEncodeOpenChromDnaseCllAlnRep3.bam"
-PEAK_NAME="wgEncodeOpenChromDnaseCllPk"
-PEAK_FILE=${PEAK_NAME}.narrowPeak
+PEAK_FILE="${PEAK_NAME}.narrowPeak"
 
 #select DOWNLOAD PATH accroding to DWN_SOURCE
 case "${DWN_SOURCE}" in
 	
 	Duke)
-		#DUKe golden path
+		#ENCODE Duke DNase HS golden path
 		DOWNLOAD_PATH='hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeOpenChromDnase/'
 	;;
 	UW)
-		#UW golden path
+		#ENCODE UW DNase HS golden path
 		DOWNLOAD_PATH='hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeUwDnase/'
 	;;
 	UW_DGF)
-		#UW DGF golden path
+		#ENCODE UW DGF golden path
 		DOWNLOAD_PATH='hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeUwDgf/'
 
 	;;
 	UW_mouse)
-		#UW DGF golden path
+		#ENCODE mouse UW golden path
 		DOWNLOAD_PATH='hgdownload.cse.ucsc.edu/goldenPath/mm9/encodeDCC/wgEncodeUwDnase/'
 
 	;;
 esac
 
-#set future bamfile path
+# set future bamfile path
 BAM_FILE=${OUTPUT_DIR}/${BAM_NAME}
-#the perl script handling the region file is a bit lazy coded. it basically decides based on the end of of the file name (.gff or (.bed or .narroweak)) in which columns is has to look for the chromosome and start and stop coordinates
+# the perl script handling the region file decides based on the end of of the file name (.gff or (.bed or .narroweak)) in which columns is has to look for the chromosome and start and stop coordinates
 REGIONS_FILE=${OUTPUT_DIR}/${PEAK_FILE}
 REGIONS_FILE_PLOIDY_FILTERED=${OUTPUT_DIR}/${PEAK_NAME}_ploidy_filtered.bed
 
-# ======================================================================================= #
-# Configure Paths to genomes and chr sizes files for required organisms and genome builds #
-# only required those specified that are atully used                                      #
-# ======================================================================================= #
+# ======================================================================================== #
+# Configure Paths to genomes and chr sizes files and ploidy regions to filter out for      #
+# required organisms and genome builds only required those specified that are atully used  #                            
+# ======================================================================================== #
 
 #hg19
 REF_GENOME_hg19=/databank/igenomes/Homo_sapiens/UCSC/hg19/Sequence/WholeGenomeFasta/genome.fa
@@ -111,7 +116,7 @@ PLOIDY_REGIONS_mm9=/t1-data1/WTSA_Dev/rschwess/database_assembly/region_exclude/
 
 # ===================================================================================================== #
 # Configure Paths to genome wide background DNase/ATAC cut propensities according to organism and build #
-# only required those specified that are atully used                                      		#
+# only required to specifiy those that are actully used                                       		#
 # ===================================================================================================== #
 
 #human DNase
@@ -119,7 +124,7 @@ PROPENSITY_PLUS_human_dnase=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_co
 PROPENSITY_MINUS_human_dnase=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_h_ery_1/pnorm/hg18_h_ery_1_propensities_minus_merged
 
 #human ATAC
-PROPENSITY_PLUS_human_atac==/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_h_ery_1_atac/pnorm/cut_kmer_6_hg18_h_ery_1_atac_plus_merged_propensities
+PROPENSITY_PLUS_human_atac=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_h_ery_1_atac/pnorm/cut_kmer_6_hg18_h_ery_1_atac_plus_merged_propensities
 PROPENSITY_MINUS_human_atac=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/background/hg18_h_ery_1_atac/pnorm/cut_kmer_6_hg18_h_ery_1_atac_minus_merged_propensities
 
 #mouse DNase
@@ -165,7 +170,7 @@ case "${ORGANISM}" in
 			;;
 
 			ATAC)
-				pnormsource="atac"
+				pnormsource="h_ery_1_atac"
 				PROPENSITY_PLUS=${PROPENSITY_PLUS_human_atac}
 				PROPENSITY_MINUS=${PROPENSITY_MINUS_human_atac}
 			;;
@@ -188,13 +193,13 @@ case "${ORGANISM}" in
 		case "${DATA_TYPE}" in
 	
 			DNase)
-				pnormsource="mm9"
+				pnormsource="m_ery_1"
 				PROPENSITY_PLUS=${PROPENSITY_PLUS_mouse_dnase}
 				PROPENSITY_MINUS=${PROPENSITY_MINUS_mouse_dnase}			
 			;;
 
 			ATAC)
-				pnormsource="atac_mm9"
+				pnormsource="m_ery_1_atac"
 				PROPENSITY_PLUS=${PROPENSITY_PLUS_mouse_atac}
 				PROPENSITY_MINUS=${PROPENSITY_MINUS_mouse_atac}
 			;;
@@ -224,44 +229,45 @@ rsync -a -P rsync://${DOWNLOAD_PATH}/${BAM_NAME}.bai ${OUTPUT_DIR}
 
 rsync -a -P rsync://${DOWNLOAD_PATH}/${PEAK_FILE}.gz ${OUTPUT_DIR}
 
-#wget -nv "http://${DOWNLOAD_PATH}/${BAM_NAME}"
-
-#wget -nv "http://${DOWNLOAD_PATH}/${BAM_NAME}.bai"
-
-#wget -nv "http://${DOWNLOAD_PATH}/${PEAK_FILE}.gz"
-
 gzip -d ${OUTPUT_DIR}/${PEAK_FILE}.gz
 
 ### --------------------------------------
 ### filter regions file for ploidy regions
 ### --------------------------------------
 
-#rather specific to our server system /not required when bedtools is accessible
+# load modules: rather specific to our server system /not required when bedtools is accessible
 module add bedtools
 
+# filter peaks for ploidy regions
 bedtools intersect -v -a ${REGIONS_FILE} -b ${PLOIDY_REGIONS} >${REGIONS_FILE_PLOIDY_FILTERED}
 
-##### -----------------
-##### Submit Footprints
-##### -----------------
+### -----------------
+### Submit Footprints
+### -----------------
 
+# submit fooptrinting and keep job id
 fpid=`qsub -N fp_${IDTAG} -v OUTPUT_DIR=${OUTPUT_DIR},DATA_TYPE=${DATA_TYPE},BAM_FILE=${BAM_FILE},SCRIPT_DIR=${SCRIPT_DIR},BIGWIG_CHRSIZES=${BIGWIG_CHRSIZES},SEQ_TYPE=${SEQ_TYPE},IDTAG=${IDTAG} ${PIPE_DIR}/runscript_tissue_v2_footprinting.sh | perl -ne '$_=~/\s+(\d+)\s+/; print $1;'`
-
-echo "Footprinting Job $fpid submitted"
+# 
+# echo "Footprinting Job $fpid submitted"
 
 ### ------------------------
 ### submit count k-mers pnorm
 ### ------------------------
+
 # make counts directory
 COUNTS=${OUTPUT_DIR}/counts
 mkdir -p ${COUNTS}
 
+# submit kmer based cut profile counting and store job ID
 countpnormid=`qsub -N kmerpn_${IDTAG} -hold_jid $fpid -v COUNTS=${COUNTS},OUTPUT_DIR=${OUTPUT_DIR},REGIONS_FILE_PLOIDY_FILTERED=${REGIONS_FILE_PLOIDY_FILTERED},SCRIPT_DIR=${SCRIPT_DIR},REF_GENOME=${REF_GENOME},IDTAG=${IDTAG},PROPENSITY_PLUS=${PROPENSITY_PLUS},PROPENSITY_MINUS=${PROPENSITY_MINUS},pnormsource=${pnormsource} ${PIPE_DIR}/runscript_tissue_v2_kmercount_pnorm.sh  | perl -ne '$_=~/\s+(\d+)\s+/; print $1;'`
 
-##without hold
+
+# without waiting for the footprinting job ID
 # countpnormid=`qsub -N kmerpn_${IDTAG} -v COUNTS=${COUNTS},OUTPUT_DIR=${OUTPUT_DIR},REGIONS_FILE_PLOIDY_FILTERED=${REGIONS_FILE_PLOIDY_FILTERED},SCRIPT_DIR=${SCRIPT_DIR},REF_GENOME=${REF_GENOME},IDTAG=${IDTAG},PROPENSITY_PLUS=${PROPENSITY_PLUS},PROPENSITY_MINUS=${PROPENSITY_MINUS},pnormsource=${pnormsource} ${PIPE_DIR}/runscript_tissue_v2_kmercount_pnorm.sh  | perl -ne '$_=~/\s+(\d+)\s+/; print $1;'`
 
+
 echo "K-mer counting P-norm Job $countpnormid submitted"
+
 
 ### -----------------------------------------------------
 ### count reads, peaks and reads in peaks into stats file
@@ -271,8 +277,9 @@ echo "Total reads: `samtools view ${BAM_FILE} | wc -l`" >${OUTPUT_DIR}/read_stat
 echo "Number of Peaks:: `wc -l ${REGIONS_FILE_PLOIDY_FILTERED}`" >>${OUTPUT_DIR}/read_stats.txt 
 echo "Reads in Peaks:: `bedtools intersect -wa -a ${BAM_FILE} -b ${REGIONS_FILE_PLOIDY_FILTERED} | wc -l`" >>${OUTPUT_DIR}/read_stats.txt 
 
+
 ### --------------------------------------------------------------------------------------------
-### Submit cleaner .sh for removing temporary stored bam and footprint files after jobs finished
+### Submit cleaner .sh for removing temporary stored bam (and footprint files if adjusted the cleaner script) after jobs finished
 ### --------------------------------------------------------------------------------------------
 qsub -N cleaner_${IDTAG} -hold_jid $fpid,$countpnormid -v OUTPUT_DIR=${OUTPUT_DIR},REGIONS_FILE=${REGIONS_FILE},REGIONS_FILE_PLOIDY_FILTERED=${REGIONS_FILE_PLOIDY_FILTERED},BAM_FILE=${BAM_FILE} ${PIPE_DIR}/runscript_tissue_v2_cleaner.sh
 

@@ -11,10 +11,12 @@
 
 datadir="/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/human/DNase"
 
-rep1="ENCODE_UW_Monocytes_CD14plus_RO1746_rep1"
-rep2="ENCODE_UW_Monocytes_CD14plus_RO1746_rep2"
+tag="ENCODE_UW_HPF"
 
-merged="ENCODE_UW_Monocytes_CD14plus_RO1746_merged"
+rep1="${tag}_rep1"
+rep2="${tag}_rep2"
+
+merged="${tag}_merged"
 
 pnorm_tag="h_ery_1"
 
@@ -31,7 +33,7 @@ perl /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pip
 
 echo "... $i plus done"
 
-perl /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/scripts/merge_replicates_kmerfiles.pl ${datadir}/${rep1}/counts/kmers_${i}_count_${rep1}_pnorm_${pnorm_tag}_minus.txt ${datadir}/${rep2}/counts/kmers_${i}_count_${rep2}_pnorm_${pnorm_tag}_minus.txt >kmers_${i}_count_${merged}_pnorm_{pnorm_tag}_minus.txt
+perl /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/scripts/merge_replicates_kmerfiles.pl ${datadir}/${rep1}/counts/kmers_${i}_count_${rep1}_pnorm_${pnorm_tag}_minus.txt ${datadir}/${rep2}/counts/kmers_${i}_count_${rep2}_pnorm_${pnorm_tag}_minus.txt >kmers_${i}_count_${merged}_pnorm_${pnorm_tag}_minus.txt
 
 echo "... $i minus done"
 
@@ -48,11 +50,13 @@ cd $datadir
 
 datadir="/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/human/DNase"
 
-rep1="ENCODE_Duke_HeLa_S3_rep1"
-rep2="ENCODE_Duke_HeLa_S3_rep2"
-rep3="ENCODE_Duke_HeLa_S3_rep3"
+tag="Duke_CLL"
 
-merged="ENCODE_Duke_HeLa_S3_merged"
+rep1="${tag}_rep1"
+rep2="${tag}_rep2"
+rep3="${tag}_rep3"
+
+merged="${tag}_merged"
 
 pnorm_tag="h_ery_1"
 

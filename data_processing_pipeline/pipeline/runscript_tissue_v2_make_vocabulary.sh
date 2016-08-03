@@ -16,7 +16,7 @@
 #$ -j y
 #$ -e /t1-data1/WTSA_Dev/rschwess/clustereo
 #$ -o /t1-data1/WTSA_Dev/rschwess/clustereo
-#$ -N voc_mouse_ery
+#$ -N voc_uw_Treg_Wb83319432
 
 #qsub /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/runscript_tissue_v2_make_vocabulary.sh
 
@@ -31,7 +31,7 @@ ORGANISM="mouse"
 FRAG_TYPE="DNase"
 
 #Tissue ID
-TISSUE="WTHG_C57bl6_erythroblasts_term_diff_rep1"
+TISSUE="WTHG_C57bl6_erythroblasts_term_diff_rep3_2"
 
 #define DATA directory
 DATA_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/${ORGANISM}/${FRAG_TYPE}/

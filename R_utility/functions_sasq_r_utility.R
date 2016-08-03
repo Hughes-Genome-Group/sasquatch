@@ -1,56 +1,57 @@
-##############################################################################################
-##                                                                                          ##
-## Sasquatch, Sequence based predicting of DNase I footprinting potential.                  ##
-## Copyright (C) 2016 Genome Biology and Computational Biology Research Group, WIMM, Oxford ##
-##                                                                                          ##
-## This program is free software: you can redistribute it and/or modify                     ##
-## it under the terms of the GNU General Public License as published by                     ##
-## the Free Software Foundation, either version 3 of the License, or                        ##
-## (at your option) any later version.                                                      ##
-##                                                                                          ##
-## This program is distributed in the hope that it will be useful,                          ##
-## but WITHOUT ANY WARRANTY; without even the implied warranty of                           ##
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                             ##
-## GNU General Public License for more details.	                                            ##
-##                                                                                          ##
-## You should have received a copy of the GNU General Public License                        ##
-## along with this program. If not, see <http://www.gnu.org/licenses/>.                     ##
-##                                                                                          ##
-## Contact: Ron Schwessinger, ron.schwessinger@ndcls.ox.ac.uk                               ##
-##          CBRG, genmail@molbiol.ox.ac.uk                                                  ##
-##          Jim Hughes, jim.hughes@imm.ox.ac.uk                                             ##
-##                                                                                          ##
-## Address: The Weatherall Institute of Molecular Medicine                                  ##
-##          University of Oxford                                                            ##
-##          John Radcliffe Hospital                                                         ##
-##          Headington                                                                      ##
-##          Oxford OX3 9DS                                                                  ##
-##                                                                                          ##
-##############################################################################################
+### ===============================================================================================
+## Sasquatch, Sequence based predicting of DNase I footprinting potential.                          ##
+## Copyright (C) 2016 Genome Biology and Computational Biology Research Group, University of Oxford ##
+##                                                                                                  ##
+## This program is free software: you can redistribute it and/or modify                             ##
+## it under the terms of the GNU General Public License as published by                             ##
+## the Free Software Foundation, either version 3 of the License, or                                ##
+## (at your option) any later version.                                                              ##
+##                                                                                                  ##
+## This program is distributed in the hope that it will be useful,                                  ##
+## but WITHOUT ANY WARRANTY; without even the implied warranty of                                   ##
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                                     ##
+## GNU General Public License for more details.	                                                    ##
+##                                                                                                  ##
+## You should have received a copy of the GNU General Public License                                ##
+## along with this program. If not, see http://www.gnu.org/licenses/gpl-3.0.txt                     ##
+##                                                                                                  ##
+## Contact: Ron Schwessinger, ron.schwessinger@ndcls.ox.ac.uk                                       ##
+##          CBRG, managers@molbiol.ox.ac.uk                                                         ##
+##          Jim Hughes, jim.hughes@imm.ox.ac.uk                                                     ##
+##                                                                                                  ##
+## Address: The Weatherall Institute of Molecular Medicine                                          ##
+##          University of Oxford                                                                    ##
+##          John Radcliffe Hospital                                                                 ##
+##          Headington                                                                              ##
+##          Oxford OX3 9DS                                                                          ##
+##                                                                                                  ##
+## ################################################################################################ ##
 
-###############################################
-## Functions & Theme for Sasquatch R utility ##
-## Author: Ron Schwessinger                  ##
-###############################################
+################################################
+## Functions & Themes for Sasquatch R utility ##
+## Author: Ron Schwessinger                   ##
+################################################
 
 ### SOURCE Requirements ----------------------------------------------------------------------
 library(ggplot2)
-library(grid)
 library(RColorBrewer)
 library(methods)
 
 ### THEMES ----------------------------------------------------------------------
-#define theme for plotting
+
+# default theme for plotting
 science_theme <- theme(
   panel.grid.major = element_line(size = 0.5, color = "grey"),
   panel.grid.minor = element_blank(),
-  text = element_text(size = 14, family="Arial"),
+  text = element_text(size = 14),
   axis.line = element_line(color="black", size = 0.7),
   axis.line.x = element_line(color="black", size = 0.7),
   axis.line.y = element_line(color="black", size = 0.7),
   plot.margin = unit(c(0.7,0.7,0.7,0.7), "lines")
 )
+# removed: , family="Arial" 
 
+# adjusted theme for web plotting
 web_theme <- theme(
   panel.grid.major = element_line(size = 0.5, color = "grey"),
   panel.grid.minor = element_blank(),
@@ -60,6 +61,9 @@ web_theme <- theme(
   text = element_text(size = 14, family="Arial"),
   panel.grid = element_line()
 )
+
+#color blind friendly colors
+# qual_colors <- c("#7aa171", "#1d8fa0", "#c07a20", "#9b471b")
 
 ### HELPER FUNCTIONS -----------------------------------------------------------
 DecodeKmer <- function(kmer){
@@ -73,10 +77,14 @@ DecodeKmer <- function(kmer){
   
   mersplit <- unlist(strsplit(kmer,''))
   newlist <- c("")
+  
   for(i in c(1:length(mersplit))){
+  
     #simplebase > just push each newlist entry with base	
+    
     if(mersplit[i] %in% c('A','C','G','T')){ newlist <- lapply(newlist,function(x){ x<-paste0(x,mersplit[i])}); }
     #N every base, repeat newlist 4 times add each base to 1/4 of newlist
+  
     if(mersplit[i] == "N"){
       newlist<-rep(newlist,4)
       l<-length(newlist)
@@ -85,6 +93,7 @@ DecodeKmer <- function(kmer){
       newlist[c(((l/2)+1):((l/4)*3))] <-paste0(newlist[c(((l/2)+1):((l/4)*3))],"G")
       newlist[c((((l/4)*3)+1):l)] <-paste0(newlist[c((((l/4)*3)+1):l)],"C")
     }
+  
     ###2er##	#K > G or T
     if(mersplit[i] == "K"){
       newlist<-rep(newlist,2)
@@ -188,6 +197,12 @@ GetPossibleMutations <- function(sequence, kl=7, chr=".", position=1){
     return(NA_real_)
   }
   
+  #check if sequence conteins ambivalent characters
+  if(grepl("[^A,G,C,T]+", sequence, perl=TRUE)){
+    warning("Sequence is to short! Has to be a minimum of: kl*2-1 !")
+    return(NA_real_)
+  }
+  
   window.size <- kl*2-1
   
   #make moving window sequence split
@@ -198,7 +213,7 @@ GetPossibleMutations <- function(sequence, kl=7, chr=".", position=1){
     
   }
   
-  #get ref base per sequqnce window
+  #get ref base per sequence window
   ref.list <- substr(seq.list, kl, kl)
   
   bases <- c("A", "C", "G", "T")
@@ -235,24 +250,6 @@ GetPossibleMutations <- function(sequence, kl=7, chr=".", position=1){
   
 }
 
-Sobeln <- function(profile){
-  # Calculate 1st derivative approximation of profile by 1D sobel filtering
-  #
-  # Args:
-  #   profile: input profile
-  #
-  # Returns:
-  #   1st derivative approximation of profile 
-  
-  b=rep(0,length(profile))
-  for(i in c(2:(length(profile)-1))){
-    b[i] = ( profile[i-1] * -1 ) + ( profile[i] * 0 ) + ( profile[i+1] * 1 )
-  }
-  b[1] = b[2]
-  b[length(profile)] <- b[length(profile)-1]
-  return(b)
-}
-
 PreLoadKmerProfiles <- function(kl, data.dir, tissue, pnorm.tag){
   # Helper Function to preload a kmer profile table for faster kmer processing
   #
@@ -287,7 +284,56 @@ PreLoadVocab <- function(data.dir, tissue){
   
 }
 
+Sobeln <- function(profile){
+  # Calculate 1st derivative approximation of profile by 1D sobel filtering
+  #
+  # Args:
+  #   profile: input profile
+  #
+  # Returns:
+  #   1st derivative approximation of profile 
+  
+  b=rep(0,length(profile))
+  for(i in c(2:(length(profile)-1))){
+    b[i] = ( profile[i-1] * -1 ) + ( profile[i] * 0 ) + ( profile[i+1] * 1 )
+  }
+  b[1] = b[2]
+  b[length(profile)] <- b[length(profile)-1]
+  return(b)
+}
+
+
 ### BASIC FUNCTIONS -----------------------------------------------------------
+CalcSFR <- function(profile, us.mid, ds.mid, range.us, range.ds){
+  # Calculate Shoulder to Footprint Ratio of a footprint profile
+  #
+  # Args:
+  #   profile: input cut profile (should be smoothed)
+  #   us.mid: center bp position  of the upstream shoulde, as estimated from SobelBorders()
+  #   ds.mid: center bp position  of the downstream shoulder
+  #   range.us: range in bp of the upstream shoulder
+  #   range.ds: range in bp of the downstream shoulder
+  #
+  # Returns:
+  #   SFR
+  
+  #get range to extend from the shoulder positions
+  ext.us <- range.us/2
+  ext.ds <- range.ds/2
+  
+  #set the estimated shoulders 
+  shoulder <- profile[ c( c((us.mid-ext.us):(us.mid+ext.us)), c((ds.mid-ext.ds):(ds.mid+ext.ds)))]
+  shoulder.cuts <- sum(shoulder)	#get all cuts within the shoulders
+  footprint <- profile[c((us.mid+ext.us+1):(ds.mid-ext.ds-1))]	#get all cuts within the footprint
+  footprint.cuts <- sum(footprint)
+  
+  #Calculate the SFRatio
+  sfr <- (shoulder.cuts/length(shoulder))/((footprint.cuts)/length(footprint))
+  
+  return(sfr)
+  
+}
+
 DissectSequence <- function(sequence, kl, list=FALSE){
   # split longer Sequence into list of kmers
   #
@@ -385,37 +431,366 @@ GrepProfile <- function(kmer, infile, preload=FALSE, preload.profiles.strand){
   
 }
 
-CalcSFR <- function(profile, 
-                    us.mid, 
-                    ds.mid, 
-                    range.us, 
-                    range.ds){
-  # Calculate Shoulder to Footprint Ratio of a footprint profile
+PlotSingle <- function(profile, 
+                       kl=7, 
+                       plot.shoulders=FALSE, 
+                       shoulders=FALSE, 
+                       ylim=c(0,0.01), 
+                       xlim=c(-125,125), 
+                       color="black"){
+  # Plot the average profile given an input profile
+  # plot the shoulders if plot.shoulders is set to TRUE use shoulders list provided or determine
   #
   # Args:
-  #   profile: input cut profile (should be smoothed)
-  #   us.mid: center bp position  of the upstream shoulde, as estimated from SobelBorders()
-  #   ds.mid: center bp position  of the downstream shoulder
-  #   range.us: range in bp of the upstream shoulder
-  #   range.ds: range in bp of the downstream shoulder
+  #   profile: input profile
+  #   kl: k-mer length to plot dashed lines in the center
+  #   plot.shoulders: flag if to plot the shoulder regions
+  #   shoulders: estimated shoulder border and ranges (list object as produced from SobelBorders)
+  #   ylim: ylim to fix for plot (default c(0, 0.01))
+  #   xlim: xlim to fix for plot (default c(-125, 125))
+  #   color: color to plot the profile
   #
   # Returns:
-  #   SFR
+  #   Profile plot
   
-  #get range to extend from the shoulder positions
-  ext.us <- range.us/2
-  ext.ds <- range.ds/2
+  #check if shoulder ranges and border list is provided when shoulders should be plotted
+  if((plot.shoulders == TRUE) && (shoulders == FALSE)){
+    warning("There is no shoulder details list specified!\n Please run 
+            SobelBorders or indicate to not plot the shoulders via plot.shoulders=FALSE!\n
+            Will produce the plot without shoulders.")
+    plot.shoulders <- FALSE
+  }
   
-  #set the estimated shoulders 
-  shoulder <- profile[ c( c((us.mid-ext.us):(us.mid+ext.us)), c((ds.mid-ext.ds):(ds.mid+ext.ds)))]
-  shoulder.cuts <- sum(shoulder)	#get all cuts within the shoulders
-  footprint <- profile[c((us.mid+ext.us+1):(ds.mid-ext.ds-1))]	#get all cuts within the footprint
-  footprint.cuts <- sum(footprint)
+  #cover if no border could be estimated but should be plotted
+  if((plot.shoulders == TRUE) && (shoulders$flag == FALSE)){
+    warning("No shoulders could be estimated in the provided shoulder list.\n
+            Will plot the profile without shoulders.")
+    plot.shoulders <- FALSE
+  }
   
-  #Calculate the SFRatio
-  sfr <- (shoulder.cuts/length(shoulder))/((footprint.cuts)/length(footprint))
+  #get window size of profile arround kmer
+  window.size <- length(profile) - kl
   
-  return(sfr)
+  #make dataframe for ggplotting
+  df <-data.frame(
+    x=c(-(window.size/2):((window.size/2)+kl-1)),
+    y=profile
+  )
+  
+  #PLOTTING
+  if(plot.shoulders){	#if plot.shoulders flag is TRUE
+    
+    #get borders and range from shoulders list
+    us.border <- unlist(shoulders["us"])
+    ds.border <- unlist(shoulders["ds"])
+    us.range <- shoulders$range.us
+    ds.range <- shoulders$range.ds
+    
+    #convert shoulder positions to relative positions surrounding kmer
+    us.border <- us.border - (1+(window.size/2))
+    ds.border <- ds.border - (1+(window.size/2))
+    
+    #MAKE PLOT
+    p <- ggplot(df, aes(x=x, y=y)) + geom_line(size=1, color=color) + 
+      geom_vline(xintercept = c((0),(kl-1)), linetype = "dashed", size=1) + 
+      geom_vline(xintercept = c(
+        (us.border+(us.range/2)), ds.border-(ds.range/2)
+      ), colour="red", size=1) + 
+      geom_vline(xintercept = c(
+        (us.border-(us.range/2)), (ds.border+(ds.range/2))
+      ), colour="red", linetype = "longdash", size=1) + 
+      labs(x="Relative position [bp]", y="Relative cut frequency") + 
+      coord_cartesian(ylim=ylim, xlim=xlim, expand=FALSE) + 
+      theme_bw() + science_theme + 
+      theme(panel.grid = element_blank(), text = element_text(size=20))
+    
+  }else{		#border could not be estimated
+    
+    p <- ggplot(df, aes(x=x, y=y)) + geom_line(size=1, color=color) + 
+      geom_vline(xintercept = c((0),(kl-1)), linetype = "dashed", size=1) + 
+      labs(x="Relative position [bp]", y="Relative cut frequency") + 
+      coord_cartesian(ylim=ylim, xlim=xlim, expand=FALSE) + 
+      theme_bw() + science_theme + 
+      theme(panel.grid = element_blank(), text = element_text(size=20))
+    
+    
+  }
+  
+  return(p)
+  
+}
+
+PlotOverlap <- function(profile1, 
+                        profile2, 
+                        kmer1, 
+                        kmer2,
+                        count1 = "NA",
+                        count2 = "NA",
+                        ymode = "separate",
+                        ylim = c(0,0.01), 
+                        xlim = c(-125,125),
+                        plot.shoulders=FALSE,
+                        shoulders1=FALSE,
+                        shoulders2=FALSE){
+  # Plot two average profiles overlapping given two input profiles
+  # plot the shoulders if plot.shoulders is set to TRUE use shoulders list provided or determine
+  #
+  # Args:
+  #   profile1: input profile1
+  #   profile2: input profile2
+  #   kmer1: input k-mer 1 (reference)
+  #   kmer2: input k-mer 2 (variant)
+  #   count1: count of k-mer1 occurence 
+  #   count2: count of k-mer2 occurence 
+  #   ymode: mode how to plot the overlapping profiles ("merged" or as "separate" profiles above each other)
+  #   ylim: ylim to fix for plot (default c(0, 0.01))
+  #   xlim: xlim to fix for plot (default c(-125, 125))
+  #   plot.shoulders: flag TRUE/FALSE if to plot the estimated shoulders with the profiles
+  #     note that it is only plotted if the separate profile option was selected to keep the plots tidy
+  #   shoulders1: list object of estiamte shoulder postion and ranges for profile 1
+  #   shoulders2: list object of estiamte shoulder postion and ranges for profile 2
+  #
+  # Returns:
+  #   Overlapping profile plot
+  
+  # check if kmers are equal
+  if(kmer1 == kmer2){
+    warning("kmers are similiar, no overlap plot is created!")
+    return("NA")
+  }
+  
+  #check if kmer have equal length
+  if(nchar(kmer1) != nchar(kmer2)){
+    warning("kmers do not have equal length!")
+    return("NA")
+  }
+  
+  #check if ymode is set properly
+  if((ymode != "merged") & (ymode != "separate")){
+    warning("Select ymode (\"merged\" or \"separate\"")
+    return("NA")
+  }
+  
+  #check if shoulders supplied when plot.shoulder flag set to TRUE
+  if((plot.shoulders == TRUE) && ((shoulders1 == FALSE) || (shoulders2 == FALSE))){
+    warning("No shoulder details list specified!\n Please run 
+            SobelBorders or indicate to not plot the shoulders via plot.shoulders=FALSE!\n
+            Will produce the plot without shoulders.")
+    plot.shoulders <- FALSE
+  }
+  #cover if no border could be estimated but should be plotted
+  if((plot.shoulders == TRUE) && ((shoulders1$flag == FALSE) || (shoulders2$flag == FALSE))){
+    warning("No shoulders could be estimated in the provided shoulder list.\n
+            Will plot the profile without shoulders.")
+    plot.shoulders <- FALSE
+  }
+  #check if plot mode separate when trying to plot the shoulders
+  if((plot.shoulders == TRUE) && (ymode != "separate")){
+    warning("Shoulders are only plotted for the separate plot mode! Changing plot.shoulders to FALSE!")
+    plot.shoulders <- FALSE
+  }
+  
+  
+  #get kmer length
+  kl=nchar(kmer1)
+  
+  #get window size of profile arround kmer
+  window.size <- length(profile1) - kl
+  
+  #make dataframe for ggplotting
+  df <-data.frame(
+    x=rep(c(-(window.size/2):((window.size/2)+kl-1)), 2),
+    y=c(profile1, profile2),
+    Source=c(
+      rep(kmer1, length(profile1)), 
+      rep(kmer2, length(profile2))
+    )
+  )
+  
+  #sort source for colors
+  df$Source <- factor(df$Source, levels=c(kmer1, kmer2))
+  
+  #make dataframe for annotation
+  anno.df <- data.frame(
+    Source = c(kmer1, kmer2),
+    x=rep((xlim[2]-(xlim[2]-xlim[1])/6), 2), 
+    y=rep((ylim[2]-(ylim[2]-ylim[1])/12), 2),
+    label=c(paste0(kmer1, " #", count1), paste0(kmer2," #", count2))
+  )
+  
+  #MAKE THE PLOT
+  #mode one merged probfiles on same y-axis
+  if(ymode == "merged"){
+    
+    #adjust annotation dataframe y values for nonoverlapping labels
+    anno.df$y <- c((ylim[2]-(ylim[2]-ylim[1])/12), (ylim[2]-(ylim[2]-ylim[1])/5))
+    
+    p <- ggplot( df, aes(x=x, y=y, colour=Source)) + geom_line(size=1) + 
+      geom_vline(xintercept = c((0),(kl-1)), linetype = "dashed", size=1) + 
+      labs(x="Relative position [bp]", y="Relative cut frequency") + 
+      coord_cartesian(ylim=ylim, xlim=xlim, expand=FALSE) + 
+      scale_colour_manual(values=rev(brewer.pal(3,"Set1")[c(1,2)])) +
+      #add annotation
+      geom_text(data=anno.df, aes(x=x, y=y, label=label)) +
+      theme_bw() + science_theme + 
+      theme(
+        legend.position = "none",
+        panel.grid = element_blank()
+        # axis.title.y = element_text(size=16),
+        # axis.title.x = element_text(size=16)
+      )
+    
+    #mode two separate y-axis above each other  
+  }else if(ymode == "separate"){
+    
+    #part one reference (top) without x-axis
+    p <- ggplot(df, aes(x=x, y=y, colour=Source)) + 
+      geom_line(size=1) + 
+      scale_color_manual(values=rev(brewer.pal(3,"Set1")[c(1,2)])) +
+      facet_grid(Source ~ .) +
+      labs(x="Relative position [bp]", y="Relative cut frequency") +
+      geom_vline(xintercept = c((0),(kl-1)), linetype = "dashed", size=1) + 
+      #add annotation
+      geom_text(data=anno.df, aes(x=x, y=y, label=label)) +
+      coord_cartesian(ylim=ylim, xlim=xlim, expand=FALSE) + 
+      theme_bw() + science_theme + 
+      theme(
+        legend.position = "none",
+        panel.grid.major.x = element_blank(), 
+        #         axis.title.y = element_text(size=16),
+        #         axis.title.x = element_text(size=16),
+        panel.border = element_blank(),
+        panel.margin = unit("1.15", "lines"),
+        strip.text.y = element_blank(),  #remove strips from facetting
+        strip.background = element_blank()
+      )
+    
+    #add shoulder if plot.shoulders is specified as TRUE
+    if(plot.shoulders){
+      
+      #get borders and range from shoulders list
+      us.border1 <- unlist(shoulders1["us"])
+      ds.border1 <- unlist(shoulders1["ds"])
+      us.border2 <- unlist(shoulders2["us"])
+      ds.border2 <- unlist(shoulders2["ds"])
+      us.range1 <- shoulders1$range.us
+      ds.range1 <- shoulders1$range.ds
+      us.range2 <- shoulders2$range.us
+      ds.range2 <- shoulders2$range.ds
+      
+      #convert shoulder positions to relative positions surrounding kmer
+      us.border1 <- us.border1 - (1+(window.size/2))
+      ds.border1 <- ds.border1 - (1+(window.size/2))
+      us.border2 <- us.border2 - (1+(window.size/2))
+      ds.border2 <- ds.border2 - (1+(window.size/2))
+      
+      #make df for shoulders
+      shoulder.frame <- data.frame(
+        inner=c(
+          (us.border1+(us.range1/2)), (ds.border1-(ds.range1/2)), 
+          (us.border2+(us.range2/2)), (ds.border2-(ds.range2/2))),
+        outer=c(
+          (us.border1-(us.range1/2)), (ds.border1+(ds.range1/2)),
+          (us.border2-(us.range2/2)), (ds.border2+(ds.range2/2))
+        ),
+        Source=c(rep(kmer1, 2), rep(kmer2, 2))
+      )
+      
+      #add shoulders to plot
+      p <- p + 
+        geom_vline(data=shoulder.frame, aes(xintercept=inner), colour=brewer.pal(3,"Set1")[3], linetype="dashed", size=1) + 
+        geom_vline(data=shoulder.frame, aes(xintercept=outer), linetype="dashed", colour=brewer.pal(3,"Set1")[3], size=1) + 
+        facet_grid(Source ~ .)
+      
+    }
+    
+  }
+  
+  return(p)
+  
+}
+
+PruneProfile <- function(profile, desired.length){
+  # Prune an average profile equally from both directions given the profile and the window size around the kmer which to retrieve
+  # requires an even number as length to prune
+  # lengthwill always be (desired.length + kmer.length)
+  #
+  # Args:
+  #   profile: input profile
+  #   desired.length: number of bps around the kmer to which the profile should be pruned
+  #
+  # Returns:
+  #   pruned profile
+  
+  #first check if length is equal
+  if (desired.length %% 2 != 0) {
+    warning("The desired length is not even. Please select an even number to retrieve a profile symetric around the k-mer: returning NA")
+    return(NA_real_)
+  }
+  
+  remove.temp <- (250-desired.length)/2 #set positions to subtract from the full profile
+  
+  #prune
+  profile <- profile[c((1+remove.temp)):(length(profile)-remove.temp)]
+  
+  #return
+  return(profile)
+  
+}
+
+QueryJaspar <- function(sequence, threshold=0.8, pwm.data){
+  # Take a Sequence input and query it against the set of Jaspar2014 PWMs
+  #
+  # Args:
+  #   sequence: input sequence
+  #   threshold: percentage relative score thresh over which to report matches (default=0.8)
+  #   pwm.data: a stored pwm. RData object as retrieved and save from JASPAR2014 R package
+  #
+  # Returns:
+  #   Character string listing the PWM matches above a certain rel. threshold
+  
+  require(Biostrings)
+  require(TFBSTools)
+  
+  # 1 pad sequence with N's
+  sequence = paste0("NNNNN",sequence,"NNNNN")
+  
+  #make DNAString
+  sequence = DNAString(sequence)
+  
+  #match
+  suppressWarnings(out <- lapply(pwm.data, function(x) searchSeq(x, sequence, strand="*", min.score=threshold )) )
+  out <- out[sapply(out, function(x) nrow(writeGFF3(x)) > 0 )]
+  
+  # combine output
+  tmp <- ""
+  
+  if(length(out) >= 1){
+    
+    #make dataframes
+    out.frame <- lapply(out, function(x) writeGFF3(x) ) #make data frame
+    out.frame <- lapply(out.frame, function(x) x <- x[x[,6]==max(x[,6]),]) #pick highest matching strand
+    factors <- sapply(out.frame, function(x) strsplit(as.character(unlist(x[9])),";")[[1]][1] )
+    factors <- sapply(factors, function(x) gsub("TF=(\\w+)","\\1",x, perl=TRUE) )
+    
+    #get relative score
+    rel.scores <- lapply(out, function(x) relScore(x))
+    rel.scores <- lapply(rel.scores, max)
+    
+    #assemble data frame
+    df <- data.frame(factor=factors, rel.scores=unlist(rel.scores) )
+    df <- df[order(df$rel.scores, decreasing =TRUE),]
+    
+    #merge values
+    for(i in c(1:nrow(df))){
+      tmp <- paste0(tmp,df$factor[i],"=",round(df$rel.scores[[i]],digits=2),";")
+    }
+    
+  }else{	#if no match above threshold report nothing
+    tmp <- "no hits"
+  }
+  
+  return(tmp)
   
 }
 
@@ -542,372 +917,237 @@ SmoothProfile <- function(profile, bandwidth=5){
   
 }
 
-PruneProfile <- function(profile, desired.length){
-  # Prune an average profile equally from both directions given the profile and the window size around the kmer which to retrieve
-  # requires an even number as length to prune
-  # lengthwill always be (desired.length + kmer.length)
+# WRAPPER FUNCTIONS -----------------------------------------------------------
+CompareSequences <- function(sequence1, 
+                             sequence2, 
+                             kl, 
+                             damage.mode="exhaustive", 
+                             tissue, 
+                             data.dir,
+                             pnorm.tag,
+                             vocab.flag=FALSE, 
+                             vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"), 
+                             frag.type, 
+                             plots="highest", 
+                             smooth=TRUE, 
+                             ylim=c(0,0.01), 
+                             xlim=c(-125,125),
+                             plot.shoulders=FALSE,
+                             preload=FALSE,
+                             preload.vocab="",
+                             preload.profiles=""){
+  # Wrapper function to analyse multiple Ref-Var-Sequence pairs
+  # split each sequence into k-mers of lenfth kl, get their SFRs form vocab file 
+  # or calculate new and calculate the damage associated with each kmer pair and 
+  # from that the local or exhaustive summed up dmage of entire sequence pair
   #
   # Args:
-  #   profile: input profile
-  #   desired.length: number of bps around the kmer to which the profile should be pruned
+  #   ref.var.df: three column data frame listing id referecne and variance sequence 
+  #   in the following scheme (id reference variance)
+  #   kl: length of k-mers to split sequences into
+  #   damage.mode: mode for calculating the total damage 
+  #   (local: get highest pair, exhaustive: sum up over entire sequence)
+  #   tissue: input tissue to query the profile from
+  #   data.dir: repository storing processed kmer files per tissue
+  #   pnorm.tag: identifier which background was used for normalisation
+  #     m_ery_1 --> mouse erythroid DNase digest;
+  #     h_ery_1 --> human erythroid DNase digest;
+  #     m_ery_1_atac --> mouse erythroid ATAC digest;
+  #     h_ery_1_atac --> human erythroid ATAC digest;
+  #   vocab.flag: indicating if a preprocessed vocabulary file is present and to be used [TRUE/FALSE]
+  #   vocab.file: path to preprocessed vocabulary file
+  #   frag.type: fragmentation type ("DNase" or "ATAC")
+  #   plots: indicate if and what overlay plots to retrieve 
+  #     with values FALSE for no plots to retrieve, "highest" for only retrieving one plot of 
+  #     the highest scoring kmer pair, "all" for retrieving a list of all pairwise overlay plots
+  #   preload: FALSE/TRUE specify if to use preloaded data for speeding up
+  #   preload.profiles: list of plus and minus kmer profiles preloaded (only required if preload=TRUE and vocab.flag=FALSE)
+  #   preload.vocab: 2 column table kmer, SFR preloaded from vocabulary file
   #
   # Returns:
-  #   pruned profile
+  #   Dataframe listing Ref and Var sequence with highest scoring kmer pair and 
+  #   the according SFRs and calculated (exhaustive or local) damage
+  #   and the percentage change of the footprinting strength
   
-  #first check if length is equal
-  if (desired.length %% 2 != 0) {
-    warning("The desired length is not even. Please select an even number to retrieve a profile symetric around the k-mer: returning NA")
+  #check if indicated vocab file is readable
+  if((vocab.flag == TRUE) & (!file.exists(vocab.file))){
+    warning(paste0("File ", vocab.file, "does not exists! Please indicate the appropriate 
+                   path to the vocabulary file or select vocab.flag=FALSE instead!"))
     return(NA_real_)
   }
   
-  remove.temp <- (250-desired.length)/2 #set positions to subtract from the full profile
-  
-  #prune
-  profile <- profile[c((1+remove.temp)):(length(profile)-remove.temp)]
-  
-  #return
-  return(profile)
-  
-}
-
-PlotSingle <- function(profile, 
-                       kl=7, 
-                       plot.shoulders=FALSE, 
-                       shoulders=FALSE, 
-                       ylim=c(0,0.01), 
-                       xlim=c(-125,125), 
-                       color="black"){
-  # Plot the average profile given an input profile
-  # plot the shoulders if plot.shoulders is set to TRUE use shoulders list provided or determine
-  #
-  # Args:
-  #   profile: input profile
-  #   kl: k-mer length to plot dashed lines in the center
-  #   plot.shoulders: flag if to plot the shoulder regions
-  #   shoulders: estimated shoulder border and ranges (list object as produced from SobelBorders)
-  #   ylim: ylim to fix for plot (default c(0, 0.01))
-  #   xlim: xlim to fix for plot (default c(-125, 125))
-  #   color: color to plot the profile
-  #
-  # Returns:
-  #   Profile plot
-  
-  #check if shoulder ranges and border list is provided when shoulders should be plotted
-  if((plot.shoulders == TRUE) && (shoulders == FALSE)){
-    warning("There is no shoulder details list specified!\n Please run 
-            SobelBorders or indicate to not plot the shoulders via plot.shoulders=FALSE!\n
-            Will produce the plot without shoulders.")
-    plot.shoulders <- FALSE
+  #capture if sequences are to short
+  if((nchar(sequence1) < kl) | (nchar(sequence2) < kl)){
+    warnings("At least one input sequence is shorter than the length of k-mers to split to! Returning NA!")
+    return("NA")
   }
-
-  #cover if no border could be estimated but should be plotted
-  if((plot.shoulders == TRUE) && (shoulders$flag == FALSE)){
-    warning("No shoulders could be estimated in the provided shoulder list.\n
-            Will plot the profile without shoulders.")
-    plot.shoulders <- FALSE
-  }
-
-  #get window size of profile arround kmer
-  window.size <- length(profile) - kl
-  
-  #make dataframe for ggplotting
-  df <-data.frame(
-    x=c(-(window.size/2):((window.size/2)+kl-1)),
-    y=profile
-  )
-    
-  #PLOTTING
-  if(plot.shoulders){	#if plot.shoulders flag is TRUE
-    
-    #get borders and range from shoulders list
-    us.border <- unlist(shoulders["us"])
-    ds.border <- unlist(shoulders["ds"])
-    us.range <- shoulders$range.us
-    ds.range <- shoulders$range.ds
-  
-    #convert shoulder positions to relative positions surrounding kmer
-    us.border <- us.border - (1+(window.size/2))
-    ds.border <- ds.border - (1+(window.size/2))
-      
-    #MAKE PLOT
-    p <- ggplot(df, aes(x=x, y=y)) + geom_line(size=1, color=color) + 
-      geom_vline(xintercept = c((0),(kl-1)), linetype = "dashed", size=1) + 
-      geom_vline(xintercept = c(
-        (us.border+(us.range/2)), ds.border-(ds.range/2)
-      ), colour="red", size=1) + 
-      geom_vline(xintercept = c(
-        (us.border-(us.range/2)), (ds.border+(ds.range/2))
-      ), colour="red", linetype = "longdash", size=1) + 
-      labs(x="Relative position [bp]", y="Relative cut frequency") + 
-      coord_cartesian(ylim=ylim, xlim=xlim) + 
-      theme_bw() + science_theme + 
-      theme(panel.grid = element_blank(), text = element_text(size=20))
-    
-    }else{		#border could not be estimated
-    
-    p <- ggplot(df, aes(x=x, y=y)) + geom_line(size=1, color=color) + 
-        geom_vline(xintercept = c((0),(kl-1)), linetype = "dashed", size=1) + 
-        labs(x="Relative position [bp]", y="Relative cut frequency") + 
-        coord_cartesian(ylim=ylim, xlim=xlim) + 
-        theme_bw() + science_theme + 
-        theme(panel.grid = element_blank(), text = element_text(size=20))
-      
-    
-  }
-  
-  return(p)
-    
-}
-
-PlotOverlap <- function(profile1, 
-                        profile2, 
-                        kmer1, 
-                        kmer2,
-                        count1 = "NA",
-                        count2 = "NA",
-                        ymode = "separate",
-                        ylim = c(0,0.01), 
-                        xlim = c(-125,125),
-                        plot.shoulders=FALSE,
-                        shoulders1=FALSE,
-                        shoulders2=FALSE){
-  # Plot two average profiles overlapping given two input profiles
-  # plot the shoulders if plot.shoulders is set to TRUE use shoulders list provided or determine
-  #
-  # Args:
-  #   profile1: input profile1
-  #   profile2: input profile2
-  #   kmer1: input k-mer 1 (reference)
-  #   kmer2: input k-mer 2 (variant)
-  #   count1: count of k-mer1 occurence 
-  #   count2: count of k-mer2 occurence 
-  #   ymode: mode how to plot the overlapping profiles ("merged" or as "separate" profiles above each other)
-  #   ylim: ylim to fix for plot (default c(0, 0.01))
-  #   xlim: xlim to fix for plot (default c(-125, 125))
-  #   plot.shoulders: flag TRUE/FALSE if to plot the estimated shoulders with the profiles
-  #     note that it is only plotted if the separate profile option was selected to keep the plots tidy
-  #   shoulders1: list object of estiamte shoulder postion and ranges for profile 1
-  #   shoulders2: list object of estiamte shoulder postion and ranges for profile 2
-  #
-  # Returns:
-  #   Overlapping profile plot
-  
-  # check if kmers are equal
-  if(kmer1 == kmer2){
-    warning("kmers are similiar, no overlap plot is created!")
+  #check if sequences have equal length
+  if(nchar(sequence1) != nchar(sequence2)){
+    warning("Input sequences have unequal length! Currently only equal length is suported! Returning NA!")
     return("NA")
   }
   
-  #check if kmer have equal length
-  if(nchar(kmer1) != nchar(kmer2)){
-    warning("kmers do not have equal length!")
+  #1 split sequences into two lists
+  dl1 <- DissectSequence(sequence1, kl, list=TRUE)
+  dl2 <- DissectSequence(sequence2, kl, list=TRUE)
+  
+  #2 get SFRs for each k-mer 
+  dl1.sfr <- lapply(dl1, function(x){
+    x <- GetSFR(kmer=x, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, vocab.flag = vocab.flag, vocab.file = vocab.file, frag.type = frag.type, preload=preload, preload.vocab=preload.vocab, preload.profiles=preload.profiles)
+  })
+  dl2.sfr <- lapply(dl2, function(x){
+    x <- GetSFR(kmer=x, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, vocab.flag = vocab.flag, vocab.file = vocab.file, frag.type = frag.type, preload=preload, preload.vocab=preload.vocab, preload.profiles=preload.profiles)
+  })
+  
+  #3 compose data frame
+  dl.df <- data.frame(kmer.ref=unlist(dl1), kmer.var=unlist(dl2), sfr.ref=unlist(dl1.sfr), sfr.var=unlist(dl2.sfr))
+  
+  #4 calc single kmer overlap damage
+  dl.df$damage <- dl.df$sfr.ref - dl.df$sfr.var
+  
+  #5 pick highest scoring kmers
+  highest.damage.id <- which(abs(dl.df$damage) == max(abs(dl.df$damage)))[1]
+  
+  #6 calculate total damage according to selected mode
+  if(damage.mode == "exhaustive"){
+    total.damage <- sum(dl.df$damage)
+  }else if(damage.mode == "local"){
+    total.damage <- dl.df[highest.damage.id, ]$damage
+  }else{
+    warning("Specify a mode to calculate the total damage for comparing the sequences! damage.mode=exhaustive/local")
     return("NA")
   }
   
-  #check if ymode is set properly
-  if((ymode != "merged") & (ymode != "separate")){
-    warning("Select ymode (\"merged\" or \"separate\"")
-    return("NA")
-  }
+  #7 calculate the percentage change
+  # #make copy of the dl.df to screw with it
+  # dl.df.copy <- dl.df
+  # 
+  # #get rid of lines with ref equals var kmer
+  # dl.df.copy <- subset(dl.df.copy, as.character(dl.df.copy$kmer.ref) != as.character(dl.df$kmer.var))
+  # 
+  # #get highest kmer either ref or var
+  # highest.ref.sfr.id <- which(dl.df.copy$sfr.ref == max(dl.df.copy$sfr.ref))[1]
+  # highest.var.sfr.id <- which(dl.df.copy$sfr.var == max(dl.df.copy$sfr.var))[1]
+  # 
+  # #pick ref or var as highest
+  # if( max(dl.df.copy$sfr.var) > max(dl.df.copy$sfr.ref)){
+  #   highest.sfr.id <- highest.var.sfr.id
+  # }else{
+  #   highest.sfr.id <- highest.ref.sfr.id
+  # }
+  # 
+  # #calculate the % change by scaling the highest SFR to 100 % comparing
+  # #select max and min again
+  # max <- max(c(dl.df.copy[highest.sfr.id, ]$sfr.ref, dl.df.copy[highest.sfr.id, ]$sfr.var))
+  # min <- min(c(dl.df.copy[highest.sfr.id, ]$sfr.ref, dl.df.copy[highest.sfr.id, ]$sfr.var))
   
-  #check if shoulders supplied when plot.shoulder flag set to TRUE
-  if((plot.shoulders == TRUE) && ((shoulders1 == FALSE) || (shoulders2 == FALSE))){
-    warning("No shoulder details list specified!\n Please run 
-            SobelBorders or indicate to not plot the shoulders via plot.shoulders=FALSE!\n
-            Will produce the plot without shoulders.")
-    plot.shoulders <- FALSE
-  }
-  #cover if no border could be estimated but should be plotted
-  if((plot.shoulders == TRUE) && ((shoulders1$flag == FALSE) || (shoulders2$flag == FALSE))){
-    warning("No shoulders could be estimated in the provided shoulder list.\n
-            Will plot the profile without shoulders.")
-    plot.shoulders <- FALSE
-  }
-  #check if plot mode separate when trying to plot the shoulders
-  if((plot.shoulders == TRUE) && (ymode != "separate")){
-    warning("Shoulders are only plotted for the separate plot mode! Changing plot.shoulders to FALSE!")
-    plot.shoulders <- FALSE
-  }
+  # calculate percentage change for highest scoring total.damage kmer pair
+  max <- max(dl.df[highest.damage.id, ]$sfr.ref, dl.df[highest.damage.id, ]$sfr.var)
+  min <- min(dl.df[highest.damage.id, ]$sfr.ref, dl.df[highest.damage.id, ]$sfr.var)
   
+  #remove 1 from each cause thats the background
+  max <- max - 1
+  min <- min - 1
   
-  #get kmer length
-  kl=nchar(kmer1)
+  #scale them to percentage of max and calculate difference
+  perc.change <- 1 - ((1/max) * min)
   
-  #get window size of profile arround kmer
-  window.size <- length(profile1) - kl
-  
-  #make dataframe for ggplotting
-  df <-data.frame(
-    x=rep(c(-(window.size/2):((window.size/2)+kl-1)), 2),
-    y=c(profile1, profile2),
-    Source=c(
-      rep(kmer1, length(profile1)), 
-      rep(kmer2, length(profile2))
-      )
-  )
- 
-  #sort source for colors
-  df$Source <- factor(df$Source, levels=c(kmer1, kmer2))
-  
-  #make dataframe for annotation
-  anno.df <- data.frame(
-    Source = c(kmer1, kmer2),
-    x=rep((xlim[2]-(xlim[2]-xlim[1])/6), 2), 
-    y=rep((ylim[2]-(ylim[2]-ylim[1])/12), 2),
-    label=c(paste0(kmer1, " #", count1), paste0(kmer2," #", count2))
+  #8 make summary line like for batch query
+  summary.line <- data.frame(
+    sequence.ref=sequence1,
+    sequence.var=sequence2,
+    kmer.ref=as.character(dl.df[highest.damage.id, ]$kmer.ref), 
+    kmer.var=as.character(dl.df[highest.damage.id, ]$kmer.var),
+    SFR.ref=round(dl.df[highest.damage.id, ]$sfr.ref, digits = 3),
+    SFR.var=round(dl.df[highest.damage.id, ]$sfr.var, digits = 3),
+    total.damage=round(total.damage, digits = 3),
+    perc.change=round(perc.change, digits = 3)
   )
   
-  #MAKE THE PLOT
-  #mode one merged probfiles on same y-axis
-  if(ymode == "merged"){
+  
+  #9 make plots if desired 
+  if(plots == "all"){
     
-    #adjust annotation dataframe y values for nonoverlapping labels
-    anno.df$y <- c((ylim[2]-(ylim[2]-ylim[1])/12), (ylim[2]-(ylim[2]-ylim[1])/5))
-    
-    p <- ggplot( df, aes(x=x, y=y, colour=Source)) + geom_line(size=1) + 
-      geom_vline(xintercept = c((0),(kl-1)), linetype = "dashed", size=1) + 
-      labs(x="Relative position [bp]", y="Relative cut frequency") + 
-      coord_cartesian(ylim=ylim, xlim=xlim) + 
-      scale_colour_manual(values=rev(brewer.pal(3,"Set1")[c(1,2)])) +
-      #add annotation
-      geom_text(data=anno.df, aes(x=x, y=y, label=label)) +
-      theme_bw() + science_theme + 
-      theme(
-        legend.position = "none",
-        panel.grid = element_blank()
-        # axis.title.y = element_text(size=16),
-        # axis.title.x = element_text(size=16)
+    plot.list <- apply(dl.df[, c("kmer.ref", "kmer.var")], 1, function(x){
+      
+      pp <- PlotOverlapKmers(
+        kmer1=x[1], 
+        kmer2=x[2],
+        tissue1=tissue, 
+        tissue2=tissue, 
+        data.dir=data.dir,
+        pnorm.tag,
+        frag.type=frag.type, 
+        smooth=smooth,
+        ylim=ylim, 
+        xlim=xlim,
+        plot.shoulders=plot.shoulders,
+        preload=preload, 
+        preload.profiles=preload.profiles
       )
       
-  #mode two separate y-axis above each other  
-  }else if(ymode == "separate"){
+      return(pp)
+      
+    })
     
-    #part one reference (top) without x-axis
-    p <- ggplot(df, aes(x=x, y=y, colour=Source)) + 
-      geom_line(size=1) + 
-      scale_color_manual(values=rev(brewer.pal(3,"Set1")[c(1,2)])) +
-      facet_grid(Source ~ .) +
-      labs(x="Relative position [bp]", y="Relative cut frequency") +
-      geom_vline(xintercept = c((0),(kl-1)), linetype = "dashed", size=1) + 
-      #add annotation
-      geom_text(data=anno.df, aes(x=x, y=y, label=label)) +
-      coord_cartesian(ylim=ylim, xlim=xlim) + 
-      theme_bw() + science_theme + 
-      theme(
-        legend.position = "none",
-        panel.grid.major.x = element_blank(), 
-#         axis.title.y = element_text(size=16),
-#         axis.title.x = element_text(size=16),
-        panel.border = element_blank(),
-        panel.margin = unit("1.15", "lines"),
-        strip.text.y = element_blank(),  #remove strips from facetting
-        strip.background = element_blank()
-      )
+  }else if(plots == "highest"){
     
-    #add shoulder if plot.shoulders is specified as TRUE
-    if(plot.shoulders){
-      
-      #get borders and range from shoulders list
-      us.border1 <- unlist(shoulders1["us"])
-      ds.border1 <- unlist(shoulders1["ds"])
-      us.border2 <- unlist(shoulders2["us"])
-      ds.border2 <- unlist(shoulders2["ds"])
-      us.range1 <- shoulders1$range.us
-      ds.range1 <- shoulders1$range.ds
-      us.range2 <- shoulders2$range.us
-      ds.range2 <- shoulders2$range.ds
-      
-      #convert shoulder positions to relative positions surrounding kmer
-      us.border1 <- us.border1 - (1+(window.size/2))
-      ds.border1 <- ds.border1 - (1+(window.size/2))
-      us.border2 <- us.border2 - (1+(window.size/2))
-      ds.border2 <- ds.border2 - (1+(window.size/2))
-      
-      #make df for shoulders
-      shoulder.frame <- data.frame(
-        inner=c(
-          (us.border1+(us.range1/2)), (ds.border1-(ds.range1/2)), 
-          (us.border2+(us.range2/2)), (ds.border2-(ds.range2/2))),
-        outer=c(
-          (us.border1-(us.range1/2)), (ds.border1+(ds.range1/2)),
-          (us.border2-(us.range2/2)), (ds.border2+(ds.range2/2))
-        ),
-        Source=c(rep(kmer1, 2), rep(kmer2, 2))
-      )
-
-      #add shoulders to plot
-      p <- p + 
-        geom_vline(data=shoulder.frame, aes(xintercept=inner), colour=brewer.pal(3,"Set1")[3], linetype="dashed", size=1) + 
-        geom_vline(data=shoulder.frame, aes(xintercept=outer), linetype="dashed", colour=brewer.pal(3,"Set1")[3], size=1) + 
-        facet_grid(Source ~ .)
-
-    }
-
+    plot.list <- PlotOverlapKmers(
+      kmer1=as.character(dl.df[highest.damage.id, ]$kmer.ref), 
+      kmer2=as.character(dl.df[highest.damage.id, ]$kmer.var),
+      tissue1=tissue, 
+      tissue2=tissue, 
+      data.dir=data.dir,
+      pnorm.tag,
+      frag.type=frag.type, 
+      smooth=smooth, 
+      ylim=ylim, 
+      xlim=xlim,
+      plot.shoulders=plot.shoulders,
+      preload=preload, 
+      preload.profiles=preload.profiles
+    )
+    
+  }else if(!plots){
+    plot.list <- "No Plots specified"
+  }else{
+    warnings("Please select if and what plots to produce: FALSE \"highest\" \"all\"!\n Will return without plots!")
+    plot.list <- "No Plots specified"
   }
-
-  return(p)
+  
+  #10 assemble output
+  newlist <- list(df=dl.df, summary=summary.line, plots=plot.list, damage.mode=damage.mode)
+  return(newlist)
   
 }
 
-QueryJaspar <- function(sequence, 
-                        threshold=0.8, 
-                        pwm.data){
-  # Take a Sequence input and query it against the set of Jaspar2014 PWMs
+GetCount <- function(kmer, 
+                     tissue, 
+                     data.dir,
+                     pnorm.tag,
+                     frag.type){
+  # Wrapper function to get the count of the k-mer in DHS in the tissue of interest
   #
   # Args:
-  #   sequence: input sequence
-  #   threshold: percentage relative score thresh over which to report matches (default=0.8)
-  #   pwm.data: a stored pwm. RData object as retrieved and save from JASPAR2014 R package
+  #   kmer: k-mer to query
+  #   tissue: input tissue to query the profile from
+  #   data.dir: repository storing processed kmer files per tissue,
+  #   pnorm.tag: identifier which background was used for normalisation
+  #     m_ery_1 --> mouse erythroid DNase digest;
+  #     h_ery_1 --> human erythroid DNase digest;
+  #     m_ery_1_atac --> mouse erythroid ATAC digest;
+  #     h_ery_1_atac --> human erythroid ATAC digest;
+  #   frag.type: fragmentation type ("DNase" or "ATAC")
   #
   # Returns:
-  #   Character string listing the PWM matches above a certain rel. threshold
+  #   Count
   
-  require(Biostrings)
-  require(TFBSTools)
-  
-  # 1 pad sequence with N's
-  sequence = paste0("NNNNN",sequence,"NNNNN")
-  
-  #make DNAString
-  sequence = DNAString(sequence)
-  
-  #match
-  suppressWarnings(out <- lapply(pwm.data, function(x) searchSeq(x, sequence, strand="*", min.score=threshold )) )
-  out <- out[sapply(out, function(x) nrow(writeGFF3(x)) > 0 )]
-  
-  # combine output
-  tmp <- ""
-  
-  if(length(out) >= 1){
-    
-    #make dataframes
-    out.frame <- lapply(out, function(x) writeGFF3(x) ) #make data frame
-    out.frame <- lapply(out.frame, function(x) x <- x[x[,6]==max(x[,6]),]) #pick highest matching strand
-    factors <- sapply(out.frame, function(x) strsplit(as.character(unlist(x[9])),";")[[1]][1] )
-    factors <- sapply(factors, function(x) gsub("TF=(\\w+)","\\1",x, perl=TRUE) )
-    
-    #get relative score
-    rel.scores <- lapply(out, function(x) relScore(x))
-    rel.scores <- lapply(rel.scores, max)
-    
-    #assemble data frame
-    df <- data.frame(factor=factors, rel.scores=unlist(rel.scores) )
-    df <- df[order(df$rel.scores, decreasing =TRUE),]
-    
-    #merge values
-    for(i in c(1:nrow(df))){
-      tmp <- paste0(tmp,df$factor[i],"=",round(df$rel.scores[[i]],digits=2),";")
-    }
-    
-  }else{	#if no match above threshold report nothing
-    tmp <- "no hits"
-  }
-  
-  return(tmp)
+  fp <- GetFootprint(kmer=kmer, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, 
+                     smooth=FALSE)
+  return(fp$count)
   
 }
 
-# WRAPPER FUNCTIONS -----------------------------------------------------------
 GetFootprint <- function(kmer, 
                          tissue, 
                          data.dir,
@@ -1188,453 +1428,6 @@ GetSFR <- function(kmer,
     
   }
 }
-  
-GetCount <- function(kmer, 
-                   tissue, 
-                   data.dir,
-                   pnorm.tag,
-                   frag.type){
-  # Wrapper function to get the count of the k-mer in DHS in the tissue of interest
-  #
-  # Args:
-  #   kmer: k-mer to query
-  #   tissue: input tissue to query the profile from
-  #   data.dir: repository storing processed kmer files per tissue,
-  #   pnorm.tag: identifier which background was used for normalisation
-  #     m_ery_1 --> mouse erythroid DNase digest;
-  #     h_ery_1 --> human erythroid DNase digest;
-  #     m_ery_1_atac --> mouse erythroid ATAC digest;
-  #     h_ery_1_atac --> human erythroid ATAC digest;
-  #   frag.type: fragmentation type ("DNase" or "ATAC")
-  #
-  # Returns:
-  #   Count
-
-    fp <- GetFootprint(kmer=kmer, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, 
-                       smooth=FALSE)
-    return(fp$count)
-  
-}
-
-QueryLongSequence <- function(sequence, 
-                              kl, 
-                              tissue, 
-                              data.dir,
-                              pnorm.tag,
-                              vocab.flag=FALSE, 
-                              vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"), 
-                              frag.type, 
-                              plots=FALSE, 
-                              smooth=TRUE, 
-                              plot.shoulders=TRUE, 
-                              ylim=c(0,0.01), 
-                              xlim=c(-125,125),
-                              preload=FALSE,
-                              preload.vocab="",
-                              preload.profiles=""){
-  # Wrapper function to get split longer sequence into kmer of length kl and return kmer, SFR 
-  # plots if specified
-  #
-  # Args:
-  #   sequence: input logner sequence
-  #   kl: length of k-mers to qsplit sequence into
-  #   tissue: input tissue to query the profile from
-  #   data.dir: repository storing processed kmer files per tissue
-  #   pnorm.tag: identifier which background was used for normalisation
-  #     m_ery_1 --> mouse erythroid DNase digest;
-  #     h_ery_1 --> human erythroid DNase digest;
-  #     m_ery_1_atac --> mouse erythroid ATAC digest;
-  #     h_ery_1_atac --> human erythroid ATAC digest;
-  #   vocab.flag: indicating if a preprocessed vocabulary file is present and to be used [TRUE/FALSE]
-  #   vocab.file= path to preprocessed vocabulary file
-  #   frag.type: fragmentation type ("DNase" or "ATAC")
-  #   plots: TRUE/FALSE indicate if to make the profile plot for every k-mer
-  #   smooth: flag if to smooth the profile (TRUE or FALSE)  
-  #   plot.shoulders: flag if to plot the shoulder regions
-  #   ylim: ylim to fix for plot (default c(0, 0.01))
-  #   xlim: xlim to fix for plot (default c(-125, 125))
-  #   preload: FALSE/TRUE specify if to use preloaded data for speeding up
-  #   preload.profiles: list of plus and minus kmer profiles preloaded (only required if preload=TRUE and vocab.flag=FALSE)
-  #   preload.vocab: 2 column table kmer, SFR preloaded from vocabulary file
-  #
-  # Returns:
-  #   data frame listing the splitted kmers with the respective SFR ($df)
-  #   if specified list of plots one per splitted k-mer ($plots)
-  
-  #capture if sequence is to short
-  if(nchar(sequence) < kl){
-    warnings("Input sequence is shorter than the length of k-mers to split to! Returning NA!")
-    return("NA")
-  }
-  
-  #1 dissect sequence 
-  dl <- DissectSequence(sequence, kl, list=TRUE)
-  
-  #2 get SFR per k-mer 
-  dl.sfr <- lapply(dl, function(x){
-    x <- GetSFR(kmer=x, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, vocab.flag = vocab.flag, vocab.file = vocab.file, frag.type = frag.type, preload=preload, preload.vocab=preload.vocab, preload.profiles=preload.profiles)
-  })
-  
-  #3 compose data frame for output
-  dl.df <- data.frame(kmer=unlist(dl), sfr=unlist(dl.sfr))
-  
-  #4 get plots if specified
-  if(plots){
-    dl.plots <- lapply(dl, function(x){
-      x <- PlotSingleKmer(kmer=x, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, 
-                          smooth=smooth, plot.shoulders=plot.shoulders, ylim=ylim, xlim=xlim, preload=preload, preload.profiles=preload.profiles)
-    })
-  }
-  
-  #return according to specified desired output
-  if(plots){
-    newlist <- list(df=dl.df, plots=dl.plots)
-    return(newlist)
-  }else if(!plots){
-    return(dl.df)
-  }else{
-    warnings("Specifiy if to make plots explicitly if they are desired! plots=TRUE/FALSE  Will return output without plots!")
-    return(dl.df)
-  }
-}
-
-CompareSequences <- function(sequence1, 
-                             sequence2, 
-                             kl, 
-                             damage.mode="exhaustive", 
-                             tissue, 
-                             data.dir,
-                             pnorm.tag,
-                             vocab.flag=FALSE, 
-                             vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"), 
-                             frag.type, 
-                             plots="highest", 
-                             smooth=TRUE, 
-                             ylim=c(0,0.01), 
-                             xlim=c(-125,125),
-                             plot.shoulders=FALSE,
-                             preload=FALSE,
-                             preload.vocab="",
-                             preload.profiles=""){
-  # Wrapper function to analyse multiple Ref-Var-Sequence pairs
-  # split each sequence into k-mers of lenfth kl, get their SFRs form vocab file 
-  # or calculate new and calculate the damage associated with each kmer pair and 
-  # from that the local or exhaustive summed up dmage of entire sequence pair
-  #
-  # Args:
-  #   ref.var.df: three column data frame listing id referecne and variance sequence 
-  #   in the following scheme (id reference variance)
-  #   kl: length of k-mers to split sequences into
-  #   damage.mode: mode for calculating the total damage 
-  #   (local: get highest pair, exhaustive: sum up over entire sequence)
-  #   tissue: input tissue to query the profile from
-  #   data.dir: repository storing processed kmer files per tissue
-  #   pnorm.tag: identifier which background was used for normalisation
-  #     m_ery_1 --> mouse erythroid DNase digest;
-  #     h_ery_1 --> human erythroid DNase digest;
-  #     m_ery_1_atac --> mouse erythroid ATAC digest;
-  #     h_ery_1_atac --> human erythroid ATAC digest;
-  #   vocab.flag: indicating if a preprocessed vocabulary file is present and to be used [TRUE/FALSE]
-  #   vocab.file: path to preprocessed vocabulary file
-  #   frag.type: fragmentation type ("DNase" or "ATAC")
-  #   plots: indicate if and what overlay plots to retrieve 
-  #     with values FALSE for no plots to retrieve, "highest" for only retrieving one plot of 
-  #     the highest scoring kmer pair, "all" for retrieving a list of all pairwise overlay plots
-  #   preload: FALSE/TRUE specify if to use preloaded data for speeding up
-  #   preload.profiles: list of plus and minus kmer profiles preloaded (only required if preload=TRUE and vocab.flag=FALSE)
-  #   preload.vocab: 2 column table kmer, SFR preloaded from vocabulary file
-  #
-  # Returns:
-  #   Dataframe listing Ref and Var sequence with highest scoring kmer pair and 
-  #   the according SFRs and calculated (exhaustive or local) damage
-  #   and the percentage change of the footprinting strength
-  
-  #check if indicated vocab file is readable
-  if((vocab.flag == TRUE) & (!file.exists(vocab.file))){
-    warning(paste0("File ", vocab.file, "does not exists! Please indicate the appropriate 
-                     path to the vocabulary file or select vocab.flag=FALSE instead!"))
-    return(NA_real_)
-  }
-  
-  #capture if sequences are to short
-  if((nchar(sequence1) < kl) | (nchar(sequence2) < kl)){
-    warnings("At least one input sequence is shorter than the length of k-mers to split to! Returning NA!")
-    return("NA")
-  }
-  #check if sequences have equal length
-  if(nchar(sequence1) != nchar(sequence2)){
-    warning("Input sequences have unequal length! Currently only equal length is suported! Returning NA!")
-    return("NA")
-  }
-  
-  #1 split sequences into two lists
-  dl1 <- DissectSequence(sequence1, kl, list=TRUE)
-  dl2 <- DissectSequence(sequence2, kl, list=TRUE)
-  
-  #2 get SFRs for each k-mer 
-  dl1.sfr <- lapply(dl1, function(x){
-    x <- GetSFR(kmer=x, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, vocab.flag = vocab.flag, vocab.file = vocab.file, frag.type = frag.type, preload=preload, preload.vocab=preload.vocab, preload.profiles=preload.profiles)
-  })
-  dl2.sfr <- lapply(dl2, function(x){
-    x <- GetSFR(kmer=x, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, vocab.flag = vocab.flag, vocab.file = vocab.file, frag.type = frag.type, preload=preload, preload.vocab=preload.vocab, preload.profiles=preload.profiles)
-  })
-  
-  #3 compose data frame
-  dl.df <- data.frame(kmer.ref=unlist(dl1), kmer.var=unlist(dl2), sfr.ref=unlist(dl1.sfr), sfr.var=unlist(dl2.sfr))
-  
-  #4 calc single kmer overlap damage
-  dl.df$damage <- dl.df$sfr.ref - dl.df$sfr.var
-  
-  #5 pick highest scoring kmers
-  highest.damage.id <- which(abs(dl.df$damage) == max(abs(dl.df$damage)))[1]
-  
-  #6 calculate total damage according to selected mode
-  if(damage.mode == "exhaustive"){
-    total.damage <- sum(dl.df$damage)
-  }else if(damage.mode == "local"){
-    total.damage <- dl.df[highest.damage.id, ]$damage
-  }else{
-    warning("Specify a mode to calculate the total damage for comparing the sequences! damage.mode=exhaustive/local")
-    return("NA")
-  }
-  
-  #7 calculate the percentage change
-  #make copy of the dl.df to screw with it
-  dl.df.copy <- dl.df
-  
-  #get rid of lines with ref equals var kmer
-  dl.df.copy <- subset(dl.df.copy, as.character(dl.df.copy$kmer.ref) != as.character(dl.df$kmer.var))
-  
-  #get highest kmer either ref or var
-  highest.ref.sfr.id <- which(dl.df.copy$sfr.ref == max(dl.df.copy$sfr.ref))[1]
-  highest.var.sfr.id <- which(dl.df.copy$sfr.var == max(dl.df.copy$sfr.var))[1]
-  
-  #pick ref or var as highest
-  if( max(dl.df.copy$sfr.var) > max(dl.df.copy$sfr.ref)){
-    highest.sfr.id <- highest.var.sfr.id
-  }else{
-    highest.sfr.id <- highest.ref.sfr.id
-  }
-  
-  #calculate the % change by scaling the highest SFR to 100 % comparing
-  #select max and min again 
-  max <- max(c(dl.df.copy[highest.sfr.id, ]$sfr.ref, dl.df.copy[highest.sfr.id, ]$sfr.var))
-  min <- min(c(dl.df.copy[highest.sfr.id, ]$sfr.ref, dl.df.copy[highest.sfr.id, ]$sfr.var))
-  
-  #remove 1 from each cause thats the background
-  max <- max - 1
-  min <- min - 1
-  
-  #scale them to percentage of max and calculate difference
-  perc.change <- 1 - ((1/max) * min)
-
-  #8 make summary line like for batch query
-  summary.line <- data.frame(
-    sequence.ref=sequence1,
-    sequence.var=sequence2,
-    kmer.ref=as.character(dl.df[highest.damage.id, ]$kmer.ref), 
-    kmer.var=as.character(dl.df[highest.damage.id, ]$kmer.var),
-    SFR.ref=round(dl.df[highest.damage.id, ]$sfr.ref, digits = 3),
-    SFR.var=round(dl.df[highest.damage.id, ]$sfr.var, digits = 3),
-    total.damage=round(total.damage, digits = 3),
-    perc.change=round(perc.change, digits = 3)
-    )
-  
-  
-  #9 make plots if desired 
-  if(plots == "all"){
-    
-    plot.list <- apply(dl.df[, c("kmer.ref", "kmer.var")], 1, function(x){
-      
-      pp <- PlotOverlapKmers(
-        kmer1=x[1], 
-        kmer2=x[2],
-        tissue1=tissue, 
-        tissue2=tissue, 
-        data.dir=data.dir,
-        pnorm.tag,
-        frag.type=frag.type, 
-        smooth=smooth,
-        ylim=ylim, 
-        xlim=xlim,
-        plot.shoulders=plot.shoulders,
-        preload=preload, 
-        preload.profiles=preload.profiles
-        )
-        
-      return(pp)
-      
-    })
-
-  }else if(plots == "highest"){
-    
-    plot.list <- PlotOverlapKmers(
-      kmer1=as.character(dl.df[highest.damage.id, ]$kmer.ref), 
-      kmer2=as.character(dl.df[highest.damage.id, ]$kmer.var),
-      tissue1=tissue, 
-      tissue2=tissue, 
-      data.dir=data.dir,
-      pnorm.tag,
-      frag.type=frag.type, 
-      smooth=smooth, 
-      ylim=ylim, 
-      xlim=xlim,
-      plot.shoulders=plot.shoulders,
-      preload=preload, 
-      preload.profiles=preload.profiles
-      )
-    
-  }else if(!plots){
-    plot.list <- "No Plots specified"
-  }else{
-    warnings("Please select if and what plots to produce: FALSE \"highest\" \"all\"!\n Will return without plots!")
-    plot.list <- "No Plots specified"
-  }
-        
-  #10 assemble output
-  newlist <- list(df=dl.df, summary=summary.line, plots=plot.list, damage.mode=damage.mode)
-  return(newlist)
-  
-}
-
-RefVarBatch <- function(ref.var.df, 
-                        kl, 
-                        damage.mode="exhaustive", 
-                        tissue, 
-                        data.dir,
-                        pnorm.tag,
-                        vocab.flag=FALSE, 
-                        vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"), 
-                        frag.type,
-                        preload=FALSE,
-                        preload.profiles="",
-                        preload.vocab=""){
-  # Wrapper function to analyse multiple Ref-Var-Sequence pairs
-  # split each sequence into k-mers of length kl, get their SFRs form vocab file 
-  # or calculate new and calculate the damage associated with each kmer pair and 
-  # from that the local or exhaustive summed up dmage of entire sequence pair
-  #
-  # Args:
-  #   ref.var.df: three column data frame listing id reference and variance sequence 
-  #   in the following scheme (id reference variance)
-  #   kl: length of k-mers to split sequences into
-  #   damage.mode: mode for calculating the toal damage 
-  #   (local: get highest pair, exhaustive: sum up over entire sequence)
-  #   tissue: input tissue to query the profile from
-  #   data.dir: repository storing processed kmer files per tissue
-  #   pnorm.tag: identifier which background was used for normalisation
-  #     m_ery_1 --> mouse erythroid DNase digest;
-  #     h_ery_1 --> human erythroid DNase digest;
-  #     m_ery_1_atac --> mouse erythroid ATAC digest;
-  #     h_ery_1_atac --> human erythroid ATAC digest;
-  #   vocab.flag: indicating if a preprocessed vocabulary file is present and to be used [TRUE/FALSE]
-  #   vocab.file= path to preprocessed vocabulary file
-  #   frag.type: fragmentation type ("DNase" or "ATAC")
-  #   preload: FALSE/TRUE specify if to use preloaded data for speeding up
-  #   preload.profiles: list of plus and minus kmer profiles preloaded (only required if preload=TRUE and vocab.flag=FALSE)
-  #   preload.vocab: 2 column table kmer, SFR preloaded from vocabulary file
-  #
-  # Returns:
-  #   Dataframe listing Ref and Var sequence with highest scoring kmer pair and 
-  #   the according SFRs and calculated (exhaustive or local) damage 
-  
-  #check format of input.df
-  if(ncol(ref.var.df) != 3){
-    warnign("The input ref.var.df data.frame requires a three column data frame input format (id ref var)!")
-    return("NA")
-  }
-  
-  #1 perform compare sequence for every row
-  temp.list <- apply(ref.var.df, 1, function(x){
-
-    comp <- CompareSequences(sequence1=as.character(x[2]), 
-                             sequence2=as.character(x[3]), 
-                             kl=kl, 
-                             damage.mode=damage.mode, 
-                             tissue=tissue,
-                             data.dir=data.dir, 
-                             pnorm.tag=pnorm.tag, 
-                             vocab.flag=vocab.flag, 
-                             vocab.file=vocab.file, 
-                             frag.type=frag.type, 
-                             plots=FALSE,
-                             preload=preload, 
-                             preload.vocab=preload.vocab, 
-                             preload.profiles=preload.profiles
-                             )$summary
-    return(comp)
-    
-  })
-  
-  #2 rbind to output summary data frame
-  out.df <- do.call(rbind, temp.list)
-  #3 add id columns
-  out.df <- cbind(ref.var.df[, 1], out.df)
-  names(out.df)[1] <- "id"
-   
-  return(out.df)
-  
-}
-
-QueryJasparBatch <- function(df, 
-                             damage.threshold=0, 
-                             match.threshold=0.8, 
-                             pwm.data){
-  # Take a data frame from RefVar Query Batch as input and query it against the 
-  # set of Jaspar2014 PWMs using a selected match.threshold 
-  # Select an absolute sasq damage above which to query jaspar
-  #
-  # Args:
-  #   df: input dataframe from RefVarBatch query 
-  #   damage.threshold: absolute damage threshold above which a RefVar pair is queried
-  #   match.threshold: percentage relative score thresh over which to report matches (default=0.8)
-  #   pwm.data: a stored pwm. RData object as retrieved and save from JASPAR2014 R package
-  #
-  # Returns:
-  #   Dataframe with additional column for jaspar query results
-  
-  #check input dataframe
-  if(ncol(df) != 9){
-    warning("Input dataframe df does not have 9 columns! Please make sure RefVarBatch has run properly:\n
-            Format: id sequence.ref  sequence.var kmer.ref kmer.var  SFR.ref  SFR.var total.damage")
-    return("NA")
-  }
-  
-  
-  
-  # go throug data frame and query jaspar
-  jsp <- apply(df, 1, function(x){
-
-    
-    if(abs(as.numeric(x[8])) >= damage.threshold){ #only query if absolute total damage is above threshold
-    
-      if(x[8] >= 0){ # if total.damage is positive --> quer reference sequence
-     
-         j <- QueryJaspar(sequence=x[2], threshold=match.threshold, pwm.data=pwm.data)
-    
-      }else if(x[8] <= 0){# if total.damage is negative query variant sequence
-        
-          j <- QueryJaspar(sequence=x[3], threshold=match.threshold, pwm.data=pwm.data)
-          
-      }
-    
-    }else{#dont query
-      
-      j <- "."
-      
-    }
-    
-    return(j) #return
-    
-  })
-  
-  #add new column
-  df$jaspar <- jsp
-  
-  #return data frame
-  return(df)
-  
-}
 
 InSilicoMutation <- function( sequence,
                               kl=7,
@@ -1791,6 +1584,228 @@ InSilicoMutation <- function( sequence,
 }
 
 
+QueryJasparBatch <- function(df, 
+                             damage.threshold=0, 
+                             match.threshold=0.8, 
+                             pwm.data){
+  # Take a data frame from RefVar Query Batch as input and query it against the 
+  # set of Jaspar2014 PWMs using a selected match.threshold 
+  # Select an absolute sasq damage above which to query jaspar
+  #
+  # Args:
+  #   df: input dataframe from RefVarBatch query 
+  #   damage.threshold: absolute damage threshold above which a RefVar pair is queried
+  #   match.threshold: percentage relative score thresh over which to report matches (default=0.8)
+  #   pwm.data: a stored pwm. RData object as retrieved and save from JASPAR2014 R package
+  #
+  # Returns:
+  #   Dataframe with additional column for jaspar query results
+  
+  #check input dataframe
+  if(ncol(df) != 9){
+    warning("Input dataframe df does not have 9 columns! Please make sure RefVarBatch has run properly:\n
+            Format: id sequence.ref  sequence.var kmer.ref kmer.var  SFR.ref  SFR.var total.damage")
+    return("NA")
+  }
+  
+  
+  
+  # go throug data frame and query jaspar
+  jsp <- apply(df, 1, function(x){
+    
+    
+    if(abs(as.numeric(x[8])) >= damage.threshold){ #only query if absolute total damage is above threshold
+      
+      if(x[8] >= 0){ # if total.damage is positive --> quer reference sequence
+        
+        j <- QueryJaspar(sequence=x[2], threshold=match.threshold, pwm.data=pwm.data)
+        
+      }else if(x[8] <= 0){# if total.damage is negative query variant sequence
+        
+        j <- QueryJaspar(sequence=x[3], threshold=match.threshold, pwm.data=pwm.data)
+        
+      }
+      
+    }else{#dont query
+      
+      j <- "."
+      
+    }
+    
+    return(j) #return
+    
+  })
+  
+  #add new column
+  df$jaspar <- jsp
+  
+  #return data frame
+  return(df)
+  
+}
+
+QueryLongSequence <- function(sequence, 
+                              kl, 
+                              tissue, 
+                              data.dir,
+                              pnorm.tag,
+                              vocab.flag=FALSE, 
+                              vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"), 
+                              frag.type, 
+                              plots=FALSE, 
+                              smooth=TRUE, 
+                              plot.shoulders=TRUE, 
+                              ylim=c(0,0.01), 
+                              xlim=c(-125,125),
+                              preload=FALSE,
+                              preload.vocab="",
+                              preload.profiles=""){
+  # Wrapper function to get split longer sequence into kmer of length kl and return kmer, SFR 
+  # plots if specified
+  #
+  # Args:
+  #   sequence: input logner sequence
+  #   kl: length of k-mers to qsplit sequence into
+  #   tissue: input tissue to query the profile from
+  #   data.dir: repository storing processed kmer files per tissue
+  #   pnorm.tag: identifier which background was used for normalisation
+  #     m_ery_1 --> mouse erythroid DNase digest;
+  #     h_ery_1 --> human erythroid DNase digest;
+  #     m_ery_1_atac --> mouse erythroid ATAC digest;
+  #     h_ery_1_atac --> human erythroid ATAC digest;
+  #   vocab.flag: indicating if a preprocessed vocabulary file is present and to be used [TRUE/FALSE]
+  #   vocab.file= path to preprocessed vocabulary file
+  #   frag.type: fragmentation type ("DNase" or "ATAC")
+  #   plots: TRUE/FALSE indicate if to make the profile plot for every k-mer
+  #   smooth: flag if to smooth the profile (TRUE or FALSE)  
+  #   plot.shoulders: flag if to plot the shoulder regions
+  #   ylim: ylim to fix for plot (default c(0, 0.01))
+  #   xlim: xlim to fix for plot (default c(-125, 125))
+  #   preload: FALSE/TRUE specify if to use preloaded data for speeding up
+  #   preload.profiles: list of plus and minus kmer profiles preloaded (only required if preload=TRUE and vocab.flag=FALSE)
+  #   preload.vocab: 2 column table kmer, SFR preloaded from vocabulary file
+  #
+  # Returns:
+  #   data frame listing the splitted kmers with the respective SFR ($df)
+  #   if specified list of plots one per splitted k-mer ($plots)
+  
+  #capture if sequence is to short
+  if(nchar(sequence) < kl){
+    warnings("Input sequence is shorter than the length of k-mers to split to! Returning NA!")
+    return("NA")
+  }
+  
+  #1 dissect sequence 
+  dl <- DissectSequence(sequence, kl, list=TRUE)
+  
+  #2 get SFR per k-mer 
+  dl.sfr <- lapply(dl, function(x){
+    x <- GetSFR(kmer=x, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, vocab.flag = vocab.flag, vocab.file = vocab.file, frag.type = frag.type, preload=preload, preload.vocab=preload.vocab, preload.profiles=preload.profiles)
+  })
+  
+  #3 compose data frame for output
+  dl.df <- data.frame(kmer=unlist(dl), sfr=unlist(dl.sfr))
+  
+  #4 get plots if specified
+  if(plots){
+    dl.plots <- lapply(dl, function(x){
+      x <- PlotSingleKmer(kmer=x, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, 
+                          smooth=smooth, plot.shoulders=plot.shoulders, ylim=ylim, xlim=xlim, preload=preload, preload.profiles=preload.profiles)
+    })
+  }
+  
+  #return according to specified desired output
+  if(plots){
+    newlist <- list(df=dl.df, plots=dl.plots)
+    return(newlist)
+  }else if(!plots){
+    return(dl.df)
+  }else{
+    warnings("Specifiy if to make plots explicitly if they are desired! plots=TRUE/FALSE  Will return output without plots!")
+    return(dl.df)
+  }
+}
+
+
+RefVarBatch <- function(ref.var.df, 
+                        kl, 
+                        damage.mode="exhaustive", 
+                        tissue, 
+                        data.dir,
+                        pnorm.tag,
+                        vocab.flag=FALSE, 
+                        vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"), 
+                        frag.type,
+                        preload=FALSE,
+                        preload.profiles="",
+                        preload.vocab=""){
+  # Wrapper function to analyse multiple Ref-Var-Sequence pairs
+  # split each sequence into k-mers of length kl, get their SFRs form vocab file 
+  # or calculate new and calculate the damage associated with each kmer pair and 
+  # from that the local or exhaustive summed up dmage of entire sequence pair
+  #
+  # Args:
+  #   ref.var.df: three column data frame listing id reference and variance sequence 
+  #   in the following scheme (id reference variance)
+  #   kl: length of k-mers to split sequences into
+  #   damage.mode: mode for calculating the toal damage 
+  #   (local: get highest pair, exhaustive: sum up over entire sequence)
+  #   tissue: input tissue to query the profile from
+  #   data.dir: repository storing processed kmer files per tissue
+  #   pnorm.tag: identifier which background was used for normalisation
+  #     m_ery_1 --> mouse erythroid DNase digest;
+  #     h_ery_1 --> human erythroid DNase digest;
+  #     m_ery_1_atac --> mouse erythroid ATAC digest;
+  #     h_ery_1_atac --> human erythroid ATAC digest;
+  #   vocab.flag: indicating if a preprocessed vocabulary file is present and to be used [TRUE/FALSE]
+  #   vocab.file= path to preprocessed vocabulary file
+  #   frag.type: fragmentation type ("DNase" or "ATAC")
+  #   preload: FALSE/TRUE specify if to use preloaded data for speeding up
+  #   preload.profiles: list of plus and minus kmer profiles preloaded (only required if preload=TRUE and vocab.flag=FALSE)
+  #   preload.vocab: 2 column table kmer, SFR preloaded from vocabulary file
+  #
+  # Returns:
+  #   Dataframe listing Ref and Var sequence with highest scoring kmer pair and 
+  #   the according SFRs and calculated (exhaustive or local) damage 
+  
+  #check format of input.df
+  if(ncol(ref.var.df) != 3){
+    warnign("The input ref.var.df data.frame requires a three column data frame input format (id ref var)!")
+    return("NA")
+  }
+  
+  #1 perform compare sequence for every row
+  temp.list <- apply(ref.var.df, 1, function(x){
+
+    comp <- CompareSequences(sequence1=as.character(x[2]), 
+                             sequence2=as.character(x[3]), 
+                             kl=kl, 
+                             damage.mode=damage.mode, 
+                             tissue=tissue,
+                             data.dir=data.dir, 
+                             pnorm.tag=pnorm.tag, 
+                             vocab.flag=vocab.flag, 
+                             vocab.file=vocab.file, 
+                             frag.type=frag.type, 
+                             plots=FALSE,
+                             preload=preload, 
+                             preload.vocab=preload.vocab, 
+                             preload.profiles=preload.profiles
+                             )$summary
+    return(comp)
+    
+  })
+  
+  #2 rbind to output summary data frame
+  out.df <- do.call(rbind, temp.list)
+  #3 add id columns
+  out.df <- cbind(ref.var.df[, 1], out.df)
+  names(out.df)[1] <- "id"
+   
+  return(out.df)
+  
+}
+
 
 # PLOT FUNCTION WRAPPER -----------------------------------------
 PlotSingleKmer <- function(kmer, 
@@ -1800,7 +1815,8 @@ PlotSingleKmer <- function(kmer,
                            frag.type, 
                            smooth=TRUE, 
                            smooth.bandwidth=5, 
-                           plot.shoulders=FALSE, 
+                           plot.shoulders=FALSE,
+                           plot.title=FALSE,
                            ylim=c(0,0.01), 
                            xlim=c(-125,125), 
                            color="black",
@@ -1820,6 +1836,7 @@ PlotSingleKmer <- function(kmer,
   #   frag.type: fragmentation type ("DNase" or "ATAC")
   #   smooth: flag if to smooth the profile (TRUE or FALSE)  
   #   plot.shoulders: flag if to plot the shoulder regions
+  #   plot.title: TRUE/FALSE print the kmer and occurrence as title
   #   ylim: ylim to fix for plot (default c(0, 0.01))
   #   xlim: xlim to fix for plot (default c(-125, 125)) 
   #   color: color for profile to plot
@@ -1838,6 +1855,12 @@ PlotSingleKmer <- function(kmer,
   
   #2 make plot
   p <- PlotSingle(profile=fp$profile, kl=nchar(kmer), plot.shoulders=plot.shoulders, shoulders=sh, ylim=ylim, xlim=xlim, color=color)
+  
+  if(plot.title == TRUE){
+    p <- p + ggtitle(paste0(kmer, " #", fp$count))
+  }
+  
+  return(p)
   
 }
 
@@ -1972,15 +1995,15 @@ PlotSingleStrands <- function(kmer,
   
 }
 
-RainbowPlot <- function(df, ylim=c(-2,2)){
-  # Make a rainbow plot from data frame as output from InSilicoMutation. Must have been run with report="all"
+InSilicoMutationPlot <- function(df, ylim=c(-2,2)){
+  # Make a InSilicoMutation plot from data frame as output from InSilicoMutation. Must have been run with report="all"
   #
   # Args:
   #   df: Dataframe from InSilicoMutation (report="all")
   #   ylim: y-limits for plot
   #
   # Returns:
-  #   ggplot2 plot object of the rainbowplot  
+  #   ggplot2 plot object of the InSilicoMutationplot  
   
   
   #check data frame
@@ -1991,14 +2014,18 @@ RainbowPlot <- function(df, ylim=c(-2,2)){
     return(NA_real_)
   }
   
-  #make plot
-  p <- ggplot(df, aes(x=pos, y=damage, col=var.base)) + 
-  geom_hline(yintercept=0, ) +
+  # select point shape size according to sequence length
+  selected.point.size <- 3.25 + nrow(df)/3 * -0.005
+
+  # make plot
+  p <- ggplot(df, aes(x=pos, y=damage, shape=var.base, col=var.base)) + 
+  geom_hline(yintercept=0) +
   geom_segment(aes(x=pos, xend=pos, y=0, yend=damage), col="Grey") + 
-  geom_point(size=1.5) + 
-  coord_cartesian(xlim=c(df$pos[1], tail(df$pos, 1)), ylim=ylim, expand=FALSE) + 
+  geom_point(size=selected.point.size) +
+  coord_cartesian(xlim=c(df$pos[1]-0.5, tail(df$pos, 1)+0.5), ylim=ylim, expand=FALSE) + 
   labs(x=df$chr[1], y="Sum of Damage") +
   scale_color_manual(values=brewer.pal(6, "Set1")[c(3,2,4,1)], name="Variant") + 
+  scale_shape_manual(values=c(15,16,17,18), name="Variant") +
   theme_bw() + science_theme +
   theme(
     panel.grid.major.x=element_blank(), 
@@ -2009,13 +2036,13 @@ RainbowPlot <- function(df, ylim=c(-2,2)){
   
 }
 
-MakeRainbowTrackHub <- function(input.df,
+MakeInSilicoMutationTrackHub <- function(input.df,
                                 id.tag = "SasQ_RP",
                                 store.tracks = paste0("~/", id.tag, "_tracks"),
                                 store.hub = paste0("~/", id.tag,"_track_hub"),
                                 genome.build = "hg19",
                                 path.chr.sizes,
-                                short.label = "SasQ In silico mutation Rainbow plot",
+                                short.label = "SasQ In silico mutation InSilicoMutation plot",
                                 long.label = "",
                                 set.email = "none",
                                 bedgraph.to.bigwig.path,
@@ -2028,7 +2055,7 @@ MakeRainbowTrackHub <- function(input.df,
                               #   id.tag: id tag to name the hub directory and bw tracks
                               #   store.tracks: directory to store the bigwig tracks
                               #   store.hub: were to store the hub & visualization folder
-                              #   genome.build: select genome build ("hg19", "hg18", "m_ery_1", ...)
+                              #   genome.build: select genome build ("hg19", "hg18", "mm9", ...)
                               #   path.chr.sizes: full.path to chrsizes file amtching to the selected genome
                               #   short.label: shortLabel for track hub
                               #   long.label: longLabel for track hub (default = short.label)
@@ -2282,7 +2309,7 @@ PlotOverlapHS <- function(profile1,
   p <- ggplot( df, aes(x=x, y=y, colour=Source)) + geom_line(size=1) + 
     geom_vline(xintercept = c((0),(kl-1)), linetype = "dashed", size=1) + 
     labs(x="Relative position [bp]", y="Relative cut frequency") + 
-    coord_cartesian(ylim=ylim, xlim=xlim) + 
+    coord_cartesian(ylim=ylim, xlim=xlim, expand=FALSE) + 
     scale_colour_manual(values=rev(brewer.pal(3,"Set1")[c(1,2)])) +
     #add annotation
     geom_text(data=anno.df, aes(x=x, y=y, label=label)) +

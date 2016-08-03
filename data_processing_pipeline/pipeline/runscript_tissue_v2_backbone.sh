@@ -11,11 +11,11 @@
 
 #$ -cwd
 #$ -q batchq
-#$ -M rschwess
+#$ -M ron.schwessinger@ndcls.ox.ac.uk
 #$ -m eas
 #$ -e /t1-data1/WTSA_Dev/rschwess/clustereo
 #$ -o /t1-data1/WTSA_Dev/rschwess/clustereo
-#$ -N bb_lncap_dnase_he_l_v
+#$ -N bb_dnase
 
 #qsub /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/runscript_tissue_v2_backbone.sh
 	
@@ -32,35 +32,35 @@ SCRIPT_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processi
 ##################
 
 #specify organism ["mouse" or "human"]
-ORGANISM="human"	
+ORGANISM="mouse"	
 
 #genome Build ["hg18", "hg19", "mm9"] currently choosable
-BUILD='hg19'
+BUILD='mm9'
 
 #IDtag to produce output directory and name the files
-IDTAG="DNase_He_refined_LNCaP_50U_50_100bp_L_V"
+IDTAG="WTHG_C57bl6_erythroblasts_term_diff_rep3_2"
 
 #specify if DNaseI or ATAC data ("DNase" or "ATAC")
 DATA_TYPE="DNase"
 
 #type of sequencing ["singleend" / "pairedend"] 
-SEQ_TYPE="singleend"
+SEQ_TYPE="pairedend"
 
 #set output directory
 OUTPUT_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/${ORGANISM}/${DATA_TYPE}/${IDTAG}/
 
 #path to aligned reads bam file
-BAM_FILE="${OUTPUT_DIR}/filtered.bam"
+BAM_FILE="/t1-data1/WTSA_Dev/telenius/runsAndAnalysis/DNaseI_longruns/C57_32/C57_3_2/mm9/filtered_Sorted.bam"
 
 #full path to peak file
-PEAK_FILE="${OUTPUT_DIR}/PeakCall.bed"
+PEAK_FILE="WTHG_C57bl6_erythroblasts_term_diff_rep3_2_macs2_peaks.bed"
 #identifier name of the peak file to produce the ploidy filtered peaks
-PEAK_NAME=`basename ${PEAK_NAME} .bed`
+PEAK_NAME=`basename ${PEAK_FILE} .bed`
 
 
 #the perl script handling the region file decides based on the end of the file name (.gff or (.bed or .narroweak)) in which columns it has to look for the chromosome and start and stop coordinates
 REGIONS_FILE=${PEAK_FILE}
-REGIONS_FILE_PLOIDY_FILTERED=${OUTPUT_DIR}/${PEAK_NAME}_ploidy_filtered.gff
+REGIONS_FILE_PLOIDY_FILTERED=${OUTPUT_DIR}/${PEAK_NAME}_ploidy_filtered.bed
 
 # ======================================================================================= #
 # Configure Paths to genomes and chr sizes files for required organisms and genome builds #
@@ -162,7 +162,7 @@ case "${ORGANISM}" in
 		case "${DATA_TYPE}" in
 	
 			DNase)
-				pnormsource="mm9"
+				pnormsource="m_ery_1"
 				PROPENSITY_PLUS=${PROPENSITY_PLUS_mouse_dnase}
 				PROPENSITY_MINUS=${PROPENSITY_MINUS_mouse_dnase}			
 			;;
@@ -231,5 +231,5 @@ echo "Reads in Peaks:: `bedtools intersect -wa -a ${BAM_FILE} -b ${REGIONS_FILE_
 ### --------------------------------------------------------------------------------------------
 ### Submit cleaner .sh for removing temporary stored bam and footprint files after jobs finished
 ### --------------------------------------------------------------------------------------------
-# qsub -N cleaner_${IDTAG} -hold_jid $fpid,$countpnormid -v REGIONS_FILE=${REGIONS_FILE},REGIONS_FILE_PLOIDY_FILTERED=${REGIONS_FILE_PLOIDY_FILTERED},BAM_FILE=${BAM_FILE} ${PIPE_DIR}/runscript_tissue_v2_cleaner.sh
+#### qsub -N cleaner_${IDTAG} -hold_jid $fpid,$countpnormid -v REGIONS_FILE=${REGIONS_FILE},REGIONS_FILE_PLOIDY_FILTERED=${REGIONS_FILE_PLOIDY_FILTERED},BAM_FILE=${BAM_FILE} ${PIPE_DIR}/runscript_tissue_v2_cleaner.sh
 

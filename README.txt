@@ -1,27 +1,34 @@
-This copy is represents the central version version controle an shared.
-Date: 19th August 2015
-Ron Schwessinger (Contact: ron.schwessinger@t-online.de)
+##############################################################################################
+##                                                                                          ##
+## Sasquatch, Sequence based predicting of DNase I footprinting potential.                  ##
+## Copyright (C) 2016 Genome Biology and Computational Biology Research Group, WIMM, Oxford ##
+##                                                                                          ##
+## This program is free software: you can redistribute it and/or modify                     ##
+## it under the terms of the GNU General Public License as published by                     ##
+## the Free Software Foundation, either version 3 of the License, or                        ##
+## (at your option) any later version.                                                      ##
+##                                                                                          ##
+## This program is distributed in the hope that it will be useful,                          ##
+## but WITHOUT ANY WARRANTY; without even the implied warranty of                           ##
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                             ##
+## GNU General Public License for more details.	                                            ##
+##                                                                                          ##
+## You should have received a copy of the GNU General Public License                        ##
+## along with this program. If not, see <http://www.gnu.org/licenses/>.                     ##
+##                                                                                          ##
+## Contact: Ron Schwessinger, ron.schwessinger@ndcls.ox.ac.uk                               ##
+##          CBRG, genmail@molbiol.ox.ac.uk                                                  ##
+##          Jim Hughes, jim.hughes@imm.ox.ac.uk                                             ##
+##                                                                                          ##
+## Address: The Weatherall Institute of Molecular Medicine                                  ##
+##          University of Oxford                                                            ##
+##          John Radcliffe Hospital                                                         ##
+##          Headington                                                                      ##
+##          Oxford OX3 9DS                                                                  ##
+##                                                                                          ##
+##############################################################################################
 
-### use git! ###
-https://www.atlassian.com/git/
+### =============================== README =============================================== ###
 
-0. Very Basic Git Settings: 
-
-git config --global user.name <name>
-git config --global user.email <email adress>
-
-1. clone a copy of this repository to a directory of your choice using:
-
-git clone /hts/data4/rschwess/Sasquatch_offline/Sasquatch.git <your new directory of your SasQ copy>
-
-2. Edit the Script paths in the desired workflow and pipeline scripts to your local clone
-
-3. Enjoy Playing around and change what you like in your clone. The clone is version controled itself (have a quick read through basic git tutorial for suggestions). 
-
-4. For pulling recent changes in the global repository use: 
-
-git pull origin
-
-5. Familiarize the git version control collaboration structure for submitting or pulling any changes to the global version. (But contact me first ;)! ) 
 
 

@@ -11,7 +11,7 @@
 
 #$ -cwd
 #$ -q batchq
-#$ -M rschwess
+#$ -M ron.schwessinger@ndcls.ox.ac.uk
 #$ -m eas
 #$ -j y
 #$ -o /t1-data1/WTSA_Dev/rschwess/clustereo
