@@ -201,27 +201,27 @@ echo "Start downloading bam file ..."
 
 wget -q ${BAM_PATH}
 
-## check for single or paired end (check first 100000 reads
-#pairedcheck=`samtools view ${BAM_FILE} | head -n 10000 | perl -lane 'print $_ if $F[1] & 0x1;' | head -n 1`
-#
-##echo $pairedcheck
-#
-#if [ -z "$pairedcheck" ]
-#then
-#	echo "bam file is single end ..."
-#	SEQ_TYPE="singleend"
-#else
-#	echo "bam file is paired end ..."
-#        SEQ_TYPE="pairedend"
-#fi
-#
-#
-#echo "Start downloading bed file ..."
-#
-#wget -q ${BED_PATH} 
-#
-#gzip -d ${OUTPUT_DIR}/${PEAK_FILE}.gz
-#
+# check for single or paired end (check first 100000 reads
+pairedcheck=`samtools view ${BAM_FILE} | head -n 10000 | perl -lane 'print $_ if $F[1] & 0x1;' | head -n 1`
+
+#echo $pairedcheck
+
+if [ -z "$pairedcheck" ]
+then
+	echo "bam file is single end ..."
+	SEQ_TYPE="singleend"
+else
+	echo "bam file is paired end ..."
+        SEQ_TYPE="pairedend"
+fi
+
+
+echo "Start downloading bed file ..."
+
+wget -q ${BED_PATH} 
+
+gzip -d ${OUTPUT_DIR}/${PEAK_FILE}.gz
+
 ### --------------------------------------
 ### filter regions file for ploidy regions
 ### --------------------------------------
@@ -230,42 +230,42 @@ wget -q ${BAM_PATH}
 module load bedtools
 module load samtools
 
-## filter peaks for ploidy regions
-#bedtools intersect -v -a ${REGIONS_FILE} -b ${PLOIDY_REGIONS} >${REGIONS_FILE_PLOIDY_FILTERED}
+# filter peaks for ploidy regions
+bedtools intersect -v -a ${REGIONS_FILE} -b ${PLOIDY_REGIONS} >${REGIONS_FILE_PLOIDY_FILTERED}
 
-#### -----------------
-#### Submit Footprints
-#### -----------------
-#
-## submit fooptrinting and keep job id
-#fpid=`qsub -N fp_${IDTAG} -v OUTPUT_DIR=${OUTPUT_DIR},DATA_TYPE=${DATA_TYPE},BAM_FILE=${BAM_FILE},SCRIPT_DIR=${SCRIPT_DIR},BIGWIG_CHRSIZES=${BIGWIG_CHRSIZES},SEQ_TYPE=${SEQ_TYPE},IDTAG=${IDTAG} ${PIPE_DIR}/runscript_tissue_v2_footprinting.sh | perl -ne '$_=~/\s+(\d+)\s+/; print $1;'`
-# 
-# echo "Footprinting Job $fpid submitted"
-#
-#### ------------------------
-#### submit count k-mers pnorm
-#### ------------------------
-#
-## make counts directory
-#COUNTS=${OUTPUT_DIR}/counts
-#mkdir -p ${COUNTS}
-#
-## submit kmer based cut profile counting and store job ID
-#countpnormid=`qsub -N kmerpn_${IDTAG} -hold_jid $fpid -v COUNTS=${COUNTS},OUTPUT_DIR=${OUTPUT_DIR},REGIONS_FILE_PLOIDY_FILTERED=${REGIONS_FILE_PLOIDY_FILTERED},SCRIPT_DIR=${SCRIPT_DIR},REF_GENOME=${REF_GENOME},IDTAG=${IDTAG},PROPENSITY_PLUS=${PROPENSITY_PLUS},PROPENSITY_MINUS=${PROPENSITY_MINUS},pnormsource=${pnormsource} ${PIPE_DIR}/runscript_tissue_v2_kmercount_pnorm.sh  | perl -ne '$_=~/\s+(\d+)\s+/; print $1;'`
-#
-#
+### -----------------
+### Submit Footprints
+### -----------------
+
+# submit fooptrinting and keep job id
+fpid=`qsub -N fp_${IDTAG} -v OUTPUT_DIR=${OUTPUT_DIR},DATA_TYPE=${DATA_TYPE},BAM_FILE=${BAM_FILE},SCRIPT_DIR=${SCRIPT_DIR},BIGWIG_CHRSIZES=${BIGWIG_CHRSIZES},SEQ_TYPE=${SEQ_TYPE},IDTAG=${IDTAG} ${PIPE_DIR}/runscript_tissue_v2_footprinting.sh | perl -ne '$_=~/\s+(\d+)\s+/; print $1;'`
+ 
+ echo "Footprinting Job $fpid submitted"
+
+### ------------------------
+### submit count k-mers pnorm
+### ------------------------
+
+# make counts directory
+COUNTS=${OUTPUT_DIR}/counts
+mkdir -p ${COUNTS}
+
+# submit kmer based cut profile counting and store job ID
+countpnormid=`qsub -N kmerpn_${IDTAG} -hold_jid $fpid -v COUNTS=${COUNTS},OUTPUT_DIR=${OUTPUT_DIR},REGIONS_FILE_PLOIDY_FILTERED=${REGIONS_FILE_PLOIDY_FILTERED},SCRIPT_DIR=${SCRIPT_DIR},REF_GENOME=${REF_GENOME},IDTAG=${IDTAG},PROPENSITY_PLUS=${PROPENSITY_PLUS},PROPENSITY_MINUS=${PROPENSITY_MINUS},pnormsource=${pnormsource} ${PIPE_DIR}/runscript_tissue_v2_kmercount_pnorm.sh  | perl -ne '$_=~/\s+(\d+)\s+/; print $1;'`
+
+
 ## without waiting for the footprinting job ID
 ##countpnormid=`qsub -N kmerpn_${IDTAG} -v COUNTS=${COUNTS},OUTPUT_DIR=${OUTPUT_DIR},REGIONS_FILE_PLOIDY_FILTERED=${REGIONS_FILE_PLOIDY_FILTERED},SCRIPT_DIR=${SCRIPT_DIR},REF_GENOME=${REF_GENOME},IDTAG=${IDTAG},PROPENSITY_PLUS=${PROPENSITY_PLUS},PROPENSITY_MINUS=${PROPENSITY_MINUS},pnormsource=${pnormsource} ${PIPE_DIR}/runscript_tissue_v2_kmercount_pnorm.sh  | perl -ne '$_=~/\s+(\d+)\s+/; print $1;'`
-#
-#
-#echo "K-mer counting P-norm Job $countpnormid submitted"
-#
-#
-#### -----------------------------------------------------
-#### count reads, peaks and reads in peaks into stats file
-#### -----------------------------------------------------
-#
-#samtools index ${BAM_FILE}
+
+
+echo "K-mer counting P-norm Job $countpnormid submitted"
+
+
+### -----------------------------------------------------
+### count reads, peaks and reads in peaks into stats file
+### -----------------------------------------------------
+
+samtools index ${BAM_FILE}
 
 echo "Total reads: `samtools view ${BAM_FILE} | wc -l`" >${OUTPUT_DIR}/read_stats.txt
 echo "Number of Peaks:: `wc -l ${REGIONS_FILE_PLOIDY_FILTERED}`" >>${OUTPUT_DIR}/read_stats.txt 

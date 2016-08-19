@@ -1602,7 +1602,7 @@ QueryJasparBatch <- function(df,
   #   Dataframe with additional column for jaspar query results
   
   #check input dataframe
-  if(ncol(df) != 9){
+  if(ncol(df) < 9){
     warning("Input dataframe df does not have 9 columns! Please make sure RefVarBatch has run properly:\n
             Format: id sequence.ref  sequence.var kmer.ref kmer.var  SFR.ref  SFR.var total.damage")
     return("NA")
@@ -1655,7 +1655,7 @@ QueryLongSequence <- function(sequence,
                               plots=FALSE, 
                               smooth=TRUE, 
                               plot.shoulders=TRUE, 
-                              ylim=c(0,0.01), 
+                              ylim=c(0,0.01),
                               xlim=c(-125,125),
                               preload=FALSE,
                               preload.vocab="",
@@ -1805,6 +1805,76 @@ RefVarBatch <- function(ref.var.df,
   return(out.df)
   
 }
+
+
+# !!! WORKING !!! VERSION FOR INDELS ...
+CalcIndelDmg <- function(ref.seq, 
+                         var.seq,
+                         kl, 
+                         tissue, 
+                         data.dir,
+                         pnorm.tag,
+                         vocab.flag=FALSE, 
+                         vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"), 
+                         frag.type, 
+                         preload=FALSE,
+                         preload.vocab="",
+                         preload.profiles=""){
+  
+  # Wrapper to calculate INDEL damage (playground work-around)...
+  
+  # 1) Perform longer sequence query
+  q.ref <- QueryLongSequence(ref.seq, 
+                             kl=kl, 
+                             tissue=tissue, 
+                             data.dir=data.dir, 
+                             pnorm.tag = pnorm.tag, 
+                             vocab.flag=vocab.flag, 
+                             vocab.file=vocab.file,
+                             preload=preload, 
+                             preload.vocab=preload.vocab,
+                             preload.profiles=preload.profiles)
+  
+  q.var <- QueryLongSequence(var.seq, 
+                             kl=kl, 
+                             tissue=tissue, 
+                             data.dir=data.dir, 
+                             pnorm.tag = pnorm.tag, 
+                             vocab.flag=vocab.flag, 
+                             vocab.file=vocab.file,
+                             preload=preload, 
+                             preload.vocab=preload.vocab,
+                             preload.profiles=preload.profiles)
+  
+  # 2) Sum up SFR and normalise to kl [default=7] * (sum of SFR/number of kmer steps)
+  # to give a pseudo (13) bp window SFR measure
+  pseudo.sfr.ref <- (sum(q.ref$sfr)/nrow(q.ref))
+  pseudo.sfr.var <- (sum(q.var$sfr)/nrow(q.var))
+  
+  # 3) Calculate the difference and rel.change
+  dmg <- pseudo.sfr.ref - pseudo.sfr.var
+  
+  rel.change <- pseudo.sfr.ref - pseudo.sfr.var
+  
+  perc.change <- 1 - ((1/max(pseudo.sfr.ref, pseudo.sfr.var)) * min(pseudo.sfr.ref, pseudo.sfr.var))
+  
+  # 4) prepare summary
+  summary.line <- data.frame(
+    sequence.ref=ref.seq,
+    sequence.var=var.seq,
+    pseudo.SFR.ref=round(pseudo.sfr.ref, digits = 3),
+    pseudo.SFR.var=round(pseudo.sfr.var, digits = 3),
+    total.damage=round(dmg, digits = 3),
+    perc.change=round(perc.change, digits = 3)
+  )
+  
+  # 5) report
+  newlist <- list(ref=q.ref, var=q.var, summary=summary.line)
+  return(newlist)  
+  
+}
+
+
 
 
 # PLOT FUNCTION WRAPPER -----------------------------------------
