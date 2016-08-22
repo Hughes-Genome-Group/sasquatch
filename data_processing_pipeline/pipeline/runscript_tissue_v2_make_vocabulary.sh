@@ -9,61 +9,70 @@
 ##                                                                                          ##
 ##############################################################################################
 
+# Options: for Sun Grid Engine Cluster Batch Queue System
 #$ -cwd
 #$ -q batchq
 #$ -m eas
 #$ -j y
-#$ -o /t1-data1/WTSA_Dev/rschwess/clustereo
 #$ -N saq_voc
 
-# sh  /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/runscript_tissue_v2_make_vocabulary.sh
-# qsub /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/runscript_tissue_v2_make_vocabulary.sh
+#################
+# Requirements: #
+#################
+#
+# Does not require a sun grid engine cluster set-up
+# Need Sasquatch scripts and the tissue of interest 
+# preprocessed to have the kmer fiiles in place
 
-SCRIPT_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/scripts
-COMMON_FUNCTIONS=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/R_utility/functions_sasq_r_utility.R
+###########
+# Run as: #
+# 
+# sh   /path_to_sasquatch/Sasquatch/data_processing_pipeline/pipeline/runscript_tissue_v2_make_vocabulary.sh
+# qsub /path_to_sasquatch/Sasquatch/data_processing_pipeline/pipeline/runscript_tissue_v2_make_vocabulary.sh
 
-#input possible kmers
-KMER_IN=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/kmers/Kmers_5_6_7_combined.txt
+###############################
+# Adjust Paths and Parameters #
+###############################
 
-ORGANISM="mouse"
+# Set PIPELINE Paths ============================================= #
+# Full path to your Sasquatch copy
+SASQ_PATH=${SASQ_PATH}/path_to_sasquatch/Sasquatch
 
-FRAG_TYPE="DNase"
+# Path to you Sasquatch R funtions copy 
+COMMON_FUNCTIONS=${SASQ_PATH}/R_utility/functions_sasq_r_utility.R
 
-#Tissue ID
-TISSUE="WTHG_C57bl6_erythroblasts_term_diff_rep3_2"
+# Path to all possible kmer files
+KMER_IN=${SASQ_PATH}/data_processing_pipeline/kmers/Kmers_5_6_7_combined.txt
 
-#define DATA directory
-DATA_DIR=/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/${ORGANISM}/${FRAG_TYPE}/
+# Set basi parameters ============================================ #
+# Organism [human, mouse]
+ORGANISM="human"
+
+# Defautlt "DNase"
+DATA_TYPE="DNase"
+
+#Tissue ID (Dsub directory nae)
+TISSUE="my_new_tissue_rep1"
+
+# Full path to where you stored your preprocessed data [default = "${SASQ_PATH}/${ORGANISM}/${DATA_TYPE}/"]
+DATA_DIR=${SASQ_PATH}/${ORGANISM}/${DATA_TYPE}/${IDTAG}
+
+#########################
+# Auto Select pnorm tag #
+#########################
 
 # Select PNORM TAG
 case "${ORGANISM}" in 
 
 	human)
-		case "${FRAG_TYPE}" in 
-		
-		DNase)	
-			PNORM_TAG="h_ery_1"
-		;;
-		ATAC)
-			PNORM_TAG="h_ery_1_atac"
-		;;
-		esac
+		PNORM_TAG="h_ery_1"
 	;;
 
 	mouse)
-		case "${FRAG_TYPE}" in
-		
-		DNase)	
-			PNORM_TAG="m_ery_1"
-		;;
-		ATAC)
-			PNORM_TAG="m_ery_1_atac"
-		;;
-		esac
+		PNORM_TAG="m_ery_1"
 	;;
 
 esac
-
 
 # SET OUTPUT
 OUTPUT_DIR=${DATA_DIR}/${TISSUE}
@@ -75,7 +84,7 @@ VOCAB=${OUTPUT_DIR}/vocabulary_${TISSUE}.txt
 
 # Submit Rscript ====================================
 
-Rscript ${SCRIPT_DIR}/create_vocabulary.R ${COMMON_FUNCTIONS} ${TISSUE} ${ORGANISM} ${PNORM_TAG} ${DATA_DIR} ${FRAG_TYPE} ${VOCAB} ${KMER_IN}
+Rscript ${SCRIPT_DIR}/create_vocabulary.R ${COMMON_FUNCTIONS} ${TISSUE} ${ORGANISM} ${PNORM_TAG} ${DATA_DIR} ${DATA_TYPE} ${VOCAB} ${KMER_IN}
 
 # =====================================
 echo "Processing vocabulary file done"

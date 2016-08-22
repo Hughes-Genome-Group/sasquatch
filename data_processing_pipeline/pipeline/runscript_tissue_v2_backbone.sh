@@ -83,7 +83,7 @@ ORGANISM="human"
 BUILD='hg19'
 
 # IDtag to produce output directory and name the files
-IDTAG="my_new_yissue_rep1"
+IDTAG="my_new_tissue_rep1"
 
 # specify if DNaseI or ATAC data [default = "DNase"] 
 # ("ATAC" only supported for test purposes)
