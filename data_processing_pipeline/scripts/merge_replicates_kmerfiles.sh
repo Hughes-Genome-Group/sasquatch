@@ -9,18 +9,27 @@
 
 #!usr/bin/bash
 
-datadir="/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/human/DNase"
+# Select data path where tissue directories are stores [defailt = ./Sasquatch/data"
+datadir="./Sasquatch/data"
 
-tag="ENCODE_UW_HPF"
+# Define Tissue directory tag, single replicate dirs and name for the merged target
+tag="Tissue_dir"
 
+# declare as many reps as needed
 rep1="${tag}_rep1"
 rep2="${tag}_rep2"
+rep3="${tag}_rep3"
 
 merged="${tag}_merged"
 
+# Select pnorm tag used for DNase propensity normalisation
 pnorm_tag="h_ery_1"
 
 # ==================================
+
+### ===================== ###
+### For 2 replicates run: ###
+### ===================== ###
 
 mkdir -p ${datadir}/${merged}/counts
 
@@ -44,23 +53,10 @@ perl /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pip
 cd $datadir
 
 
-### ====== ###
-### 3 reps ###
-### ====== ###
 
-datadir="/t1-data1/WTSA_Dev/rschwess/database_assembly/idx_correct_assembly/human/DNase"
-
-tag="Duke_CLL"
-
-rep1="${tag}_rep1"
-rep2="${tag}_rep2"
-rep3="${tag}_rep3"
-
-merged="${tag}_merged"
-
-pnorm_tag="h_ery_1"
-
-# ==================================
+### ===================== ###
+### For 3 replicates run: ###
+### ===================== ###
 
 mkdir -p ${datadir}/${merged}/counts
 
@@ -84,4 +80,4 @@ perl /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pip
 cd  $datadir
 
 
-
+# For more rplicates adjust the commands 

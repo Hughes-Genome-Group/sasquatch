@@ -11,7 +11,6 @@
 
 #$ -cwd
 #$ -q batchq
-#$ -M ron.schwessinger@ndcls.ox.ac.uk
 #$ -m eas
 #$ -j y
 #$ -o /t1-data1/WTSA_Dev/rschwess/clustereo
@@ -19,6 +18,7 @@
 cd ${COUNTS}
 date
 
+echo "SASQ_PATH = ${SASQ_PATH}"
 echo "OUTPUT_DIR = ${OUTPUT_DIR}"
 echo "REGIONS_FILE_PLOIDY_FILTERED = ${REGIONS_FILE_PLOIDY_FILTERED}"
 echo "REF_GENOME = ${REF_GENOME}"
@@ -33,13 +33,13 @@ echo ""
 for i in 5 6 7
 do
 
-	perl ${SCRIPT_DIR}/count_kmers_pnorm.pl /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/kmers/All_Possible_Sequences_${i}.txt ${REGIONS_FILE_PLOIDY_FILTERED} ${OUTPUT_DIR}/footprints/${IDTAG}_Plus.wig ${i} ${REF_GENOME} ${PROPENSITY_PLUS} >${COUNTS}/kmers_${i}_count_${IDTAG}_pnorm_${pnormsource}_plus.txt
+	perl ${SCRIPT_DIR}/count_kmers_pnorm.pl ${SASQ_PATH}/data_processing_pipeline/kmers/All_Possible_Sequences_${i}.txt ${REGIONS_FILE_PLOIDY_FILTERED} ${OUTPUT_DIR}/footprints/${IDTAG}_Plus.wig ${i} ${REF_GENOME} ${PROPENSITY_PLUS} >${COUNTS}/kmers_${i}_count_${IDTAG}_pnorm_${pnormsource}_plus.txt
 
 
 	echo "$i plus done"
 	date
 
-	perl ${SCRIPT_DIR}/count_kmers_pnorm_minus.pl /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/kmers/All_Possible_Sequences_${i}.txt ${REGIONS_FILE_PLOIDY_FILTERED} ${OUTPUT_DIR}/footprints/${IDTAG}_Minus.wig ${i} ${REF_GENOME} ${PROPENSITY_MINUS} >${COUNTS}/kmers_${i}_count_${IDTAG}_pnorm_${pnormsource}_minus.txt
+	perl ${SCRIPT_DIR}/count_kmers_pnorm_minus.pl ${SASQ_PATH}/data_processing_pipeline/kmers/All_Possible_Sequences_${i}.txt ${REGIONS_FILE_PLOIDY_FILTERED} ${OUTPUT_DIR}/footprints/${IDTAG}_Minus.wig ${i} ${REF_GENOME} ${PROPENSITY_MINUS} >${COUNTS}/kmers_${i}_count_${IDTAG}_pnorm_${pnormsource}_minus.txt
 
 	echo "$i minus done"
 	date

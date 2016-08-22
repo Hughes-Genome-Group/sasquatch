@@ -1,0 +1,7 @@
+# personalised data preprocessing files to ignore
+./data_processing_pipeline/pipeline/runscript_tissue_v2_backbone_public.sh
+./data_processing_pipeline/pipeline/runscript_tissue_v2_backbone_moreencode.sh
+./data_processing_pipeline/pipeline/runscript_tissue_v2_backbone_RS.sh
+./data_processing_pipeline/pipeline/runscript_tissue_v2_make_vocabulary_RS.sh
+./data_processing_pipeline/scripts/merge_replicates_kmerfiles_RS.sh
+./R_utility/example_script_sasq_r_utility_RS.R

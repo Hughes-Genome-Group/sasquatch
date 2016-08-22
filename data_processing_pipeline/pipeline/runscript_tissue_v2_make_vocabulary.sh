@@ -11,14 +11,13 @@
 
 #$ -cwd
 #$ -q batchq
-#$ -M ron.schwessinger@ndcls.ox.ac.uk
 #$ -m eas
 #$ -j y
-#$ -e /t1-data1/WTSA_Dev/rschwess/clustereo
 #$ -o /t1-data1/WTSA_Dev/rschwess/clustereo
-#$ -N voc_uw_Treg_Wb83319432
+#$ -N saq_voc
 
-#qsub /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/runscript_tissue_v2_make_vocabulary.sh
+# sh  /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/runscript_tissue_v2_make_vocabulary.sh
+# qsub /t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/pipeline/runscript_tissue_v2_make_vocabulary.sh
 
 SCRIPT_DIR=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/data_processing_pipeline/scripts
 COMMON_FUNCTIONS=/t1-data1/WTSA_Dev/rschwess/Sasquatch_offline/Sasquatch/R_utility/functions_sasq_r_utility.R
