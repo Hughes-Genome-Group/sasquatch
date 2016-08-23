@@ -15,48 +15,48 @@ source("./R_utility/functions_sasq_r_utility.R")
 # Note: the example script runs with the pre-processed tissue dummy data provided with the code distribution. 
 # To run different sequences on different tissues, please download your data of interest and the appropriate 
 # background data from the webtool address: http://apps.molbiol.ox.ac.uk/sasquatch/cgi-bin/foot.cgi
+# and extract them into the data repository 
 
-
-### === Set Some Initial Parameters ===============================================================
+### === Set Some Initial Parameters ===========================================
 
 data.dir <- "./data/human/DNase/"  # data storage where downloaded / pre-processed data were extracted 
 
 pnorm.tag <- "h_ery_1" # identifier for the propensity source used ["h_ery_1" = human, "m_ery_1" = mouse]
 
-# only for background plots
-background.dir <- "/home/ron/fusessh/database_assembly/idx_correct_assembly/background/"
-background.tissue <- "hg18_human_h_ery_1"
-
-# output directory for tables and plots  
-out.dir <- "/home/ron/Daten/WIMM/Sasquatch_working/"
-
 # select tissue (e.g. "list.files(data.dir)")
-tissue <- "WIMM_primary_erythroid_Fibach_Fade8"
+tissue <- "Dummy_tissue_example"
 
-# select fragmentation type
+# select fragmentation type ["DNase" or "ATAC" (currently only for testing purposes)]
 frag.type <- "DNase"
 
+# Paths to background data only needs specifying when tryin to plot background plot. Every other normalisation is already done. 
+background.dir <- "./data/human/background/"
+background.tissue <- "Background_dummy_h_ery_1"
 
-### ===== TEST R BASIC FUNCTIONS ==================================================================
+# output directory for table and plots  
+out.dir <- "../sasq_sandbox/"
 
 
-# single k-mers analysis  ---------------------------------------------------------------------
+### ===== TEST SasQ R BASIC FUNCTIONS =========================================
+
+# We will first run through the Basic SasQ functions, 
+# bare in mind that there are wrappers for all common tasks, discussed afterwards. 
+
+# 1) single k-mers analysis  --------------------------------------------------
 
 # select a k-mer of interest
 kmer <- "CGCATGC"
 
 # get the footprint 
 fp <- GetFootprint(kmer=kmer, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, smooth=TRUE)
-#returns list object with $profile and $count
+# returns list object with $profile and $count
 
-
-# estimate the shoulders from the profile (use smoothed profile or smooth within call!)
+# estimate the shoulders from the profile (use a smoothed profile or smooth within call!)
 sh <- SobelBorders(fp$profile, kl=nchar(kmer))
 # returns list object: 
 #   $us and $ds shoulder positions upstream and downstream respectively
 #   $range.us $range.ds range(size) of the respective shoulder; 
 #   $flag TRUE/FALSE indicating if shoulders could be estimated 
-
 
 # make single, merged profile plot 
 p <- PlotSingle(profile=fp$profile, 
@@ -66,7 +66,7 @@ p <- PlotSingle(profile=fp$profile,
                 ylim=c(0,0.0123))
 plot(p)
 
-# further example: make a pruned profile plot with no shoulders
+# further example: make a pruned profile plot with no shoulders plotted
 p <- PlotSingle(profile=fp$profile, 
                 kl=nchar(kmer), 
                 plot.shoulders=FALSE, 
@@ -74,10 +74,11 @@ p <- PlotSingle(profile=fp$profile,
                 xlim=c(-50,50))
 plot(p)
 
-# Get overlap of profiles ----------------------------------------------------------------------
 
-kmer1 <- "WGATAA" #note FASTA ambiguous code is supported
-kmer2 <- "WGATTA"
+# 2) Get overlap of profiles --------------------------------------------------
+
+kmer1 <- "TGACTCA"
+kmer2 <- "TGAGTCA"
 
 fp1 <- GetFootprint(kmer=kmer1, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, smooth=T)
 fp2 <- GetFootprint(kmer=kmer2, tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, smooth=T)
@@ -90,69 +91,62 @@ p <- PlotOverlap(
   kmer2,
   fp1$count,
   fp2$count,
-  ymode="separate", 
-  xlim=c(-80,80), 
-  ylim=c(0.0020, 0.0100),
-  plot.shoulders=FALSE
+  ymode="separate"
   )
 
-p
+plot(p)
 
-# dissect a longer sequence  ----------------------------------------------------------------------
+
+# 3) dissect a longer sequence  ----------------------------------------------------------------------
 seq <- "GGATATGATAGATACCT"
-
 # helper function to dissect sequence into list of 1 bp sliding k-mers
 dl <- DissectSequence(seq, kl=7, list=FALSE)
 # returns: list (list=TRUE) or vector (list = FALSE)
-# use with lapply or sapply how you like
+# use with lapply or sapply or ever you how you like
+
 
 ### ===== TEST R WRAPPER FUNCTIONS =================================================================
 
-# library(RColorBrewer)
 # color.store <- brewer.pal(3,"Set1")
+
+# indicates that we have a precalculated vocabulary file (SFR for every unique k-mer) present in the repository subdirectory
+# this is true for most all the tissues we distribute but can be switched of in case you haven't processed that file yet.
+# using the vocabulary file speeds the calculation up significantly. 
 
 # Wrapper to get SFR from k-mer and tissues --> returns single SFR value --------------------------
 sfr <- GetSFR(kmer="CACGTG", 
               tissue=tissue, 
               data.dir=data.dir,
               pnorm.tag=pnorm.tag,
-              vocab.flag=F, 
+              vocab.flag=TRUE,  
               frag.type="DNase")
 
 # Wrapper for single plot
-p <- PlotSingleKmer(kmer="GGCGGG", tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, 
+s <- PlotSingleKmer(kmer="GGCGGG", tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type=frag.type, 
                     smooth=FALSE, plot.shoulders=FALSE, ylim=c(0,0.01), xlim=c(-70,70),
                     color="black")
-p
+plot(s)
 
 # Example to save a plot --------------------------------------------------------------------------
-ggsave(p, filename=file.path(out.dir,
-       paste0("single_profile_", kmer, "_humane_erythroid.svg")), 
-       width=10, height=10/2.5)
+ggsave(p, filename=file.path(out.dir, "single_profile_GGCGGG_humane_erythroid.png"), width=10, height=10/2.5)
+
 
 # Wrapper for overlap plots from k-mers -----------------------------------------------------------
-p <- PlotOverlapKmers(
-  kmer1="CACGTG", kmer2="CACGTT", 
+o <- PlotOverlapKmers(
+  kmer1="TGACTCA", kmer2="TGAGTCA",
   tissue1=tissue, tissue2=tissue, 
-  data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type="DNase", 
-  smooth=TRUE, plot.shoulders = TRUE,
-  ylim=c(0,0.01), xlim=c(-75,75)
+  data.dir=data.dir, pnorm.tag=pnorm.tag, frag.type="DNase"
   )
-p
+plot(o)
 
 # Wrapper to query longer sequence ----------------------------------------------------------------
-dl <- QueryLongSequence(sequence=seq, 
-                        kl=7, 
+dl <- QueryLongSequence(sequence="CACGTGG", 
+                        kl=6, 
                         tissue=tissue, 
                         data.dir=data.dir,
                         pnorm.tag=pnorm.tag,
                         vocab.flag=TRUE, 
-                        frag.type=frag.type, 
-                        plots=FALSE, 
-                        smooth=TRUE, 
-                        plot.shoulders=TRUE, 
-                        ylim=c(0,0.01), 
-                        xlim=c(-125,125)
+                        frag.type=frag.type
                         )
 
 # Wrapper for Ref-Var Batch query -----------------------------------------------------------------
@@ -173,11 +167,11 @@ bcomp <- RefVarBatch(ref.var.df=tdf,
                      frag.type=frag.type)
 
 # Meet old JASPAR -----------------------------------------------------------------------------------
-#load Rdata object storing the jaspar 2016 pwms (all versions)
+# load Rdata object storing the jaspar 2016 pwms (all versions)
 library(Biostrings)
 library(TFBSTools)
 
-load("/home/ron/fusessh/database_assembly/jaspar/jaspar2016.human.9606.all.versions")
+load("data/jaspar/jaspar2016.human.9606.all.versions")
 
 # Single JASPAR query
 QueryJaspar(sequence="AGATAATAG", threshold=0.8, pwm.data=human.pwm)
@@ -197,17 +191,20 @@ comp <- CompareSequences(
   tissue = tissue, 
   vocab.flag = TRUE,
   frag.type = "DNase", 
-  plots = "highest"
+  plots = FALSE
   )
 
 # Wrapper to get strand specific footprint profiles for tissue or background -------------------------
-sfp <- GetFootprintStrand(kmer="WGATAA", tissue=tissue, data.dir=data.dir, pnorm.tag = pnorm.tag, frag.type=frag.type, smooth=TRUE, smooth.bandwidth=5, background.flag=FALSE)
+sfp <- GetFootprintStrand(kmer="CACGTG", tissue=tissue, data.dir=data.dir, pnorm.tag = pnorm.tag, frag.type=frag.type, smooth=TRUE, smooth.bandwidth=5, background.flag=FALSE)
 
-bfp <- GetFootprintStrand(kmer="WGATAA", tissue=background.tissue, data.dir=background.dir, pnorm.tag = pnorm.tag, frag.type=frag.type, smooth=TRUE, smooth.bandwidth=5, background.flag=TRUE)
+bfp <- GetFootprintStrand(kmer="CACGTG", tissue=background.tissue, data.dir=background.dir, pnorm.tag = pnorm.tag, frag.type=frag.type, smooth=TRUE, smooth.bandwidth=5, background.flag=TRUE)
 
-# plot single strands
-splots <- PlotSingleStrands(kmer="WGATAA", tissue = background.tissue, data.dir = background.dir, frag.type = frag.type,
+# plot single strands (of background)
+splots <- PlotSingleStrands(kmer="CACGTG", tissue = tissue, data.dir = data.dir, frag.type = frag.type, pnorm.tag = pnorm.tag,
+                            smooth=TRUE, background.flag = FALSE)
+bplots <- PlotSingleStrands(kmer="CACGTG", tissue = background.tissue, data.dir = background.dir, frag.type = frag.type,
                             smooth=TRUE, background.flag = TRUE)
+
 
 # Insilico mutations ---------------------------------------------------------------------------------
 
@@ -235,20 +232,19 @@ df.insilico <- InSilicoMutation(sequence="GTGCCCGCATGTGCTTATTTCTGCAAAAATAAACCATG
 head(df.insilico)
 
 # Note: progress.bar = TRUE will require the package "pbapply" which visualized the progress
-# install packagew with install.packages("pbapply") or set to FALSE
+# installthe package with install.packages("pbapply") or set to FALSE
 
 # Make a InSilicoMutationplot from the processed in silico mutation data.frame
 rp <- InSilicoMutationPlot(df.insilico)
-rp
+plot(rp)
 
 # Full example for in silico mutation data frame and InSilicoMutationplot --------------
-library(ggplot2)
-library(RColorBrewer)
+# to get a sequence of interest load a reference genome
 library(BSgenome)
 library(BSgenome.Hsapiens.UCSC.hg18)
 genome <- BSgenome.Hsapiens.UCSC.hg18
 
-# To get the next 30 bases starting from start.pos
+# Fet 30 bases starting from start.pos of interest
 chr <- "chr16"
 start.pos <- 145852
 end.pos <- start.pos + 30
@@ -262,7 +258,7 @@ df.insilico <- InSilicoMutation(sequence=seq,
                          position=start.pos,
                          report="all",
                          damage.mode="exhaustive",
-                         tissue="human_erythroid_hg18",
+                         tissue=tissue,
                          data.dir=data.dir,
                          pnorm.tag = pnorm.tag,
                          vocab.flag=TRUE,
@@ -271,13 +267,12 @@ df.insilico <- InSilicoMutation(sequence=seq,
                          )
 
 rp <- InSilicoMutationPlot(df.insilico, ylim=c(-4,4))
-rp
+plot(rp)
+
 
 # Manual alternative --------------------------------------------------------------------------------
-
 # Get mutation data frame
 d <- GetPossibleMutations(sequence=c("AGGGATACGTAGACGGTGTAA"), kl=7, chr="chrX", position=1345990)
-
 # calculate damage using apply and the more basic functions
 d$damage <- apply(d, 1, function(x) CompareSequences(sequence1=x[5], 
                                                      sequence2=x[6], 
@@ -292,46 +287,40 @@ d$damage <- apply(d, 1, function(x) CompareSequences(sequence1=x[5],
                                                      )$summary$total.damage
                   )
 
+
 # Preload data for faster processing --------------------------------------------------------------------------------
+# We can preload the whoel vocabulary file or kmer based profiles files into memory.
+# This speeds up analysis over multiple k-mers, longer sequences, batches of variants and in silico mutations significantly. 
+# We then provide the preloaded data to the respective functions and indicate what we have preloaded and provided. 
+# Note: Different functions require different data to be preloaded. While running over many k-mers or longer sequences can be 
+# done nicely with only the vocabulary file preloaded, everythin that tries to plto profiles will need the profiles loaded to 
+# profit from the speed-up.
 
-# Preload vocab file
-data.dir <- "/home/ron/fusessh/database_assembly/idx_correct_assembly/human/DNase/"
-pnorm.tag <- "h_ery_1" #identifier for the propensity source used
-
-# output directory for tables and plots  
-out.dir <- "/home/ron/Daten/WIMM/Sasquatch_working/"
-
-# select tissue (e.g. "list.files(data.dir)")
-tissue <- "WIMM_primary_erythroid_Fibach_Fade8"
-
-# select fragmentation type
-frag.type <- "DNase"
-
+# To preload the vocabulary file
 vocab <- PreLoadVocab(data.dir, tissue)
-profiles <- PreLoadKmerProfiles(7, data.dir, tissue, pnorm.tag)
+
+# To preload the cut profiles (specify which kmer size you want to preload)
+profiles.6mers <- PreLoadKmerProfiles(6, data.dir, tissue, pnorm.tag)
+profiles.7mers <- PreLoadKmerProfiles(7, data.dir, tissue, pnorm.tag)
 
 # Apply functions with preload vocabulary file
 # 1) Get Footprint
-fp <- GetFootprint("CACGTGG", tissue, data.dir, pnorm.tag, frag.type, smooth=T, preload=T, preload.profiles = profiles)
+fp <- GetFootprint("CACGTG", tissue, data.dir, pnorm.tag, frag.type, smooth=T, preload=T, preload.profiles = profiles.6mers)
 
-# 2) GetSFR
-sfr.v <- GetSFR(kmer="CGCATGC", tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, vocab.flag=T, frag.type="DNase", preload=T, preload.vocab=vocab, preload.profiles=profiles)
-sfr.p <- GetSFR(kmer="CGCATGC", tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, vocab.flag=F, frag.type="DNase", preload=T, preload.vocab=vocab, preload.profiles=profiles)
+# 2) GetSFR from vocabulary directly or get the profiles and calculate it on the fly
+sfr.v <- GetSFR(kmer="CGCATGC", tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, vocab.flag=T, frag.type="DNase", preload=T, preload.vocab=vocab)
+sfr.p <- GetSFR(kmer="CGCATGC", tissue=tissue, data.dir=data.dir, pnorm.tag=pnorm.tag, vocab.flag=F, frag.type="DNase", preload=T, preload.profiles=profiles)
 sfr.v
 sfr.p
 
-# 3) Dissect lOnger Sequence
-ds1 <- QueryLongSequence("CCGCGCTTATGTACC", 7, tissue, data.dir, pnorm.tag, vocab.flag = F, frag.type = "DNase", preload=F)
-ds2 <- QueryLongSequence("CCGCGCTTATGTACC", 7, tissue, data.dir, pnorm.tag, vocab.flag = F, frag.type = "DNase", preload=T, preload.vocab = vocab, preload.profiles = profiles)
-ds1
-ds2
+# 3) Dissect longer Sequence
+ds <- QueryLongSequence("CCGCGCTTATGTACC", 7, tissue, data.dir, pnorm.tag, vocab.flag = TRUE, frag.type = "DNase", preload=T, preload.vocab = vocab)
+ds
+
 
 #compare time
-system.time(QueryLongSequence("CCGCGCTTATGTACC", 7, tissue, data.dir, pnorm.tag, vocab.flag = F, frag.type = "DNase", preload=F))
-system.time(QueryLongSequence("CCGCGCTTATGTACC", 7, tissue, data.dir, pnorm.tag, vocab.flag = F, frag.type = "DNase", preload=T, preload.vocab = vocab, preload.profiles = profiles))
-
 system.time(QueryLongSequence("CCGCGCTTATGTACC", 7, tissue, data.dir, pnorm.tag, vocab.flag = T, frag.type = "DNase", preload=F))
-system.time(QueryLongSequence("CCGCGCTTATGTACC", 7, tissue, data.dir, pnorm.tag, vocab.flag = T, frag.type = "DNase", preload=T, preload.vocab = vocab, preload.profiles = profiles))
+system.time(QueryLongSequence("CCGCGCTTATGTACC", 7, tissue, data.dir, pnorm.tag, vocab.flag = T, frag.type = "DNase", preload=T, preload.vocab = vocab))
 
 # 4) Compare Sequences
 comp <- CompareSequences(
@@ -342,12 +331,11 @@ comp <- CompareSequences(
   pnorm.tag = pnorm.tag,
   damage.mode="exhaustive",
   tissue=tissue, 
-  vocab.flag=T,
+  vocab.flag=TRUE,
   frag.type="DNase", 
-  plots="highest",
-  preload=T,
-  preload.vocab=vocab,
-  preload.profiles=profiles
+  plots=FALSE,
+  preload=TRUE,
+  preload.vocab=vocab
 )
 
 # 5) RefVarBatch
@@ -366,8 +354,7 @@ bcomp <- RefVarBatch(ref.var.df=tdf,
                      vocab.flag=TRUE, 
                      frag.type=frag.type,
                      preload=TRUE,
-                     preload.vocab = vocab,
-                     preload.profiles = profiles)
+                     preload.vocab = vocab)
 
 # 6) In Silico Mutation
 df.insilico <- InSilicoMutation(sequence="GTGCCCGCATGTGCTTATTTCTGCAAAAATAAACCATGGCAGG", 
@@ -383,12 +370,9 @@ df.insilico <- InSilicoMutation(sequence="GTGCCCGCATGTGCTTATTTCTGCAAAAATAAACCATG
                                 frag.type=frag.type,
                                 progress.bar=TRUE,
                                 preload=TRUE,
-                                preload.vocab = vocab,
-                                preload.profiles = profiles
+                                preload.vocab = vocab
 )
 head(df.insilico)
 
-
-
 p <- InSilicoMutationPlot(df.insilico)
-p
+plot(p)
