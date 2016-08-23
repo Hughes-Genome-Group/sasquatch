@@ -1,6 +1,6 @@
 ##############################################################################################
 ##                                                                                          ##
-## Sasquatch, Sequence based prediction of DNase I footprinting potential.                  ##
+## Sasquatch, Sequence based predicting of DNase I footprinting potential.                  ##
 ## Copyright (C) 2016 Genome Biology and Computational Biology Research Group, WIMM, Oxford ##
 ##                                                                                          ##
 ##############################################################################################
@@ -10,18 +10,12 @@
 ## Author: Ron Schwessinger  ##
 ###############################
 
-source("./R_utility/functions_sasq_r_utility.R")
-
-# Note: the example script runs with the pre-processed tissue dummy data provided with the code distribution. 
-# To run different sequences on different tissues, please download your data of interest and the appropriate 
-# background data from the webtool address: http://apps.molbiol.ox.ac.uk/sasquatch/cgi-bin/foot.cgi
-
+source("/home/ron/fusessh/Sasquatch_offline/Sasquatch/R_utility/functions_sasq_r_utility.R")
 
 ### === Set Some Initial Parameters ===============================================================
 
-data.dir <- "./data/human/DNase/"  # data storage where downloaded / pre-processed data were extracted 
-
-pnorm.tag <- "h_ery_1" # identifier for the propensity source used ["h_ery_1" = human, "m_ery_1" = mouse]
+data.dir <- "/home/ron/fusessh/database_assembly/idx_correct_assembly/human/DNase/"
+pnorm.tag <- "h_ery_1" #identifier for the propensity source used
 
 # only for background plots
 background.dir <- "/home/ron/fusessh/database_assembly/idx_correct_assembly/background/"
