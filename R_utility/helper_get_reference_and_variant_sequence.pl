@@ -18,6 +18,7 @@ use Pod::Usage;
 	--ref  column number (1 based) where to find the reference base(s) 
 	--var  column number (1 based) where to find the variant base(s)
 	--extend  bp length which sequence length surroudning the variant position should be retrieved [default = 13] for SasQ input. Should be an odd number to ensure centric SNP variant position
+	--warnings  warnings.log file to record unmatching sequences [default ./warnings.log]
         
 =head1 DESCRIPTION
 
@@ -32,6 +33,7 @@ use Pod::Usage;
 # define default options
 my $extend=13;  # target sequence length to extend to [default=13]
 my ($genome, $bed, $ref_col, $var_col) = "";
+my $warnings = "warnigns.log";
 
 # Get variables to from command line -----------------------------------------
  GetOptions(
@@ -42,6 +44,7 @@ my ($genome, $bed, $ref_col, $var_col) = "";
         "ref=i"  => \$ref_col,   # column holding the reference base(s)
         "var=i" => \$var_col,      # colum holding the variant basis
         "extend=i" => \$extend,      # target sequence length to extend to [default=13]
+	"warnings=s" => \$warnings	# write warings and skipped variants to
         ) or pod2usage(q(-verbose) => 1);
 
 # Help ------------------------------------------------------------------------
@@ -93,6 +96,9 @@ $var_col--;
 # # ===========================================================================
 my $linecounter = 0;
 
+# open warnings file
+open(WARN, ">$warnings") or die "Can not open warnings log file $warnings $!";
+
 # Get and CHECK input format ----------------------------------------------------------
 open(IN, $bed) or die "Can not open input bed like file $bed ! $!\n";
 	
@@ -116,7 +122,8 @@ open(IN, $bed) or die "Can not open input bed like file $bed ! $!\n";
 		# check requested region length
 		my $region_length = $end-$start;
                 if($region_length > 1){
-                        print "Requested poistion is longer than 1 bp. Use 1 bp position of SNP or start coordinate of INDEL! line $linecounter ... skipping\n";
+                        print WARN "#warning: Requested poistion is longer than 1 bp. Use 1 bp position of SNP or start coordinate of INDEL! line $linecounter ... skipping\n";
+			print WARN "$_\n";
                         next;
                 }
 
@@ -125,8 +132,9 @@ open(IN, $bed) or die "Can not open input bed like file $bed ! $!\n";
 
 		# check length and content of ref and variant base
 		if($ref_base=~/[^A,C,G,T,N,R,Y,K,M,S,W,B,D,H,V]+/ | $var_base=~/[^A,C,G,T,N,R,Y,K,M,S,W,B,D,H,V]+/){
-			print "Reference or variant have not allowed characters! Only standard fasta characters are allowed! line $linecounter .. skipping\n";
-			next;;
+			print WARN "#warning: Reference or variant have not allowed characters! Only standard fasta characters are allowed! line $linecounter .. skipping\n";
+			print WARN "$_\n";
+			next;
 		}
 		# get variant type snp or indel
 		my $var_type = "snp";
@@ -135,10 +143,10 @@ open(IN, $bed) or die "Can not open input bed like file $bed ! $!\n";
 		
 		# Extract sequence surrounding position of interest
 		$start++; # adjust for bed 0-based coordinate
-		# get extension length and adjust coordinates
-		
+
+		# get extension length and adjust coordinates (take into account length of reference base .. for indels)	
 		$start -= ($extend-1)/2;
-		$end += ($extend-1)/2;
+		$end += ($extend-1)/2 + (length($ref_base)-1);
 
 		# set region to extract
 		my $fai_location = $chromosome.':'.$start.'-'.$end;
@@ -158,7 +166,8 @@ open(IN, $bed) or die "Can not open input bed like file $bed ! $!\n";
 
 		# check ref at centric position
 		if(substr($refseq, (($extend-1)/2), length($ref_base)) ne $ref_base){
-			print "Ref base does not match center of extracted sequence: $ref_base in $refseq line $linecounter complementary? ... skipping \n";
+			print WARN "#warning: Ref base does not match center of extracted sequence: $ref_base in $refseq line $linecounter complementary? ... skipping \n";
+			print WARN "$_\n";
 			next;
 		}
 
@@ -173,4 +182,4 @@ open(IN, $bed) or die "Can not open input bed like file $bed ! $!\n";
 	}
 
 close(IN);
-
+close(WARN);

@@ -109,6 +109,7 @@ dl <- DissectSequence(seq, kl=7, list=FALSE)
 
 # color.store <- brewer.pal(3,"Set1")
 
+# vocab.flag = TRUE
 # indicates that we have a precalculated vocabulary file (SFR for every unique k-mer) present in the repository subdirectory
 # this is true for most all the tissues we distribute but can be switched of in case you haven't processed that file yet.
 # using the vocabulary file speeds the calculation up significantly. 
@@ -289,7 +290,7 @@ d$damage <- apply(d, 1, function(x) CompareSequences(sequence1=x[5],
 
 
 # Preload data for faster processing --------------------------------------------------------------------------------
-# We can preload the whoel vocabulary file or kmer based profiles files into memory.
+# We can preload the whole vocabulary file or kmer based profiles files into memory.
 # This speeds up analysis over multiple k-mers, longer sequences, batches of variants and in silico mutations significantly. 
 # We then provide the preloaded data to the respective functions and indicate what we have preloaded and provided. 
 # Note: Different functions require different data to be preloaded. While running over many k-mers or longer sequences can be 
