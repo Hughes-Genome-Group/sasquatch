@@ -1823,7 +1823,7 @@ CalcIndelDmg <- function(ref.seq,
   
   # Wrapper to calculate INDEL damage (playground work-around)...
   
-  # 1) Perform longer sequence query
+  # 1) Perform longer sequence queries
   q.ref <- QueryLongSequence(ref.seq, 
                              kl=kl, 
                              tissue=tissue, 

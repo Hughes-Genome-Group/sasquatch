@@ -211,12 +211,14 @@ esac
 echo "starting at ..."
 date
 
+mkdir -p ${OUTPUT_DIR}
+
 # ------------------------------------------------------------------------------
 # 0) OPTIONAL filter regions file for ploidy regions (requires bedtools)
 # ------------------------------------------------------------------------------
 
 #rather specific to our server system /not required when bedtools is accessible
-if [ "${FILTER_PLOIDIC_REGIONS}" = true ];
+if [ "${FILTER_PLOIDY_REGIONS}" = true ];
 then
 	bedtools intersect -v -a ${REGIONS_FILE} -b ${PLOIDY_REGIONS} >${REGIONS_FILE_PLOIDY_FILTERED}
 else
