@@ -46,8 +46,8 @@ science_theme <- theme(
   text = element_text(size = 14),
   axis.line = element_line(color="black", size = 0.7),
   axis.line.x = element_line(color="black", size = 0.7),
-  axis.line.y = element_line(color="black", size = 0.7),
-  plot.margin = unit(c(0.7,0.7,0.7,0.7), "lines")
+  axis.line.y = element_line(color="black", size = 0.7)
+  # plot.margin = unit(c(0.7,0.7,0.7,0.7), "lines")
 )
 # removed: , family="Arial" 
 
@@ -660,7 +660,7 @@ PlotOverlap <- function(profile1,
         #         axis.title.y = element_text(size=16),
         #         axis.title.x = element_text(size=16),
         panel.border = element_blank(),
-        panel.margin = unit("1.15", "lines"),
+        panel.spacing = unit("1.15", "lines"),
         strip.text.y = element_blank(),  #remove strips from facetting
         strip.background = element_blank()
       )
@@ -1272,8 +1272,8 @@ GetFootprintStrand <- function(kmer,
     
   }else if(background.flag){
     
-    infile.plus=file.path(data.dir, tissue, "counts", paste0("kmer_", kl, "_", tissue, "_plus_merged"))
-    infile.minus=file.path(data.dir, tissue, "counts", paste0("kmer_", kl, "_", tissue, "_minus_merged"))
+    infile.plus=file.path(data.dir, tissue, "counts", paste0("kmers_", kl, "_", tissue, "_plus_merged.txt"))
+    infile.minus=file.path(data.dir, tissue, "counts", paste0("kmers_", kl, "_", tissue, "_minus_merged.txt"))
     
   }else{
     warning("Specifiy if to retrieve data from the background naked DNA cut frequencies or from tissue\n
@@ -1483,7 +1483,7 @@ InSilicoMutation <- function( sequence,
   # make split sequence dataframe for query
   df <- GetPossibleMutations(sequence=sequence, kl=7, chr=chr, position=position)
   
-  print(paste0("Processing ", nrow(df)," sequence windows:"))
+  # print(paste0("Processing ", nrow(df)," sequence windows:"))
   
   #inslico mutation for set mode with progress bar
   if(progress.bar){
@@ -1805,76 +1805,6 @@ RefVarBatch <- function(ref.var.df,
   return(out.df)
   
 }
-
-
-# !!! WORKING !!! VERSION FOR INDELS ...
-CalcIndelDmg <- function(ref.seq, 
-                         var.seq,
-                         kl, 
-                         tissue, 
-                         data.dir,
-                         pnorm.tag,
-                         vocab.flag=FALSE, 
-                         vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"), 
-                         frag.type, 
-                         preload=FALSE,
-                         preload.vocab="",
-                         preload.profiles=""){
-  
-  # Wrapper to calculate INDEL damage (playground work-around)...
-  
-  # 1) Perform longer sequence queries
-  q.ref <- QueryLongSequence(ref.seq, 
-                             kl=kl, 
-                             tissue=tissue, 
-                             data.dir=data.dir, 
-                             pnorm.tag = pnorm.tag, 
-                             vocab.flag=vocab.flag, 
-                             vocab.file=vocab.file,
-                             preload=preload, 
-                             preload.vocab=preload.vocab,
-                             preload.profiles=preload.profiles)
-  
-  q.var <- QueryLongSequence(var.seq, 
-                             kl=kl, 
-                             tissue=tissue, 
-                             data.dir=data.dir, 
-                             pnorm.tag = pnorm.tag, 
-                             vocab.flag=vocab.flag, 
-                             vocab.file=vocab.file,
-                             preload=preload, 
-                             preload.vocab=preload.vocab,
-                             preload.profiles=preload.profiles)
-  
-  # 2) Sum up SFR and normalise to kl [default=7] * (sum of SFR/number of kmer steps)
-  # to give a pseudo (13) bp window SFR measure
-  pseudo.sfr.ref <- (sum(q.ref$sfr)/nrow(q.ref))
-  pseudo.sfr.var <- (sum(q.var$sfr)/nrow(q.var))
-  
-  # 3) Calculate the difference and rel.change
-  dmg <- pseudo.sfr.ref - pseudo.sfr.var
-  
-  rel.change <- pseudo.sfr.ref - pseudo.sfr.var
-  
-  perc.change <- 1 - ((1/max(pseudo.sfr.ref, pseudo.sfr.var)) * min(pseudo.sfr.ref, pseudo.sfr.var))
-  
-  # 4) prepare summary
-  summary.line <- data.frame(
-    sequence.ref=ref.seq,
-    sequence.var=var.seq,
-    pseudo.SFR.ref=round(pseudo.sfr.ref, digits = 3),
-    pseudo.SFR.var=round(pseudo.sfr.var, digits = 3),
-    total.damage=round(dmg, digits = 3),
-    perc.change=round(perc.change, digits = 3)
-  )
-  
-  # 5) report
-  newlist <- list(ref=q.ref, var=q.var, summary=summary.line)
-  return(newlist)  
-  
-}
-
-
 
 
 # PLOT FUNCTION WRAPPER -----------------------------------------
@@ -2452,5 +2382,162 @@ QueryJasparBatchWeb <- function(df,
   
   #return data frame
   return(df)
+  
+}
+
+
+# SANDBOX FUNCTIONS -----------------------------------------------------------
+
+
+# SANDBOC VERSION FOR INDELS ...
+CalcIndelDmg <- function(ref.seq, 
+  var.seq,
+  kl, 
+  tissue, 
+  data.dir,
+  pnorm.tag,
+  vocab.flag=FALSE, 
+  vocab.file=paste0(data.dir,"/",tissue,"/vocabulary_",tissue,".txt"), 
+  frag.type, 
+  preload=FALSE,
+  preload.vocab="",
+  preload.profiles=""){
+  
+  # Wrapper to calculate INDEL damage (playground work-around)...
+  
+  # 1) Perform longer sequence queries
+  q.ref <- QueryLongSequence(ref.seq, 
+    kl=kl, 
+    tissue=tissue, 
+    data.dir=data.dir, 
+    pnorm.tag = pnorm.tag, 
+    vocab.flag=vocab.flag, 
+    vocab.file=vocab.file,
+    preload=preload, 
+    preload.vocab=preload.vocab,
+    preload.profiles=preload.profiles)
+  
+  q.var <- QueryLongSequence(var.seq, 
+    kl=kl, 
+    tissue=tissue, 
+    data.dir=data.dir, 
+    pnorm.tag = pnorm.tag, 
+    vocab.flag=vocab.flag, 
+    vocab.file=vocab.file,
+    preload=preload, 
+    preload.vocab=preload.vocab,
+    preload.profiles=preload.profiles)
+  
+  # 2) Sum up SFR and normalise to kl [default=7] * (sum of SFR/number of kmer steps)
+  # to give a pseudo (13) bp window SFR measure
+  pseudo.sfr.ref <- (sum(q.ref$sfr)/nrow(q.ref))
+  pseudo.sfr.var <- (sum(q.var$sfr)/nrow(q.var))
+  
+  # 3) Calculate the difference and rel.change
+  dmg <- pseudo.sfr.ref - pseudo.sfr.var
+  
+  rel.change <- pseudo.sfr.ref - pseudo.sfr.var
+  
+  perc.change <- 1 - ((1/max(pseudo.sfr.ref, pseudo.sfr.var)) * min(pseudo.sfr.ref, pseudo.sfr.var))
+  
+  # 4) prepare summary
+  summary.line <- data.frame(
+    sequence.ref=ref.seq,
+    sequence.var=var.seq,
+    pseudo.SFR.ref=round(pseudo.sfr.ref, digits = 3),
+    pseudo.SFR.var=round(pseudo.sfr.var, digits = 3),
+    total.damage=round(dmg, digits = 3),
+    perc.change=round(perc.change, digits = 3)
+  )
+  
+  # 5) report
+  newlist <- list(ref=q.ref, var=q.var, summary=summary.line)
+  return(newlist)  
+  
+}
+
+# SANDBOX Function to retrieve a merged-piled-up profile over a longer consensus sequence
+GetLongMotifProfile <- function(
+  seq, 
+  kl=7,
+  tissue,
+  data.dir,
+  pnorm.tag,
+  frag.type,
+  smooth=TRUE, 
+  smooth.bandwidth=5,
+  preload=FALSE, 
+  preload.profiles){
+  # SANDBOX Function to get a piled up profile from moving kmers merged over a longer motif (e.g. CTCF)
+  
+  cons.seq <- seq
+  
+  l.cons.seq <- DissectSequence(cons.seq, kl, list=TRUE)  #split up
+  
+  l.fp <- lapply(l.cons.seq, function(x){
+    GetFootprint(
+      kmer=x,
+      tissue=tissue, 
+      data.dir=data.dir,
+      pnorm.tag=pnorm.tag,
+      frag.type=frag.type,
+      smooth = smooth,
+      smooth.bandwidth = smooth.bandwidth,
+      preload = preload,
+      preload.profiles = preload.profiles)
+  })  # get profiles
+  
+  # align and padd the profiles
+  pile.fp <- rep(0, 250 + nchar(cons.seq)) # init an empty profile
+  # for each footprint pile it up relative to the large consensus motif location
+  for(i in c(1:length(l.fp))){
+    pile.fp[c(i:(250+kl+i-1))] <- pile.fp[c(i:(250+kl+i-1))] + l.fp[[i]]$profile
+  }
+  
+  pile.fp <- pile.fp[c((length(l.fp)+1):(length(pile.fp)-length(l.fp)))]  # trim profile to only keep positons spannned by all kmers
+  pile.fp <- (pile.fp / sum(pile.fp)) # norm to relative cut frequencies again
+  
+  return(pile.fp)
+  
+}
+
+# SANDBOX Plot Longer Motif merged pileup
+PlotLongMotifProfile <- function(seq, 
+  kl=7, 
+  tissue,
+  data.dir,
+  pnorm.tag,
+  frag.type,
+  smooth=TRUE, 
+  smooth.bandwidth=5, 
+  plot.shoulders=FALSE,
+  plot.title=FALSE,
+  ylim=c(0,0.01), 
+  xlim=c(-125,125), 
+  color="black",
+  preload=FALSE,
+  preload.profiles){
+  
+  fp <- GetLongMotifProfile(
+    seq=seq, 
+    kl=kl,
+    tissue=tissue,
+    data.dir=data.dir,
+    pnorm.tag=pnorm.tag,
+    frag.type=frag.type,
+    smooth=smooth, 
+    smooth.bandwidth=smooth.bandwidth,
+    preload=preload, 
+    preload.profiles=preload.profiles)
+  
+  # get shoulders if required
+  if(plot.shoulders){
+    sh <- SobelBorders(fp, kl=kl)  
+    p.pile <- PlotSingle(fp, kl=kl, plot.shoulders = TRUE, shoulders = sh, ylim = ylim, xlim = xlim, color = color)
+  }else{
+    p.pile <- PlotSingle(fp, kl=kl, plot.shoulders = FALSE, ylim = ylim, xlim = xlim, color = color)    
+  }
+
+  return(p.pile)
   
 }
