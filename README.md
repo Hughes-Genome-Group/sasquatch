@@ -28,7 +28,9 @@ Also check out our general introduction into the [Sasquatch](http://apps.molbiol
 
 ### Links
 
-Here, you can reach our [Sasquatch webtool](http://apps.molbiol.ox.ac.uk/sasquatch/cgi-bin/foot.cgi "webtool") implementation as well as the [repository](http://apps.molbiol.ox.ac.uk/sasquatch/cgi-bin/foot.cgi?rm=mode_71 "Repository") of preprocessed DNase-seq data to download for local use. 
+Here, you can reach our [Sasquatch webtool](http://apps.molbiol.ox.ac.uk/sasquatch/cgi-bin/foot.cgi "webtool") implementation as well as the [repository](http://apps.molbiol.ox.ac.uk/sasquatch/cgi-bin/foot.cgi?rm=mode_71 "Repository") of preprocessed DNase-seq data to download for local use.
+
+Paper: http://www.genome.org/cgi/doi/10.1101/gr.220202.117
 
 ### License
 Sasquatch is pulished under [GPLv3](./LICENSE.txt "License") or later.
